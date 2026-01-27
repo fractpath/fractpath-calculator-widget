@@ -1,35 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useMemo, useState } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+import "./App.css";
+
+type Persona = "Buyer" | "Homeowner" | "Realtor";
+
+export default function App({
+  initialPersona = "Buyer",
+}: { initialPersona?: Persona }) {
+
+  // State is seeded from the widget entry point
+  const [persona] = useState<Persona>(initialPersona);
+
+  // Simple, visible framing to prove persona switching works
+  const personaDescription = useMemo(() => {
+    switch (persona) {
+      case "Buyer":
+        return "Buyer view: explore illustrative equity earned over time.";
+      case "Homeowner":
+        return "Homeowner view: explore equity retained and optional buyback framing.";
+      case "Realtor":
+        return "Realtor view: explore a simple projected commission heuristic.";
+      default:
+        return "";
+    }
+  }, [persona]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+      
+
+      <h1>FractPath Scenario Tool (Widget)</h1>
+
+      <div className="card" style={{ textAlign: "left" }}>
         <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+          <strong>Viewing as:</strong> {persona}
+        </p>
+        <p>{personaDescription}</p>
+
+        <hr />
+
+        <p style={{ fontSize: 14 }}>
+          This is an early scaffolding view. Next we’ll replace this with the
+          actual scenario inputs/outputs and email gating.
         </p>
       </div>
+
       <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+        Dev test: persona is controlled by <code>window.FractPathCalculator.setPersona(...)</code>
       </p>
     </>
-  )
+  );
 }
-
-export default App
