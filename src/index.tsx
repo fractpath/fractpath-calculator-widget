@@ -20,7 +20,6 @@ export function mount(el: HTMLElement) {
     }
 
     root.render(<App key={currentPersona} initialPersona={currentPersona} />);
-
   } catch (err) {
     // Fail gracefully: if React fails, show a fallback message
     console.error("[FractPathCalculator] mount failed:", err);
@@ -36,6 +35,15 @@ export function setPersona(persona: Persona) {
   currentPersona = persona;
   const mountEl = document.getElementById("fractpath-calculator");
   if (mountEl) mount(mountEl);
+}
+
+/**
+ * Returns a human-readable scenario summary for CRM logging.
+ * Sprint 1: persona-only summary (scenario inputs not implemented yet).
+ * Later: extend to include property value, horizon, upfront, monthly, etc.
+ */
+export function getScenarioSummary() {
+  return `persona=${currentPersona} | note=scenario_inputs_not_implemented_yet`;
 }
 
 /**
@@ -70,6 +78,7 @@ declare global {
       mount: (el: HTMLElement) => void;
       setPersona: (persona: Persona) => void;
       resetScenario: () => void;
+      getScenarioSummary: () => string;
     };
   }
 }
@@ -78,4 +87,6 @@ window.FractPathCalculator = {
   mount,
   setPersona,
   resetScenario,
+  getScenarioSummary,
 };
+
