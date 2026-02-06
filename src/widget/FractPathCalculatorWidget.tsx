@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { FractPathCalculatorWidgetProps } from "./types";
+import type { FractPathCalculatorWidgetProps } from "./types.js";
 
 export function FractPathCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const { persona, mode = "default", onEvent } = props;
