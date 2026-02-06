@@ -4,9 +4,9 @@ import type {
   SettlementResult,
   SettlementTiming,
   TimePoint
-} from "./types";
+} from "./types.js";
 
-import { DEFAULT_INPUTS } from "./constants";
+import { DEFAULT_INPUTS } from "./constants.js";
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 

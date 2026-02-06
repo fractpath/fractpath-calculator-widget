@@ -1,4 +1,4 @@
-import type { ScenarioOutputs, SettlementTiming } from "./types";
+import type { ScenarioOutputs, SettlementTiming, TimePoint } from "./types.js";
 
 export type ChartPoint = {
   month: number;
@@ -26,7 +26,7 @@ export type ChartSeries = {
  * No additional math beyond selecting fields and formatting structure.
  */
 export function buildChartSeries(outputs: ScenarioOutputs): ChartSeries {
-  const points: ChartPoint[] = outputs.series.map((p) => ({
+  const points: ChartPoint[] = outputs.series.map((p: TimePoint) => ({
     month: p.month,
     year: p.year,
     homeValue: p.homeValue,

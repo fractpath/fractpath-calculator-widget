@@ -1,4 +1,4 @@
-import type { ScenarioInputs } from "./types";
+import type { ScenarioInputs } from "./types.js";
 
 /**
  * Default constants (MVP).
