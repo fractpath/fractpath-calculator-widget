@@ -48,6 +48,10 @@ function DevHarness() {
       <FractPathCalculatorWidget
         persona={persona}
         mode={mode}
+        onLeadSubmit={(payload) => {
+          console.log("[onLeadPayload]", payload);
+          return Promise.resolve({ ok: true });
+        }}
         onEvent={(e) => console.log("[WidgetEvent]", e)}
       />
     </div>

@@ -95,7 +95,10 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       data-persona={persona}
       data-mode={mode}
     >
-      <h2 style={{ margin: 0, marginBottom: 12, fontSize: 20 }}>FractPath Calculator</h2>
+      <h2 style={{ margin: 0, marginBottom: 4, fontSize: 20 }}>FractPath Calculator</h2>
+      <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 12, fontStyle: "italic" }}>
+        Demo / Placeholder — real logic will be wired in future WGT tickets
+      </div>
 
       {mode === "share" && (
         <div
