@@ -1,16 +1,11 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import type { FractPathCalculatorWidgetProps } from "./types";
 
-export function FractPathCalculatorWidget(
-  props: FractPathCalculatorWidgetProps
-) {
+export function FractPathCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const { persona, mode = "default", onEvent } = props;
 
   useEffect(() => {
-    onEvent?.({
-      type: "calculator_used",
-      persona,
-    });
+    onEvent?.({ type: "calculator_used", persona });
   }, [persona, onEvent]);
 
   return (
@@ -25,9 +20,7 @@ export function FractPathCalculatorWidget(
       data-persona={persona}
       data-mode={mode}
     >
-      <h2 style={{ margin: 0, marginBottom: 8 }}>
-        FractPath Calculator Widget
-      </h2>
+      <h2 style={{ margin: 0, marginBottom: 8 }}>FractPath Calculator Widget</h2>
 
       <p style={{ margin: 0 }}>
         <strong>Persona:</strong> {persona}
