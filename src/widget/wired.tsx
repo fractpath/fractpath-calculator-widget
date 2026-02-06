@@ -13,6 +13,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     onEvent?.({ type: "calculator_used", persona });
   }, [persona, onEvent]);
 
+  useEffect(() => {
+    if (mode === "share") {
+      onEvent?.({ type: "share_mode_viewed", persona });
+    }
+  }, [mode, persona, onEvent]);
+
   const outputs = useMemo(() => computeScenario(DEFAULT_INPUTS), []);
   const chart = useMemo(() => buildChartSeries(outputs), [outputs]);
 
@@ -49,6 +55,22 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           <div style={{ fontWeight: 600 }}>${outputs.normalizedInputs.initialBuyAmount.toLocaleString()}</div>
         </div>
       </div>
+
+      {mode === "share" ? (
+        <div
+          style={{
+            marginBottom: 10,
+            padding: 10,
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+            background: "#f9fafb",
+            color: "#374151",
+            fontSize: 13,
+          }}
+        >
+          <strong>Share mode:</strong> results are fully visible. Lead capture is disabled.
+        </div>
+      ) : null}
 
       <EquityChart series={chart} width={720} height={260} />
 
