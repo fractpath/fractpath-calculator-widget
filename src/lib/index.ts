@@ -2,6 +2,7 @@ export { FractPathCalculatorWidget } from "../widget/FractPathCalculatorWidget.j
 
 export { computeScenario, normalizeInputs } from "../calc/calc.js";
 export { buildChartSeries } from "../calc/chart.js";
+export { EquityChart } from "../components/EquityChart.js";
 
 export type {
   CalculatorPersona,
