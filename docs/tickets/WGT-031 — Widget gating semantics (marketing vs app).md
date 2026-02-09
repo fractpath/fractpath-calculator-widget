@@ -8,7 +8,8 @@ Define unambiguous gating rules for what the widget may display, persist, and em
 - `mode="marketing"`
 - `mode="app"`
 
-These rules must prevent interpretation drift across repos.
+These rules prevent interpretation drift across repos and prohibit silent expansion
+of marketing-visible outputs.
 
 ## Context (Locked Decisions)
 - Widget is canonical for calculator math and persona logic.
@@ -19,71 +20,103 @@ These rules must prevent interpretation drift across repos.
 - Widget has two modes with different surfaces and behaviors.
 
 ## Definitions
-- **Basic Results**: the minimal set of outputs allowed to display pre-auth in marketing (explicitly listed below).
-- **Full Deal Outputs**: any outputs that reveal deal structure details, version graphs, counterparty terms, or anything requiring app permissions.
-- **DraftSnapshot**: widget-produced snapshot of inputs + computed outputs needed to resume in app.
+- **Basic Results**: the *only* outputs permitted to render pre-auth in marketing.
+- **Full Deal Outputs**: any outputs that reveal deal structure, pricing mechanics,
+  counterparty terms, legal clauses, or version history.
+- **DraftSnapshot**: widget-produced snapshot of inputs + computed outputs needed
+  to resume in app.
 - **Draft Token**: app-minted token that references/persists a DraftSnapshot server-side.
 
 ## Mode Semantics
 
 ### mode="marketing"
-Allowed:
+
+#### Allowed
 - Render persona selector UX (tabs) + input form.
 - Compute all results locally (widget-owned math) but **display only Basic Results**.
-- Emit `onDraftSnapshot(draft: DraftSnapshot)` when user hits "Save & Continue" (or equivalent).
-- Emit `onShareSummary(share: ShareSummary)` for marketing share email content.
+- Emit `onDraftSnapshot(draft: DraftSnapshot)` when user selects “Save & Continue”.
+- Emit `onShareSummary(summary: ShareSummary)` for marketing share email content.
 
-Not allowed:
-- No full deal functionality, no negotiation state, no version history.
-- No creation of real deals.
-- No persistence beyond emitting DraftSnapshot/ShareSummary via callbacks.
-- No calling app APIs directly from the widget.
+#### Prohibited
+- Full deal functionality (negotiation, counterparty terms, version graphs).
+- Creation of real deals.
+- Persistence beyond emitting DraftSnapshot / ShareSummary.
+- Calling app APIs directly from the widget.
+- Any output not explicitly listed as a Basic Result.
 
 ### mode="app"
-Allowed:
-- Render full deal functionality and all outputs needed for authenticated user flows.
-- Emit `onSave(payload: SavePayload)` for app-owned persistence flows.
-- Render permissioned share UX (as designed in app), if the widget is used there.
 
-Not allowed:
-- App mode must not reintroduce marketing lead capture or marketing email gating.
+#### Allowed
+- Render full deal functionality and all computed outputs.
+- Emit `onSave(payload: SavePayload)` for app-owned persistence.
+- Render permissioned share UX as defined by the app.
 
-## Basic Results (Marketing) — Explicit List
-Marketing may show ONLY:
-- High-level "headline" outputs: e.g., estimated cash unlocked, estimated monthly/annual impact ranges, and a single primary visualization.
-- Must NOT show any counterparty-specific terms, legal clauses, or deal version structures.
-- Must NOT show any output that could be construed as a binding quote.
+#### Prohibited
+- Marketing lead capture flows.
+- Marketing email gating or branded share mechanics.
 
-> NOTE: The specific fields included in Basic Results must be enumerated here or referenced via the contract doc section. No implied fields.
+## Basic Results (Marketing) — **Explicit, Exhaustive List**
+
+Marketing mode may render **only** the following widget-computed fields:
+
+### Headline Outputs
+- `estimated_cash_unlocked`
+- `estimated_equity_fraction_sold`
+- `estimated_home_value_used_for_calculation`
+
+### Time / Impact Ranges (Non-binding)
+- `estimated_holding_period_range`
+- `estimated_cost_of_capital_range`
+- `estimated_future_value_range`
+
+### Visualizations
+- One primary, non-interactive visualization derived solely from the above fields
+  (e.g., value-over-time or ownership-split illustration)
+
+### Metadata (Display-safe)
+- `persona`
+- `calculation_assumptions_version`
+- `disclaimer_key` (pointer to non-binding copy)
+
+### Explicitly Excluded
+Marketing mode must NOT render:
+- Counterparty-specific pricing
+- Legal or contractual clauses
+- Deal version structures
+- Scenario comparison tables
+- Any value that could be interpreted as a binding quote
+
+If a field is not listed above, it is **not** a Basic Result.
 
 ## Save & Continue Gating Flow (Marketing)
 1) User edits inputs → widget updates Basic Results live.
-2) User clicks "Save & Continue":
+2) User clicks “Save & Continue”:
    - widget produces `DraftSnapshot`
    - widget calls `onDraftSnapshot(draft)`
 3) Hosting app (marketing) is responsible for:
    - email capture gating
-   - calling app-owned mint endpoint (`/api/lead` as per MKT-006 rewrite)
+   - calling app-owned mint endpoint (`/api/lead`)
    - receiving draft token
    - redirecting to app `/resume?token=...`
 
 ## Marketing Share Gating Flow
-1) User clicks "Share":
-   - widget produces `ShareSummary` (marketing-safe content only)
+1) User clicks “Share”:
+   - widget produces `ShareSummary` (marketing-safe only)
    - widget calls `onShareSummary(summary)`
-2) Hosting app (marketing) sends branded email + magic link via `/api/share` (per MKT-006 rewrite)
+2) Hosting app sends branded email + magic link via `/api/share`.
 
 ## App Share Flow
-- Widget may support rendering share state in app mode, but share permissions and delivery are app-owned.
-- Any share link that grants access to real deal data must require authentication/authorization checks server-side.
+- Widget may render share state in app mode.
+- All permission checks and access control are app-owned.
+- No marketing-originated share grants access to real deal data without auth.
 
 ## Acceptance Criteria
-- A single, unambiguous list of what can appear in marketing vs app.
-- Explicit callback responsibilities split between widget and host.
-- No place where "it depends" is allowed; all boundaries defined or referenced to contract sections.
-- Aligns with the canonical integration contract.
+- Basic Results are explicitly enumerated and exhaustive.
+- No marketing-visible output exists outside this list.
+- Callback responsibilities are unambiguous.
+- All behavior aligns with the canonical integration contract.
 
 ## Dependencies
-- WGT-INT-001 (public interface locked)
-- WGT-030 (UI surface implementation)
-- WGT-020 (share semantics details)
+- WGT-INT-001 — Public interface locked
+- WGT-030 — Widget UI surface + mode behavior
+- WGT-020 — Share semantics
