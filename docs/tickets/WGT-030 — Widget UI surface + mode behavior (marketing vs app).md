@@ -1,63 +1,99 @@
 # WGT-030 — Widget UI surface + mode behavior (marketing vs app)
 
 ## Sprint
-Sprint 0 (rewrite) → Sprint 5 (implementation)
+Sprint 0 (alignment-only rewrite) → Sprint 5 (implementation)
 
 ## Objective
-Define the widget UI surface area by mode, including persona selector placement, allowed components, and required host integration points.
+Define the widget’s rendered UI surface and behavioral differences by mode:
+- `mode="marketing"`
+- `mode="app"`
 
-This ticket is about *what renders* and *what events fire*, not the gating rules (WGT-031) or share rules (WGT-020).
+This ticket specifies **what UI elements exist, where they appear, and what events they emit**.
+It does NOT define gating rules (WGT-031), share semantics (WGT-020), or data contracts (WGT-INT-001).
 
-## Requirements
+## Context (Locked Decisions)
+- Widget is the canonical owner of calculator math and persona logic.
+- Marketing embeds the widget via tight package import; no calculator logic exists in marketing.
+- App embeds the widget in authenticated contexts only.
+- Widget supports two modes with different surfaces and CTAs.
+- Host applications own routing, persistence, and API calls.
 
-### Persona Selector UX
-- Widget must support persona selection via tabs (or equivalent) rendered ABOVE the calculator.
-- Persona selection changes:
-  - copy / labels
-  - optional input presets or defaults (if contract allows)
-  - computation context (widget-owned)
+## UI Surface by Mode
 
-### mode="marketing" UI
-Must include:
-- Persona tabs above widget
+### Shared (All Modes)
+The following UI elements must exist and behave consistently in both modes:
+- Persona selector rendered **above** the calculator (tabs or equivalent).
+- Input form for all calculator-controlled inputs.
+- Live recalculation of results on input change (widget-owned math).
+- Deterministic rendering based solely on inputs + persona + contract version.
+
+### mode="marketing"
+
+#### Must Render
+- Persona selector (tabs) above calculator
 - Input form
-- Basic Results panel (as defined by WGT-031)
-- Primary visualization
-- "Save & Continue" CTA (emits draft snapshot callback)
-- "Share" CTA (emits share summary callback)
+- **Basic Results panel only** (as defined in WGT-031)
+- One primary visualization suitable for unauthenticated users
+- Primary CTA: **“Save & Continue”**
+- Secondary CTA: **“Share”**
 
-Must NOT include:
-- Email capture UI (host owns gating)
-- Any full deal/negotiation surfaces
-- Any authenticated-only controls
+#### CTA Behavior
+- **Save & Continue**
+  - Emits `onDraftSnapshot(draft: DraftSnapshot)`
+  - Does NOT perform email capture
+  - Does NOT navigate or call APIs
+- **Share**
+  - Emits `onShareSummary(summary: ShareSummary)`
+  - Widget does not send emails or create links
 
-### mode="app" UI
-May include:
-- Full results + full visualization suite
-- Save controls via app-owned persistence callback
-- Negotiation/version features (if in scope for app usage)
+#### Must NOT Render
+- Email input or gating UI
+- Full deal outputs or negotiation surfaces
+- Version history or counterparty-specific terms
+- Any authenticated-only affordances
 
-Must NOT include:
-- Marketing lead capture mechanics
-- Marketing branded share email mechanics
+### mode="app"
 
-## Host Integration Points (No Ambiguity)
-- Widget must be embeddable as a package import (marketing repo uses tight embed).
-- The host (marketing/app) is responsible for:
-  - routing / redirects
-  - email gating UI
-  - calling app APIs
-- Widget is responsible for:
-  - math
-  - persona logic
-  - producing DraftSnapshot + ShareSummary payloads
+#### May Render
+- Full results set (beyond Basic Results)
+- Expanded visualizations
+- Deal-related UI surfaces appropriate for authenticated users
+- Save / update controls tied to app-owned persistence
+
+#### CTA / Event Behavior
+- Emits `onSave(payload: SavePayload)` for app-controlled persistence flows
+- May emit additional app-scoped events defined in the integration contract
+
+#### Must NOT Render
+- Marketing lead capture flows
+- Marketing-branded share email affordances
+- “Save & Continue” semantics tied to draft token minting
+
+## Host Responsibilities (Explicit Non-Widget Scope)
+The widget must **never**:
+- Perform routing or redirects
+- Call app or marketing APIs directly
+- Handle email capture or authentication state
+- Persist data outside emitted callbacks
+
+The host (marketing or app) is responsible for:
+- Email gating
+- Draft-token minting and redemption
+- Navigation and resume flows
+- Share delivery and access control
+
+## Accessibility & Stability Notes
+- Mode switching must not alter underlying math or persona logic.
+- UI differences by mode must be declarative and contract-driven, not inferred.
+- Any future UI surface changes that affect emitted events require contract review.
 
 ## Acceptance Criteria
-- UI components by mode are enumerated.
-- The CTA labels and event semantics are explicit.
-- Links to WGT-031 for gating and WGT-020 for share behavior.
-- No host responsibilities leak into widget and vice versa.
+- A complete, explicit list of UI elements per mode.
+- CTA labels and emitted events are unambiguous.
+- No overlap or leakage between marketing and app responsibilities.
+- Clean references to WGT-031 and WGT-020 for behavioral rules.
 
 ## Dependencies
-- WGT-031 (gating semantics)
-- WGT-INT-001 (public interface locked)
+- WGT-031 — Widget gating semantics
+- WGT-020 — Share semantics
+- WGT-INT-001 — Locked public interface
