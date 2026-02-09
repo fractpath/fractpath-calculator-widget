@@ -1,12 +1,12 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js";
-import type { CalculatorPersona } from "./widget/types.js";
+import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
 import "./index.css";
 
 function DevHarness() {
   const [persona, setPersona] = useState<CalculatorPersona>("buyer");
-  const [mode, setMode] = useState<"default" | "share">("default");
+  const [mode, setMode] = useState<CalculatorMode>("marketing");
 
   return (
     <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
@@ -30,28 +30,30 @@ function DevHarness() {
           </button>
         ))}
         <span style={{ marginLeft: 12, fontSize: 13, color: "#6b7280" }}>Mode:</span>
-        <button
-          onClick={() => setMode(mode === "default" ? "share" : "default")}
-          style={{
-            padding: "4px 10px",
-            borderRadius: 6,
-            border: "1px solid #d1d5db",
-            background: mode === "share" ? "#f59e0b" : "#fff",
-            color: mode === "share" ? "#fff" : "#374151",
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          {mode}
-        </button>
+        {(["marketing", "app"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 6,
+              border: mode === m ? "2px solid #111827" : "1px solid #d1d5db",
+              background: mode === m ? "#111827" : "#fff",
+              color: mode === m ? "#fff" : "#374151",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            {m}
+          </button>
+        ))}
       </div>
       <FractPathCalculatorWidget
         persona={persona}
         mode={mode}
-        onLeadSubmit={(payload) => {
-          console.log("[onLeadPayload]", payload);
-          return Promise.resolve({ ok: true });
-        }}
+        onDraftSnapshot={(snapshot) => console.log("[onDraftSnapshot]", snapshot)}
+        onShareSummary={(summary) => console.log("[onShareSummary]", summary)}
+        onSave={(payload) => console.log("[onSave]", payload)}
         onEvent={(e) => console.log("[WidgetEvent]", e)}
       />
     </div>
