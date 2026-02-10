@@ -22,6 +22,9 @@ export const DEFAULT_CAP_MULTIPLE = 2.00;
 export const DEFAULT_CPW_START_PCT = 0.01;
 export const DEFAULT_CPW_END_PCT = 0.03;
 
+// Mortgage balance (default: no mortgage)
+export const DEFAULT_MORTGAGE_BALANCE = 0;
+
 // Vesting defaults (equity over time)
 export const DEFAULT_UPFRONT_EQUITY_PCT = 0.10;
 export const DEFAULT_MONTHLY_EQUITY_PCT = 0.0025;
@@ -52,5 +55,7 @@ export const DEFAULT_INPUTS: ScenarioInputs = {
   cpw: {
     startPct: DEFAULT_CPW_START_PCT,
     endPct: DEFAULT_CPW_END_PCT
-  }
+  },
+
+  mortgageBalance: DEFAULT_MORTGAGE_BALANCE,
 };

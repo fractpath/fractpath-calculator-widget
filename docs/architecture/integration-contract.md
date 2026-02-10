@@ -133,7 +133,25 @@ type FractPathCalculatorWidgetProps = {
 - Widget consumers MUST check `contract_version` compatibility before processing payloads.
 - Deprecated fields are marked for removal with at least one minor version of advance notice.
 
-## 9. Hard Prohibitions
+## 9. Equity Availability Constraint (WGT-010)
+
+The calculator enforces an equity availability constraint:
+
+- **Available equity** at settlement = `homeValueAtSettlement − mortgageBalance`
+- If the floor/cap result exceeds available equity, the payout is reduced to available equity
+- The constraint is disclosed in each `SettlementResult` via:
+
+```typescript
+equityAvailability: {
+  availableEquity: number;  // max(0, FMV_at_settlement − mortgageBalance)
+  constrained: boolean;     // true if constraint reduced the payout
+}
+```
+
+- `mortgageBalance` is a `ScenarioInputs` field (default: 0)
+- When `mortgageBalance = 0`, the constraint never fires under normal conditions
+
+## 10. Hard Prohibitions
 
 - Widget MUST NOT call marketing or app APIs.
 - Widget MUST NOT implement email capture, routing, redirects, auth, or persistence.
