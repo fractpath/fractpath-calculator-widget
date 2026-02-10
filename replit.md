@@ -13,7 +13,8 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Calc engine**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
 - **Components**: `src/components/EquityChart.tsx` (SVG line chart)
 - **Contract docs**: `docs/architecture/integration-contract.md`
-- **Tests**: `src/__tests__/` (determinism, schema allowlist, mode gating)
+- **Contracts**: `src/contracts/` (v1 output contract types, builders, barrel export)
+- **Tests**: `src/__tests__/` (determinism, schema allowlist, mode gating, contract-v1, calc-golden, chart-series)
 
 ## Key Files
 - `vite.config.ts` - Vite config with ES lib build and dev server (port 5000)
@@ -41,10 +42,11 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (30 tests across 3 suites)
+- Test with `npm test` → runs vitest (108 tests across 6 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
 ## Recent Changes
+- 2026-02-10: WGT-011 Output contract freeze (v1) — LiteShareSummaryV1, FullDealSnapshotV1, LiteChartSeriesV1 types + builders in src/contracts/, wired onLiteSnapshot/onFullSnapshot callbacks, 21 new contract tests (108 total)
 - 2026-02-09: Sprint 5 implementation — marketing/app modes, DraftSnapshot, ShareSummary, SavePayload, deterministic hashing, mode-gated UI, integration contract doc, 30 vitest tests
 - 2026-02-06: Implemented WGT-030 Calculator UI shell (controlled inputs, outputs panel, settlement rows, persona-driven hero, equity chart)
 - 2026-02-06: Configured Vite dev server for Replit (port 5000, host 0.0.0.0, allowedHosts: true)
