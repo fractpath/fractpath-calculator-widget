@@ -9,7 +9,7 @@ Define the widget’s rendered UI surface and behavioral differences by mode:
 - `mode="app"` (authenticated, objective deal editing + review)
 
 This ticket specifies **what UI elements exist, where they appear, and what events they emit**.
-It does NOT define gating rules (WGT-031), share semantics (WGT-020), or the schema/contract definitions (WGT-INT-001 / WGT-040 / WGT-050).
+It does NOT define gating rules (WGT-031), share semantics (WGT-020), or schema/contract definitions (WGT-INT-001 / WGT-040 / WGT-050).
 
 ## Context (Locked Decisions)
 - Widget is the canonical owner of **calculator math** and **schema validation**.
@@ -96,7 +96,7 @@ Inputs must be captured in a modal overlay with:
       - equity constraint disclosure: “You can only sell the portion of equity you own (FMV − mortgage).”
 - Primary CTA: **“Save & Continue”**
 - Secondary CTA: **“Edit Inputs”** (opens modal)
-- Optional tertiary: “Share” (only if it’s already in scope; keep minimal)
+- Optional tertiary: “Share” (only if already in scope; keep minimal)
 
 ### Persona Headline KPI Cards (Marketing)
 These are presentation requirements; underlying values must come from canonical compute output.
@@ -143,7 +143,7 @@ These are presentation requirements; underlying values must come from canonical 
 - Any authenticated-only affordances
 - Deal persistence UI or deal history
 - Negotiation/counter UI
-- “Ops tab” internal controls (unless explicitly required for investor demo, but default is hidden)
+- “Ops tab” internal controls (unless explicitly required for investor demo; default hidden)
 
 ---
 
@@ -164,7 +164,7 @@ These are presentation requirements; underlying values must come from canonical 
 ### CTA / Event Behavior (App)
 - On Apply in app mode:
   - widget computes and updates output region
-  - widget emits `onAppSaveRequest(payload)` (name can be finalized in WGT-INT-001)
+  - widget emits `onAppSaveRequest(payload)` (name finalized in WGT-INT-001)
 
 `onAppSaveRequest(payload)` MUST include:
 - applied inputs (canonical schema)
