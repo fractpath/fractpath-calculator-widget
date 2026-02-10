@@ -10,10 +10,11 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Dev entry**: `index.html` → `src/main.tsx` (dev harness with persona/mode switcher)
 - **Lib entry**: `src/lib/index.ts` (public exports for consumers)
 - **Widget**: `src/widget/` (FractPathCalculatorWidget, wired calculator, persona config, formatting, snapshot builders, hashing)
-- **Calc engine**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
-- **Components**: `src/components/EquityChart.tsx` (SVG line chart)
+- **Calc engine**: `src/calc/` (computeScenario, buildChartSeries/V1, types, constants)
+- **Chart**: `src/calc/chart.ts` (buildChartSeriesV1 — pure transformer, ExitSummary tooltips, equityDollarValue series)
+- **Components**: `src/components/EquityChart.tsx` (SVG line chart with area fill, exit markers, hover tooltips)
 - **Contract docs**: `docs/architecture/integration-contract.md`
-- **Tests**: `src/__tests__/` (determinism, schema allowlist, mode gating)
+- **Tests**: `src/__tests__/` (golden fixtures, chart series, determinism, schema allowlist, mode gating)
 
 ## Key Files
 - `vite.config.ts` - Vite config with ES lib build and dev server (port 5000)
@@ -41,10 +42,12 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (30 tests across 3 suites)
+- Test with `npm test` → runs vitest (87 tests across 5 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
 ## Recent Changes
+- 2026-02-10: WGT-011 chart series + visualization — buildChartSeriesV1 (pure transformer with ExitSummary tooltips, equityDollarValue), EquityChart upgraded with area fill, colored exit markers, hover tooltips; 17 new chart-series tests (87 total)
+- 2026-02-10: WGT-010 calc engine — added mortgageBalance input, equity availability constraint (FMV − mortgage), equityAvailability disclosure in SettlementResult, 40 golden fixture tests
 - 2026-02-09: Sprint 5 implementation — marketing/app modes, DraftSnapshot, ShareSummary, SavePayload, deterministic hashing, mode-gated UI, integration contract doc, 30 vitest tests
 - 2026-02-06: Implemented WGT-030 Calculator UI shell (controlled inputs, outputs panel, settlement rows, persona-driven hero, equity chart)
 - 2026-02-06: Configured Vite dev server for Replit (port 5000, host 0.0.0.0, allowedHosts: true)

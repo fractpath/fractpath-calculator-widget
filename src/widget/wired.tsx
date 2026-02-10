@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FractPathCalculatorWidgetProps } from "./types.js";
 
 import { computeScenario } from "../calc/calc.js";
-import { buildChartSeries } from "../calc/chart.js";
+import { buildChartSeriesV1 } from "../calc/chart.js";
 import { DEFAULT_INPUTS } from "../calc/constants.js";
 import { EquityChart } from "../components/EquityChart.js";
 import { formatCurrency, formatPct, formatMonth } from "./format.js";
@@ -71,7 +71,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     [homeValue, initialBuyAmount, termYears, growthRatePct]
   );
 
-  const chart = useMemo(() => buildChartSeries(outputs), [outputs]);
+  const chart = useMemo(() => buildChartSeriesV1(outputs), [outputs]);
 
   const personaCfg = getPersonaConfig(persona);
   const heroValue = personaCfg.heroValue(outputs);

@@ -1,7 +1,7 @@
 export { FractPathCalculatorWidget } from "../widget/FractPathCalculatorWidget.js";
 
 export { computeScenario, normalizeInputs } from "../calc/calc.js";
-export { buildChartSeries } from "../calc/chart.js";
+export { buildChartSeries, buildChartSeriesV1 } from "../calc/chart.js";
 export { EquityChart } from "../components/EquityChart.js";
 
 export { buildDraftSnapshot, buildShareSummary, buildSavePayload } from "../widget/snapshot.js";
@@ -34,4 +34,6 @@ export type {
   ChartPoint,
   SettlementMarker,
   ChartSeries,
+  ChartSeriesV1,
+  ExitSummary,
 } from "../calc/chart.js";
