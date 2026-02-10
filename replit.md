@@ -29,9 +29,20 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - `src/main.tsx` - Dev harness entry point
 - `docs/architecture/integration-contract.md` - Integration contract (WGT-INT-001)
 
+## Widget UI (WGT-030)
+- **Apply semantics**: No live recompute on keystroke. Outputs start null (empty state). Computed only on explicit Apply button click in modal.
+- **Persona header**: Always visible. Homeowner / Buyer primary toggle + "Realtor (beta)" tertiary. Widget manages persona state internally; `persona` prop sets initial value.
+- **Persona switch**: Clears outputs to empty state, resets draft inputs, emits persona_switched + inputs_reset events.
+- **Input modal**: Darkened backdrop overlay, ESC/click-outside to close, focus trap. Required inputs + assumptions accordion. Marketing = assumptions read-only ("editable after signup"). App = editable.
+- **Empty state**: "No results yet" with "Get Started" button before first Apply.
+
 ## Widget Modes
-- **marketing**: Shows Basic Results only (hero metric + settlement timing/net payout). Has "Save & Continue" (emits DraftSnapshot) and "Share" (emits ShareSummary) CTAs. No chart, no detailed fields.
-- **app**: Full analysis with all outputs (raw payout, transfer fees, clamp details, equity chart). Has "Save" CTA (emits SavePayload with full ScenarioInputs/Outputs).
+- **marketing**: Persona-framed KPI card (hero metric with persona label), 3-col settlement rows (timing/when/net payout), equity chart, read-only assumptions. CTAs: "Save & Continue" (emits DraftSnapshot), "Share" (emits ShareSummary), "Edit Inputs" (reopens modal).
+- **app**: Full analysis with 6-col settlement rows (timing/month/net/raw/TF/clamp), equity chart. Apply emits SavePayload. CTA: "Edit Inputs" (reopens modal).
+
+## Widget Events
+- calculator_used, share_clicked, save_continue_clicked, save_clicked
+- modal_opened, modal_closed, apply_clicked, persona_switched (with previousPersona), inputs_reset
 
 ## Versioning
 - `contract_version`: "1.0.0" — tracks integration contract version
@@ -41,10 +52,10 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (30 tests across 3 suites)
+- Test with `npm test` → runs vitest (87 tests across 5 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
 ## Recent Changes
-- 2026-02-09: Sprint 5 implementation — marketing/app modes, DraftSnapshot, ShareSummary, SavePayload, deterministic hashing, mode-gated UI, integration contract doc, 30 vitest tests
-- 2026-02-06: Implemented WGT-030 Calculator UI shell (controlled inputs, outputs panel, settlement rows, persona-driven hero, equity chart)
+- 2026-02-10: WGT-030 UI surface implementation — Apply semantics (no live recompute), persona header with internal state management, modal overlay with focus trap + assumptions accordion, empty state, mode-gated output regions (marketing KPI cards / app 6-col settlement), new WidgetEvent types (modal_opened/closed, apply_clicked, persona_switched, inputs_reset)
+- 2026-02-09: Sprint 5 implementation — marketing/app modes, DraftSnapshot, ShareSummary, SavePayload, deterministic hashing, mode-gated UI, integration contract doc
 - 2026-02-06: Configured Vite dev server for Replit (port 5000, host 0.0.0.0, allowedHosts: true)
