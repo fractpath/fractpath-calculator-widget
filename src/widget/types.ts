@@ -71,7 +71,12 @@ export type WidgetEvent =
   | { type: "calculator_used"; persona: CalculatorPersona }
   | { type: "share_clicked"; persona: CalculatorPersona }
   | { type: "save_continue_clicked"; persona: CalculatorPersona }
-  | { type: "save_clicked"; persona: CalculatorPersona };
+  | { type: "save_clicked"; persona: CalculatorPersona }
+  | { type: "modal_opened"; persona: CalculatorPersona }
+  | { type: "modal_closed"; persona: CalculatorPersona }
+  | { type: "apply_clicked"; persona: CalculatorPersona }
+  | { type: "persona_switched"; persona: CalculatorPersona; previousPersona: CalculatorPersona }
+  | { type: "inputs_reset"; persona: CalculatorPersona };
 
 export type FractPathCalculatorWidgetProps = {
   persona: CalculatorPersona;
