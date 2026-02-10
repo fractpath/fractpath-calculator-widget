@@ -96,14 +96,10 @@ function computeSettlement(inputs: ScenarioInputs, timing: SettlementTiming): Se
   const floor = inputs.initialBuyAmount * inputs.floorMultiple;
   const cap = inputs.initialBuyAmount * inputs.capMultiple;
 
-  const floorCapResult = clamp(rawPayout, floor, cap);
+  const clampedPayout = clamp(rawPayout, floor, cap);
 
   const applied: "none" | "floor" | "cap" =
-    floorCapResult === rawPayout ? "none" : floorCapResult === floor ? "floor" : "cap";
-
-  const availableEquity = Math.max(0, homeValueAtSettlement - inputs.mortgageBalance);
-  const equityConstrained = floorCapResult > availableEquity;
-  const clampedPayout = equityConstrained ? availableEquity : floorCapResult;
+    clampedPayout === rawPayout ? "none" : clampedPayout === floor ? "floor" : "cap";
 
   const tfRate = transferFeeRateForTiming(inputs, timing);
   const transferFeeAmount = clampedPayout * tfRate;
@@ -119,11 +115,7 @@ function computeSettlement(inputs: ScenarioInputs, timing: SettlementTiming): Se
     transferFeeAmount,
     netPayout,
     clamp: { floor, cap, applied },
-    transferFeeRate: tfRate,
-    equityAvailability: {
-      availableEquity,
-      constrained: equityConstrained,
-    },
+    transferFeeRate: tfRate
   };
 }
 
