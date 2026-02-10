@@ -30,7 +30,7 @@ This ticket governs **what is allowed to be shown and emitted**, not *how it is 
 ## Definitions
 - **Basic Results (Marketing)**  
   A strictly limited, non-binding subset of calculator outputs intended to
-  communicate *directional value only*. These are **not deal terms**.
+  communicate *directional value only*. These are **not deal terms**. > All Basic Results values must be directly traceable to fields in the canonical compute result. The widget must not introduce any marketing-only math or derived metrics that are not produced by the engine.
 
 - **Full Deal Outputs (App)**  
   Any outputs that reveal deal structure, pricing mechanics, fee waterfalls,
@@ -52,6 +52,8 @@ This ticket governs **what is allowed to be shown and emitted**, not *how it is 
 ## Mode Semantics
 
 ### mode="marketing" (Unauthenticated, illustrative)
+> Note: Marketing may render only Basic Results, but `onMarketingSnapshot(snapshot)` must include the full canonical applied inputs + computed result + meta so the app can resume without recomputing or inference.
+
 
 #### Allowed
 - Render persona selector UX (Homeowner / Buyer + Realtor tertiary entry).
