@@ -50,6 +50,9 @@ export type ScenarioInputs = {
     startPct: number;
     endPct: number;
   };
+
+  /** Outstanding mortgage balance on the property. Used for equity availability constraint. */
+  mortgageBalance: number;
 };
 
 export type TimePoint = {
@@ -100,6 +103,14 @@ export type SettlementResult = {
 
   /** Transfer fee rate used */
   transferFeeRate: number;
+
+  /** Equity availability constraint disclosure */
+  equityAvailability: {
+    /** Available equity at settlement: FMV at settlement − mortgageBalance */
+    availableEquity: number;
+    /** True if the equity availability constraint reduced the payout below the floor/cap result */
+    constrained: boolean;
+  };
 };
 
 export type ScenarioOutputs = {
