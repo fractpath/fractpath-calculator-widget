@@ -12,12 +12,20 @@ import { CONTRACT_VERSION, SCHEMA_VERSION } from "./types.js";
 import { deterministicHash } from "./hash.js";
 
 function extractDraftInputs(inputs: ScenarioInputs): DraftSnapshotInputs {
-  return {
+  const draft: DraftSnapshotInputs = {
     homeValue: inputs.homeValue,
     initialBuyAmount: inputs.initialBuyAmount,
     termYears: inputs.termYears,
     annualGrowthRate: inputs.annualGrowthRate,
   };
+
+  // Keep this optional for backward compatibility, but include when present
+  // so equity-availability constraint can be replayed deterministically.
+  if (typeof (inputs as any).mortgageBalance === "number" && Number.isFinite((inputs as any).mortgageBalance)) {
+    draft.mortgageBalance = (inputs as any).mortgageBalance;
+  }
+
+  return draft;
 }
 
 function extractDraftBasicResults(outputs: ScenarioOutputs): DraftSnapshotBasicResults {
@@ -87,11 +95,13 @@ export async function buildSavePayload(
 ): Promise<SavePayload> {
   const [input_hash, output_hash] = await Promise.all([
     deterministicHash(normalizedInputs as unknown as Record<string, unknown>),
-    deterministicHash({
-      standard: outputs.settlements.standard,
-      early: outputs.settlements.early,
-      late: outputs.settlements.late,
-    } as unknown as Record<string, unknown>),
+    deterministicHash(
+      {
+        standard: outputs.settlements.standard,
+        early: outputs.settlements.early,
+        late: outputs.settlements.late,
+      } as unknown as Record<string, unknown>,
+    ),
   ]);
 
   return {

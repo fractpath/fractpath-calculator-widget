@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CalculatorPersona, FractPathCalculatorWidgetProps } from "./types.js";
+import type {
+  CalculatorPersona,
+  FractPathCalculatorWidgetProps,
+} from "./types.js";
 import type { ScenarioOutputs } from "../calc/types.js";
 
 import { computeScenario } from "../calc/calc.js";
@@ -8,7 +11,15 @@ import { DEFAULT_INPUTS } from "../calc/constants.js";
 import { EquityChart } from "../components/EquityChart.js";
 import { formatCurrency, formatPct, formatMonth } from "./format.js";
 import { getPersonaConfig } from "./persona.js";
-import { buildDraftSnapshot, buildShareSummary, buildSavePayload } from "./snapshot.js";
+import {
+  buildLiteShareSummaryV1,
+  buildFullDealSnapshotV1,
+} from "../contracts/builders.js";
+import {
+  buildDraftSnapshot,
+  buildShareSummary,
+  buildSavePayload,
+} from "./snapshot.js";
 
 const FONT = "system-ui, sans-serif";
 
@@ -131,7 +142,7 @@ function InputModal({
     if (!el) return;
 
     const focusable = el.querySelectorAll<HTMLElement>(
-      'input, button, [tabindex]:not([tabindex="-1"])'
+      'input, button, [tabindex]:not([tabindex="-1"])',
     );
     if (focusable.length) focusable[0].focus();
 
@@ -159,7 +170,14 @@ function InputModal({
     setDraft({ ...draft, [key]: value });
 
   const readOnlyNote = isMarketing ? (
-    <div style={{ fontSize: 11, color: "#9ca3af", fontStyle: "italic", marginTop: 4 }}>
+    <div
+      style={{
+        fontSize: 11,
+        color: "#9ca3af",
+        fontStyle: "italic",
+        marginTop: 4,
+      }}
+    >
       Editable after signup
     </div>
   ) : null;
@@ -167,7 +185,9 @@ function InputModal({
   return (
     <div
       ref={backdropRef}
-      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      onClick={(e) => {
+        if (e.target === backdropRef.current) onClose();
+      }}
       style={{
         position: "fixed",
         inset: 0,
@@ -195,12 +215,28 @@ function InputModal({
           boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 18, color: "#111827" }}>Scenario Inputs</h3>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: 18, color: "#111827" }}>
+            Scenario Inputs
+          </h3>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280", padding: 4 }}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 20,
+              cursor: "pointer",
+              color: "#6b7280",
+              padding: 4,
+            }}
             aria-label="Close"
           >
             ✕
@@ -214,7 +250,9 @@ function InputModal({
             inputMode="numeric"
             style={fieldStyle}
             value={draft.homeValue.toLocaleString()}
-            onChange={(e) => update("homeValue", parseNum(e.target.value, draft.homeValue))}
+            onChange={(e) =>
+              update("homeValue", parseNum(e.target.value, draft.homeValue))
+            }
           />
         </div>
 
@@ -225,7 +263,12 @@ function InputModal({
             inputMode="numeric"
             style={fieldStyle}
             value={draft.initialBuyAmount.toLocaleString()}
-            onChange={(e) => update("initialBuyAmount", parseNum(e.target.value, draft.initialBuyAmount))}
+            onChange={(e) =>
+              update(
+                "initialBuyAmount",
+                parseNum(e.target.value, draft.initialBuyAmount),
+              )
+            }
           />
         </div>
 
@@ -240,7 +283,8 @@ function InputModal({
             value={draft.termYears}
             onChange={(e) => {
               const v = parseInt(e.target.value, 10);
-              if (Number.isFinite(v) && v >= 1 && v <= 30) update("termYears", v);
+              if (Number.isFinite(v) && v >= 1 && v <= 30)
+                update("termYears", v);
             }}
           />
         </div>
@@ -256,7 +300,8 @@ function InputModal({
             value={draft.growthRatePct}
             onChange={(e) => {
               const v = parseFloat(e.target.value);
-              if (Number.isFinite(v) && v >= 0 && v <= 20) update("growthRatePct", v);
+              if (Number.isFinite(v) && v >= 0 && v <= 20)
+                update("growthRatePct", v);
             }}
           />
         </div>
@@ -268,7 +313,12 @@ function InputModal({
             inputMode="numeric"
             style={fieldStyle}
             value={draft.mortgageBalance.toLocaleString()}
-            onChange={(e) => update("mortgageBalance", parseNum(e.target.value, draft.mortgageBalance))}
+            onChange={(e) =>
+              update(
+                "mortgageBalance",
+                parseNum(e.target.value, draft.mortgageBalance),
+              )
+            }
           />
         </div>
 
@@ -289,29 +339,55 @@ function InputModal({
               gap: 6,
             }}
           >
-            <span style={{ fontSize: 10, transition: "transform 0.15s", transform: assumptionsOpen ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block" }}>
+            <span
+              style={{
+                fontSize: 10,
+                transition: "transform 0.15s",
+                transform: assumptionsOpen ? "rotate(90deg)" : "rotate(0deg)",
+                display: "inline-block",
+              }}
+            >
               ▶
             </span>
             Assumptions
           </button>
 
           {assumptionsOpen && (
-            <div style={{ marginTop: 10, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+            <div
+              style={{
+                marginTop: 10,
+                padding: 12,
+                background: "#f9fafb",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+              }}
+            >
               {isMarketing && readOnlyNote}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: isMarketing ? 8 : 0 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                  marginTop: isMarketing ? 8 : 0,
+                }}
+              >
                 <div>
                   <label style={labelStyle}>Floor Multiple</label>
                   <input
                     type="number"
                     min={0}
                     step={0.01}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.floorMultiple}
                     readOnly={isMarketing}
                     onChange={(e) => {
                       if (!isMarketing) {
                         const v = parseFloat(e.target.value);
-                        if (Number.isFinite(v) && v >= 0) update("floorMultiple", v);
+                        if (Number.isFinite(v) && v >= 0)
+                          update("floorMultiple", v);
                       }
                     }}
                   />
@@ -322,13 +398,17 @@ function InputModal({
                     type="number"
                     min={0}
                     step={0.01}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.capMultiple}
                     readOnly={isMarketing}
                     onChange={(e) => {
                       if (!isMarketing) {
                         const v = parseFloat(e.target.value);
-                        if (Number.isFinite(v) && v >= 0) update("capMultiple", v);
+                        if (Number.isFinite(v) && v >= 0)
+                          update("capMultiple", v);
                       }
                     }}
                   />
@@ -340,7 +420,10 @@ function InputModal({
                     min={0}
                     max={100}
                     step={0.1}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.tfStandard}
                     readOnly={isMarketing}
                     onChange={(e) => {
@@ -358,7 +441,10 @@ function InputModal({
                     min={0}
                     max={100}
                     step={0.1}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.tfEarly}
                     readOnly={isMarketing}
                     onChange={(e) => {
@@ -376,7 +462,10 @@ function InputModal({
                     min={0}
                     max={100}
                     step={0.1}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.tfLate}
                     readOnly={isMarketing}
                     onChange={(e) => {
@@ -394,7 +483,10 @@ function InputModal({
                     min={0}
                     max={100}
                     step={0.1}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.upfrontEquityPct}
                     readOnly={isMarketing}
                     onChange={(e) => {
@@ -412,7 +504,10 @@ function InputModal({
                     min={0}
                     max={100}
                     step={0.001}
-                    style={{ ...fieldStyle, background: isMarketing ? "#f3f4f6" : "#fff" }}
+                    style={{
+                      ...fieldStyle,
+                      background: isMarketing ? "#f3f4f6" : "#fff",
+                    }}
                     value={draft.monthlyEquityPct}
                     readOnly={isMarketing}
                     onChange={(e) => {
@@ -431,7 +526,12 @@ function InputModal({
         <button
           type="button"
           onClick={onApply}
-          style={{ ...btnPrimary, width: "100%", padding: "12px 20px", fontSize: 15 }}
+          style={{
+            ...btnPrimary,
+            width: "100%",
+            padding: "12px 20px",
+            fontSize: 15,
+          }}
           data-cta="apply"
         >
           Apply
@@ -454,7 +554,14 @@ function PersonaHeader({
   ];
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        marginBottom: 16,
+      }}
+    >
       {tabs.map((t) => {
         const active = activePersona === t.persona;
         return (
@@ -486,7 +593,10 @@ function PersonaHeader({
           marginLeft: 8,
           padding: "6px 12px",
           borderRadius: 6,
-          border: activePersona === "realtor" ? "2px solid #6b7280" : "1px solid #e5e7eb",
+          border:
+            activePersona === "realtor"
+              ? "2px solid #6b7280"
+              : "1px solid #e5e7eb",
           background: activePersona === "realtor" ? "#f3f4f6" : "transparent",
           color: "#6b7280",
           fontSize: 12,
@@ -512,7 +622,14 @@ function EmptyState({ onGetStarted }: { onGetStarted: () => void }) {
       data-testid="empty-state"
     >
       <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>📊</div>
-      <div style={{ fontSize: 16, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+      <div
+        style={{
+          fontSize: 16,
+          fontWeight: 600,
+          color: "#374151",
+          marginBottom: 8,
+        }}
+      >
         No results yet
       </div>
       <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 20 }}>
@@ -530,29 +647,27 @@ function EmptyState({ onGetStarted }: { onGetStarted: () => void }) {
   );
 }
 
+/**
+ * Marketing-safe outputs:
+ * - NO Early/Standard/Late comparison tables (WGT-031 explicitly excludes scenario comparison tables).
+ * - NO charts (keep gated; host marketing site can render its own basic visuals later if desired).
+ * - Persona-framed hero value only + disclaimers + CTAs.
+ */
 function MarketingOutputs({
   outputs,
   persona,
-  chart,
   onSaveContinue,
   onShare,
   onEditInputs,
 }: {
   outputs: ScenarioOutputs;
   persona: CalculatorPersona;
-  chart: ReturnType<typeof buildChartSeriesV1>;
   onSaveContinue: () => void;
   onShare: () => void;
   onEditInputs: () => void;
 }) {
   const personaCfg = getPersonaConfig(persona);
   const heroValue = personaCfg.heroValue(outputs);
-
-  const settlements = [
-    { label: "Early", data: outputs.settlements.early },
-    { label: "Standard", data: outputs.settlements.standard },
-    { label: "Late", data: outputs.settlements.late },
-  ] as const;
 
   return (
     <div data-testid="marketing-outputs">
@@ -563,60 +678,65 @@ function MarketingOutputs({
         <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
           {formatCurrency(heroValue)}
         </div>
-        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
-          {personaCfg.helperText}
+        <div
+          style={{
+            fontSize: 11,
+            color: "#9ca3af",
+            marginTop: 6,
+            lineHeight: 1.35,
+          }}
+        >
+          Illustrative estimate. Not a binding offer.
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "#9ca3af",
+            marginTop: 6,
+            lineHeight: 1.35,
+          }}
+        >
+          Only the portion of equity you own (FMV − mortgage) can be sold.
         </div>
       </div>
 
-      <h3 style={{ margin: "0 0 8px 0", fontSize: 14, color: "#374151" }}>
-        Settlement Scenarios
-      </h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-        {settlements.map((s) => (
-          <div
-            key={s.label}
-            style={{
-              ...cardStyle,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 8,
-              alignItems: "center",
-              padding: "10px 12px",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{s.label}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
-              <div style={{ fontSize: 13 }}>{formatMonth(s.data.settlementMonth)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>
-                {formatCurrency(s.data.netPayout)}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <EquityChart series={chart} width={520} height={240} />
-
-      <div style={{ padding: "12px 0", marginTop: 12, borderTop: "1px solid #e5e7eb" }}>
-        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>Assumptions</div>
-        <div style={{ fontSize: 11, color: "#9ca3af", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
-          <span>Floor: {outputs.normalizedInputs.floorMultiple}x</span>
-          <span>Cap: {outputs.normalizedInputs.capMultiple}x</span>
-          <span>Growth: {formatPct(outputs.normalizedInputs.annualGrowthRate)}</span>
-          <span>TF Std: {formatPct(outputs.normalizedInputs.transferFeeRate_standard)}</span>
-          <span>TF Early: {formatPct(outputs.normalizedInputs.transferFeeRate_early)}</span>
-          <span>TF Late: {formatPct(outputs.normalizedInputs.transferFeeRate_late)}</span>
+      <div
+        style={{
+          padding: "12px 0",
+          marginTop: 12,
+          borderTop: "1px solid #e5e7eb",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            color: "#9ca3af",
+            marginBottom: 6,
+            fontWeight: 600,
+          }}
+        >
+          Assumptions (read-only in marketing)
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "#9ca3af",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 4,
+          }}
+        >
+          <span>
+            Growth: {formatPct(outputs.normalizedInputs.annualGrowthRate)}
+          </span>
+          <span>Floor/Ceiling protections apply</span>
+          <span>Timing affects payout, not home value</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+      <div
+        style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}
+      >
         <button
           type="button"
           onClick={onSaveContinue}
@@ -666,7 +786,14 @@ function AppOutputs({
       <h3 style={{ margin: "0 0 8px 0", fontSize: 14, color: "#374151" }}>
         Settlement Analysis
       </h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          marginBottom: 16,
+        }}
+      >
         {settlements.map((s) => (
           <div
             key={s.label}
@@ -685,7 +812,9 @@ function AppOutputs({
             </div>
             <div>
               <div style={{ fontSize: 11, color: "#9ca3af" }}>Month</div>
-              <div style={{ fontSize: 13 }}>{formatMonth(s.data.settlementMonth)}</div>
+              <div style={{ fontSize: 13 }}>
+                {formatMonth(s.data.settlementMonth)}
+              </div>
             </div>
             <div>
               <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
@@ -695,12 +824,15 @@ function AppOutputs({
             </div>
             <div>
               <div style={{ fontSize: 11, color: "#9ca3af" }}>Raw Payout</div>
-              <div style={{ fontSize: 13 }}>{formatCurrency(s.data.rawPayout)}</div>
+              <div style={{ fontSize: 13 }}>
+                {formatCurrency(s.data.rawPayout)}
+              </div>
             </div>
             <div>
               <div style={{ fontSize: 11, color: "#9ca3af" }}>Transfer Fee</div>
               <div style={{ fontSize: 13 }}>
-                {formatCurrency(s.data.transferFeeAmount)} ({formatPct(s.data.transferFeeRate)})
+                {formatCurrency(s.data.transferFeeAmount)} (
+                {formatPct(s.data.transferFeeRate)})
               </div>
             </div>
             <div>
@@ -719,7 +851,9 @@ function AppOutputs({
 
       <EquityChart series={chart} width={520} height={240} />
 
-      <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+      <div
+        style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}
+      >
         <button
           type="button"
           onClick={onEditInputs}
@@ -734,11 +868,23 @@ function AppOutputs({
 }
 
 export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
-  const { persona: initialPersona, mode = "marketing", onEvent, onDraftSnapshot, onShareSummary, onSave } = props;
+  const {
+    persona: initialPersona,
+    mode = "marketing",
+    onEvent,
+    onDraftSnapshot,
+    onShareSummary,
+    onSave,
+    onLiteSnapshot,
+    onFullSnapshot,
+  } = props;
 
-  const [activePersona, setActivePersona] = useState<CalculatorPersona>(initialPersona);
+  const [activePersona, setActivePersona] =
+    useState<CalculatorPersona>(initialPersona);
   const [modalOpen, setModalOpen] = useState(false);
-  const [appliedOutputs, setAppliedOutputs] = useState<ScenarioOutputs | null>(null);
+  const [appliedOutputs, setAppliedOutputs] = useState<ScenarioOutputs | null>(
+    null,
+  );
   const [draft, setDraft] = useState<InputDraft>(defaultDraft);
 
   const isMarketing = mode === "marketing";
@@ -757,7 +903,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       onEvent?.({ type: "persona_switched", persona: newPersona, previousPersona: prev });
       onEvent?.({ type: "inputs_reset", persona: newPersona });
     },
-    [activePersona, onEvent]
+    [activePersona, onEvent],
   );
 
   const openModal = useCallback(() => {
@@ -793,26 +939,54 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     setModalOpen(false);
     onEvent?.({ type: "apply_clicked", persona: activePersona });
 
-    if (!isMarketing && onSave) {
-      const payload = await buildSavePayload(activePersona, outputs.normalizedInputs, outputs);
-      onSave(payload);
+    if (isMarketing && onLiteSnapshot) {
+      const lite = buildLiteShareSummaryV1(activePersona, outputs.normalizedInputs, outputs);
+      onLiteSnapshot(lite);
     }
-  }, [draft, activePersona, isMarketing, onSave, onEvent]);
+
+    if (!isMarketing) {
+      if (onSave) {
+        const payload = await buildSavePayload(activePersona, outputs.normalizedInputs, outputs);
+        onSave(payload);
+      }
+      if (onFullSnapshot) {
+        const full = await buildFullDealSnapshotV1(activePersona, outputs.normalizedInputs, outputs);
+        onFullSnapshot(full);
+      }
+      onEvent?.({ type: "save_clicked", persona: activePersona });
+    }
+  }, [draft, activePersona, isMarketing, onSave, onFullSnapshot, onLiteSnapshot, onEvent]);
 
   const handleSaveContinue = useCallback(async () => {
     if (!appliedOutputs) return;
     onEvent?.({ type: "save_continue_clicked", persona: activePersona });
     if (onDraftSnapshot) {
-      const snapshot = await buildDraftSnapshot(activePersona, appliedOutputs.normalizedInputs, appliedOutputs);
+      const snapshot = await buildDraftSnapshot(
+        activePersona,
+        appliedOutputs.normalizedInputs,
+        appliedOutputs,
+      );
       onDraftSnapshot(snapshot);
     }
-  }, [activePersona, appliedOutputs, onDraftSnapshot, onEvent]);
+    if (onLiteSnapshot) {
+      const lite = buildLiteShareSummaryV1(
+        activePersona,
+        appliedOutputs.normalizedInputs,
+        appliedOutputs,
+      );
+      onLiteSnapshot(lite);
+    }
+  }, [activePersona, appliedOutputs, onDraftSnapshot, onLiteSnapshot, onEvent]);
 
   const handleShare = useCallback(() => {
     if (!appliedOutputs) return;
     onEvent?.({ type: "share_clicked", persona: activePersona });
     if (onShareSummary) {
-      const summary = buildShareSummary(activePersona, appliedOutputs.normalizedInputs, appliedOutputs);
+      const summary = buildShareSummary(
+        activePersona,
+        appliedOutputs.normalizedInputs,
+        appliedOutputs,
+      );
       onShareSummary(summary);
     }
   }, [activePersona, appliedOutputs, onShareSummary, onEvent]);
@@ -832,20 +1006,33 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       data-persona={activePersona}
       data-mode={mode}
     >
-      <h2 style={{ margin: 0, marginBottom: 4, fontSize: 20 }}>FractPath Calculator</h2>
-      <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 12, fontStyle: "italic" }}>
-        {isMarketing ? "Basic Results — upgrade for full analysis" : "Full Analysis"}
+      <h2 style={{ margin: 0, marginBottom: 4, fontSize: 20 }}>
+        FractPath Calculator
+      </h2>
+      <div
+        style={{
+          fontSize: 11,
+          color: "#9ca3af",
+          marginBottom: 12,
+          fontStyle: "italic",
+        }}
+      >
+        {isMarketing
+          ? "Illustrative estimate (marketing)"
+          : "Full analysis (app)"}
       </div>
 
-      <PersonaHeader activePersona={activePersona} onSwitch={handlePersonaSwitch} />
+      <PersonaHeader
+        activePersona={activePersona}
+        onSwitch={handlePersonaSwitch}
+      />
 
       {!appliedOutputs && <EmptyState onGetStarted={openModal} />}
 
-      {appliedOutputs && chart && isMarketing && (
+      {appliedOutputs && isMarketing && (
         <MarketingOutputs
           outputs={appliedOutputs}
           persona={activePersona}
-          chart={chart}
           onSaveContinue={handleSaveContinue}
           onShare={handleShare}
           onEditInputs={openModal}
@@ -870,7 +1057,14 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         />
       )}
 
-      <div style={{ marginTop: 12, color: "#9ca3af", fontSize: 11, textAlign: "center" }}>
+      <div
+        style={{
+          marginTop: 12,
+          color: "#9ca3af",
+          fontSize: 11,
+          textAlign: "center",
+        }}
+      >
         Viewing as <strong>{activePersona}</strong>
         {" · "}
         Mode: <strong>{mode}</strong>

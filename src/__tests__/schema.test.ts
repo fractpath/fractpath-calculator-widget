@@ -19,6 +19,7 @@ const DRAFT_INPUTS_ALLOWED_KEYS = [
   "initialBuyAmount",
   "termYears",
   "annualGrowthRate",
+  "mortgageBalance",
 ] as const;
 
 const DRAFT_BASIC_RESULTS_ALLOWED_KEYS = [
