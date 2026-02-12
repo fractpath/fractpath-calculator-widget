@@ -1,90 +1,137 @@
-# WGT-011 — Chart series + visualization (engine-to-chart transform + minimal render)
+# WGT-011 — Chart Series + Visualization (Transform Only, No New Math)
 
 ## Objective
-Generate **chart-ready series** from the deterministic calculator engine outputs (WGT-010) and render a minimal,
-investor-presentable chart surface:
+
+Generate chart-ready series from the deterministic compute module outputs (WGT-010) and render a minimal, investor-presentable chart surface:
 
 - Equity ownership over time (primary)
-- Exit summary representation (Early / Standard / Late) as markers/tooltips/secondary series
+- Exit summary representation (Early / Standard / Late)
 
-This ticket must **not introduce any new math** beyond formatting and transforming existing computed outputs.
+This ticket must not introduce any new economic logic. It may only:
+- transform
+- format
+- label
+- map already-computed outputs into chart-friendly shapes
+
+---
+
+# Architecture Alignment (Frozen)
+
+- The compute engine (WGT-010) is the only source of truth for numeric economics.
+- Chart builder must consume outputs as-is and must not recompute settlement math.
+- Marketing mode renders only marketing-allowed chart surfaces per WGT-031.
+- App mode may render full-fidelity charts based on persisted snapshot outputs supplied by the host app.
 
 ---
 
 ## Dependencies
-- WGT-010 — Deterministic calculator engine (ScenarioInputsV1/ScenarioOutputsV1)
-- WGT-031 — Marketing Basic Results allowlist (ensure marketing mode only renders allowed chart data)
+
+- WGT-010 — Deterministic calculator engine (`ScenarioInputsV1`, `ScenarioOutputsV1`)
+- WGT-031 — Marketing Basic Results allowlist + chart restrictions
+- WGT-050 — Contract versioning (chart series shape changes are versioned)
 
 ---
 
 ## Non-goals
-- No new math formulas
-- No changes to computeScenarioV1 logic
+
+- No new formulas
+- No modifications to computeScenarioV1
 - No persistence
 - No networking
-- No design-system refactors beyond adding a minimal chart component
+- No design system refactor beyond adding minimal chart component
 
 ---
 
 ## Deliverables
 
-### 1) Chart series builder
+## 1) Chart series builder (Transform-only)
+
 Create:
 - `shared/calc/chart.ts`
 
 Export:
 - `buildChartSeriesV1(inputs: ScenarioInputsV1, outputs: ScenarioOutputsV1): ScenarioChartSeriesV1`
 
-Where `ScenarioChartSeriesV1` includes only **derived series** required for rendering:
+Where `ScenarioChartSeriesV1` includes only the derived series needed for rendering.
 
-Required series:
-- `equityOverTime`
-  - array of points: `{ monthIndex, monthLabel, buyerEquityPct, homeownerEquityPct }`
-- `fmvOverTime` (optional, but recommended if already in outputs)
-  - array: `{ monthIndex, estimatedFmv }`
+### Required series
 
-Exit summary representation (required):
-- `exitMarkers`
-  - `{ scenario: "early" | "standard" | "late", exitMonthIndex, buyerPayout, homeownerNet, floorApplied, capApplied }`
+#### equityOverTime
+Array of points:
+- `{ monthIndex, monthLabel, buyerEquityPct, homeownerEquityPct }`
+
+Source-of-truth:
+- must be derived from `outputs.series` fields produced by WGT-010 (no recompute).
+
+#### fmvOverTime (optional)
+- `{ monthIndex, estimatedFmvUsd }`
+Only if already available in outputs.
+
+#### exitMarkers (required)
+- `{ scenario: "early" | "standard" | "late", exitMonthIndex, buyerPayoutUsd, homeownerNetUsd?, floorApplied, capApplied }`
 
 Rules:
-- No recalculation of settlement amounts; use outputs’ scenario values
-- Any “exitMonthIndex” must be derived from existing input horizon/CPW windows (index math only)
-- Provide stable ordering and consistent labels
+- `buyerPayoutUsd` must come from scenario outputs (already computed).
+- `exitMonthIndex` is index math only (year→month mapping).
+- Stable ordering: early, standard, late.
 
-### 2) Minimal chart component
+No scenario math recalculation is permitted.
+
+---
+
+## 2) Minimal chart component (Widget Repo)
+
 Create:
-- `client/components/EquityChart.tsx` (or equivalent location in widget repo)
+- `client/components/EquityChart.tsx` (or equivalent)
 
 Requirements:
-- Render equity ownership over time using the series from `buildChartSeriesV1`
-- Include a minimal legend:
+- Render equity ownership over time using `equityOverTime`.
+- Minimal legend:
   - Buyer equity
   - Homeowner equity
-- Render exit summary representation:
-  - marker(s) on the time axis OR
-  - tooltip rows when hovering OR
-  - secondary series points (choose simplest with your chart lib)
+- Render exit markers:
+  - markers on axis OR tooltip rows OR secondary points (choose simplest in the chart library)
 
 Implementation constraints:
-- Use the project’s existing chart library if present
-- If none, use **Recharts** (preferred for Next/shadcn ecosystems)
-- Must render with defaults (no runtime errors)
+- Use existing chart lib if present; otherwise use Recharts.
+- Must render with default inputs without runtime errors.
+
+---
+
+# Mode Safety Rules (WGT-031 Alignment)
+
+## Marketing Mode
+Chart must not expose:
+- payment schedules
+- settlement payout tables
+- fee waterfalls
+- contract-like detailed series
+
+Allowed:
+- simple ownership-over-time visualization
+- minimal exit markers (no detailed breakdown tooltips beyond allowed fields)
+
+## App Mode
+Host app may render full chart surfaces based on persisted snapshot outputs.
+No marketing gating or truncation required in app mode.
 
 ---
 
 ## Acceptance Criteria
-- `buildChartSeriesV1` exists and produces chart-ready data from inputs+outputs
-- Chart renders with default inputs (local dev) without errors
-- Equity ownership over time is visible and readable
-- Exit summary representation is present (marker/tooltip/secondary series)
-- No new math is introduced (transform only)
-- Marketing mode can safely render the chart without exposing non-allowed fields
+
+- `buildChartSeriesV1` exists and produces series from outputs without recompute.
+- Chart renders in local dev without errors.
+- Equity chart is visible, readable, and investor-presentable.
+- Exit markers are visible (marker/tooltip/secondary points).
+- No new math is introduced.
+- Marketing mode rendering conforms to WGT-031 restrictions.
 
 ---
 
 ## QA Checklist
-- Equity % series stays within [0, 100]
-- Buyer + Homeowner equity sums to 100 at each point (within rounding tolerance)
+
+- Equity % within [0, 100]
+- Buyer + homeowner equity sums to 100 (within rounding tolerance)
 - Exit markers align to expected months/years
-- Chart handles small screens without breaking layout
+- Small screens do not break layout
+
