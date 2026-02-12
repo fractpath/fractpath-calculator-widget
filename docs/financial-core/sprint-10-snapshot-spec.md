@@ -1,29 +1,3 @@
-Excellent. This is the document that ensures your financial engine cannot drift or mutate after approval.
-
-📄 DOCUMENT 3 OF N
-Snapshot Architecture & Persistence Specification
-
-This governs how computed deals are stored in the app and protects auditability.
-
-✅ Repository
-
-fractpath-app
-
-Reason:
-
-Snapshots are persisted in Supabase via the app.
-
-Persistence and immutability are app responsibilities.
-
-Compute module lives elsewhere, but snapshots live here.
-
-✅ File Path
-docs/financial-core/sprint-10-snapshot-spec.md
-
-
-Create docs/financial-core/ if it does not exist.
-
-✅ Paste the Following Entire Document Into That File
 # FractPath — Sprint 10 Snapshot Architecture Specification
 
 Version: 10.0.0  
@@ -70,9 +44,7 @@ Upon deal approval, the following JSON payload must be persisted:
   "outputs": { ...DealResults },
   "computed_at": "ISO_TIMESTAMP"
 }
-
 Database Requirements
-
 The database must:
 
 Store snapshot as JSONB
@@ -86,8 +58,6 @@ Allow fork generation
 Recommended table:
 
 deal_snapshots
-
-
 Fields:
 
 id (uuid)
@@ -136,8 +106,6 @@ Before persisting snapshot:
 
 App must validate:
 
-
-
 compute(inputs, assumptions) === outputs
 
 
@@ -153,8 +121,6 @@ If mismatch:
 # Compute Version Enforcement
 
 Snapshots must store:
-
-
 
 compute_version
 
@@ -181,3 +147,30 @@ Snapshots must allow reconstruction of:
 - Settlement amount
 
 At any point in time.
+
+---
+
+# Deal Detail Rendering Requirement
+
+Deal detail page must:
+
+- Render values from snapshot.outputs
+- Not recompute silently for approved deals
+- Only recompute when editing draft deals
+
+---
+
+# Definition of Done
+
+Snapshot implementation is complete when:
+
+- Snapshot payload matches compute spec structure
+- Snapshots are immutable
+- Forks create new snapshots
+- Deterministic recompute invariant enforced
+- Deal detail renders snapshot outputs
+- No duplicated financial logic exists in app
+
+---
+
+# End of Specification
