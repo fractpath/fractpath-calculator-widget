@@ -1,204 +1,233 @@
-# WGT-031 — Widget gating semantics (marketing vs app)
+# WGT-031 — Widget Gating Semantics (Marketing vs App) — Render/Emit Rules
 
 ## Sprint
-Sprint 0 (alignment-only rewrite) → Sprint 5 (implementation)
-
-## Objective
-Define **strict, unambiguous gating rules** for what the widget may **render, emit, and persist** in each mode:
-- `mode="marketing"`
-- `mode="app"`
-
-These rules prevent interpretation drift across repos, prohibit silent expansion
-of marketing-visible outputs, and ensure a clean separation between **persuasive projection**
-(marketing) and **authoritative deal review/editing** (app).
-
-This ticket governs **what is allowed to be shown and emitted**, not *how it is styled*
-(WGT-030) or *what the data contracts look like* (WGT-INT-001 / WGT-040).
+Sprint 0 (alignment-only rewrite) → Sprint 9 (implementation foundation)
 
 ---
 
-## Context (Locked Decisions)
-- Widget is canonical for calculator math, schema validation, and persona framing logic.
+# Objective
+
+Define strict, unambiguous gating rules for what the widget may **render** and **emit** in:
+
+- `mode="marketing"` (unauthenticated, illustrative)
+- `mode="app"` (authenticated, authoritative rendering of persisted snapshots)
+
+These rules prevent interpretation drift across repos and enforce the separation between:
+
+- **persuasive projection** (marketing)
+- **auditable, permissioned deal review/edit** (app)
+
+This ticket governs **what may be shown and emitted**, not styling (WGT-030) or interface wiring (WGT-INT-001 / WGT-040 / WGT-020).
+
+---
+
+# Context (Locked Decisions)
+
+- Widget compute engine is canonical (single source of truth for economic math).
 - Marketing embeds widget and performs **no calculator math**.
-- App owns deal creation, persistence, versioning, and permissions.
-- Marketing operates entirely on **draft / illustrative projections**.
-- App operates on **saved calculator snapshots tied to Deal IDs**.
-- Widget has two modes with explicitly different affordances and guarantees.
+- App owns:
+  - deal creation
+  - persistence
+  - versioning
+  - permissions
+  - share tokens (deal-backed)
+- Marketing operates on **illustrative drafts** only.
+- App operates on **saved deal snapshots** tied to `deal_id` and `version_id`.
+- App persisted snapshots are computed server-side using the same compute module (APP-002).
 
 ---
 
-## Definitions
-- **Basic Results (Marketing)**  
-  A strictly limited, non-binding subset of calculator outputs intended to
-  communicate *directional value only*. These are **not deal terms**. > All Basic Results values must be directly traceable to fields in the canonical compute result. The widget must not introduce any marketing-only math or derived metrics that are not produced by the engine.
+# Definitions
 
-- **Full Deal Outputs (App)**  
-  Any outputs that reveal deal structure, pricing mechanics, fee waterfalls,
-  counterparty economics, legal terms, or versioned history.
+## Basic Results (Marketing)
+A strictly limited, non-binding subset of the canonical compute outputs intended to communicate directional value only.
 
-- **DraftSnapshot**  
-  A widget-produced snapshot of:
-  - applied inputs
-  - computed outputs
-  - engine/meta information  
-  used to resume a projection in the app. DraftSnapshots are **not deals**.
+Rules:
+- Basic Results must map directly to fields in the canonical compute output.
+- Widget must not introduce marketing-only math or derived metrics outside the engine.
 
-- **Draft Token**  
-  An app-minted token that references a DraftSnapshot server-side and enables
-  resume after authentication.
+## Full Deal Outputs (App)
+Any outputs that reveal:
+- pricing mechanics (TF/FM/CM/CPW)
+- fee waterfalls
+- schedules / tables that look contractual
+- version history
+- acceptance state
+- anything that could be interpreted as binding terms
+
+## DraftSnapshot
+A widget-produced, non-binding transport payload that includes:
+- canonical inputs
+- explicit assumptions
+- metadata
+
+It exists to resume in app where the server recomputes and persists version 1.
+
+DraftSnapshot is not a deal.
+
+## ShareSummary
+Marketing-safe payload for marketing share only (WGT-020). Not deal-backed.
 
 ---
 
-## Mode Semantics
+# Mode Semantics
 
-### mode="marketing" (Unauthenticated, illustrative)
-> Note: Marketing may render only Basic Results, but `onMarketingSnapshot(snapshot)` must include the full canonical applied inputs + computed result + meta so the app can resume without recomputing or inference.
+## A) mode="marketing" (Unauthenticated, illustrative)
 
+### Allowed (Render)
+- Persona selector UX.
+- Input capture via modal (WGT-030).
+- Render **Basic Results only** (explicit list below).
+- Render disclaimers and disclosures.
 
-#### Allowed
-- Render persona selector UX (Homeowner / Buyer + Realtor tertiary entry).
-- Capture inputs via the modal overlay defined in WGT-030.
-- Compute full results internally using widget-owned math.
-- **Render only Basic Results** (explicit list below).
-- Emit `onMarketingSnapshot(snapshot)` when user selects **Save & Continue**.
-- Emit `onShareSummary(summary)` for marketing-safe share content.
+### Allowed (Emit)
+- Emit `onDraftSnapshot(draft: DraftSnapshot)` on Save & Continue intent (host handles email + token).
+- Emit `onShareSummary(summary: ShareSummary)` for marketing share.
+- Emit `onEvent(name,payload)` telemetry events.
 
-#### Prohibited
+### Prohibited
 - Rendering Full Deal Outputs.
-- Creation of real Deal IDs.
-- Persistence beyond emitting DraftSnapshot / ShareSummary payloads.
-- Calling app or marketing APIs directly from the widget.
-- Reframing or “unlocking” additional outputs without authentication.
-- Displaying any value that could be interpreted as a binding quote.
+- Rendering schedules/tables that look like deal terms (payment schedules, payout schedules, fee breakdown tables).
+- Creating or referencing real Deal IDs.
+- Any persistence or API calls from widget.
+- Any “unlocking” of outputs beyond Basic Results.
+- Displaying anything that could reasonably be construed as a binding quote.
+
+**Alignment correction:** Marketing DraftSnapshots are not authoritative results.
+Marketing mode may compute for UI preview, but app must recompute server-side before persisting.
 
 ---
 
-### mode="app" (Authenticated, authoritative)
+## B) mode="app" (Authenticated, authoritative rendering)
 
-#### Allowed
-- Render **all computed outputs** derived from the canonical calculator result.
-- Render objective deal review surfaces (terms sheet, charts, fee structures).
-- Emit `onAppSaveRequest(payload)` on **Apply** for app-owned persistence.
-- Render permissioned share affordances as defined by the host app.
+### Allowed (Render)
+- Render full outputs from the **persisted snapshot** provided by the host app.
+- Render objective review surfaces (charts, terms sheet sections, tables).
+- Render role-gated actions driven by host app (Apply, Share, etc.).
 
-#### Prohibited
-- Marketing lead capture flows.
-- Marketing-branded persuasion copy or CTAs.
-- Draft-token semantics (“Save & Continue”, magic-link resume).
-- Any artificial restriction of outputs that exist in the saved snapshot.
+### Allowed (Emit)
+- Emit `onApplyRequest(nextInputs)` to request a new version (OWNER-only, enforced by host).
+- Emit `onEvent(name,payload)` telemetry.
 
----
+### Prohibited
+- Marketing lead capture CTAs.
+- Marketing persuasion copy/gates (email blur, Save & Continue).
+- Draft-token semantics.
+- Client-side persistence of snapshots.
+- Any host-unknown recompute being treated as authoritative.
 
-## Basic Results (Marketing) — **Explicit, Exhaustive List**
-
-In `mode="marketing"`, the widget may render **only** the following categories
-of output, framed per persona but derived from the canonical compute result.
-
-### Headline KPI Cards (Persona-Framed)
-These are presentation-level cards, not deal terms.
-
-- Homeowner:
-  - Upfront cash (illustrative)
-  - Monthly cashflow (if applicable)
-  - Projected net at sale event (illustrative)
-
-- Buyer:
-  - Ownership path over time
-  - Monthly contribution + timeline
-  - Effective purchase price / discount vs FMV
-
-- Realtor (beta):
-  - Immediate commission potential
-  - Future sale commission potential
-  - Total commission potential
-
-> All values must be clearly labeled as **illustrative estimates**.
-
-### Ranges / Directional Indicators (Non-binding)
-- Estimated holding period range
-- Estimated future value range
-- Estimated cost-of-capital or appreciation context (if shown)
-
-### Visualizations
-- At most **two** primary, non-interactive visualizations:
-  - ownership / value over time
-  - cash or commission realization illustration  
-- Visuals must be derived solely from Basic Results (no hidden detail unlocks).
-
-### Assumptions & Disclosures (Read-only)
-- Base appreciation assumption (e.g. “Assumes 4%/yr”)
-- Platform fee model disclosure
-- Equity constraint disclosure:
-  - “Only the portion of equity you own (FMV − mortgage) can be sold.”
-- General disclaimer (“Illustrative estimate; not a binding offer”)
-
-### Metadata (Display-safe)
-- Selected persona
-- Calculator schema / assumptions version
-- Disclaimer key or copy reference
+**Important:** In app mode, the widget should ideally render from `snapshot.outputs_json` supplied by app, not silently recompute on mount. Any recompute is preview-only unless host persists a server-computed version.
 
 ---
 
-## Explicitly Excluded (Marketing)
-If a field or concept is not listed above, it **must not render** in marketing mode.
+# Basic Results (Marketing) — Explicit, Exhaustive Render List
+
+In `mode="marketing"`, widget may render only:
+
+## 1) Headline KPIs (Persona-Framed, Illustrative)
+Must be clearly labeled “Illustrative estimate”.
+
+- Homeowner (examples):
+  - Upfront cash estimate
+  - Monthly contribution summary (if applicable)
+  - High-level retained ownership estimate at horizon (non-binding)
+
+- Buyer (examples):
+  - Contribution summary (upfront/monthly)
+  - Directional ownership path headline (non-binding)
+  - Simple “paid X to earn ~Y% by year N” framing
+
+- Realtor (examples):
+  - Referral/commission potential (illustrative, labeled “example”)
+  - No fee waterfall table
+
+## 2) Directional Ranges
+- Future value range (if engine provides it)
+- Holding period / horizon summary
+- High-level “early/standard/late” as ranges only (no settlement payout tables)
+
+## 3) Visualizations (Max Two)
+- Simple ownership/value over time chart
+- Optional secondary chart, but must not expose hidden detailed schedules
+
+No interactive “exportable” tables in marketing.
+
+## 4) Assumptions & Disclosures (Read-only)
+- Appreciation assumption
+- Equity availability constraint disclosure (FMV − mortgage)
+- General disclaimer: “Illustrative; not a binding offer”
+- Disclaimer key/copy reference
+
+## 5) Display-Safe Metadata
+- persona
+- calculator schema version
+- engine/terms version identifiers (display-safe)
+
+---
+
+# Explicitly Excluded (Marketing)
+
+If a field/concept is not listed above, it must not render in marketing mode.
 
 Marketing mode must NOT render:
-- Counterparty-specific pricing mechanics
-- Fee waterfalls or payout schedules
-- APR or legally interpretable rates
-- Legal or contractual clauses
-- Deal version history or comparisons
-- Editable assumptions
-- Scenario comparison tables
-- Any value that could reasonably be construed as a final offer
+
+- payment schedule tables
+- settlement payout tables
+- fee waterfalls
+- APR / implied rates presented as contractual
+- editable advanced assumptions
+- version history comparisons
+- legal/contractual clause language
+- anything that implies a committed offer
 
 ---
 
-## Save & Continue Gating Flow (Marketing)
-1) User selects persona → widget resets output to empty state.
-2) User opens input modal, enters required inputs.
-3) User clicks **Apply**:
-   - widget computes results
-   - widget renders Basic Results only
-4) User clicks **Save & Continue**:
-   - widget emits `onMarketingSnapshot(snapshot)`
-5) Hosting marketing app is responsible for:
-   - email capture gating
-   - calling app-owned lead or mint endpoint
-   - receiving draft token
-   - redirecting to app resume/signup flow
+# Save & Continue Flow (Marketing)
+
+Marketing host owns gating and network.
+
+Widget flow:
+
+1) User edits inputs
+2) User clicks Apply → widget computes preview → renders Basic Results only
+3) User clicks Save & Continue → widget emits `onDraftSnapshot(draft)`
+4) Host captures email and mints resume token via `/api/lead` (MKT-006)
+5) Host redirects into app resume
 
 ---
 
-## Marketing Share Gating Flow
-1) User clicks **Share**:
-   - widget emits `onShareSummary(summary)` containing marketing-safe fields only
-2) Hosting app:
-   - sends branded email
-   - mints magic link
-   - enforces that no real deal data is accessible without auth
+# Marketing Share Flow
+
+1) User clicks Share → widget emits `onShareSummary(summary)` (WGT-020)
+2) Host sends branded email + marketing magic link
+3) No deal access granted, no app share tokens involved
 
 ---
 
-## App Share Flow
-- Widget may render share state in `mode="app"`.
-- All permission checks and access control are app-owned.
-- No marketing-originated share grants access to real deal data without authentication.
+# App Share Flow (Deal-Backed)
+
+- Widget may show share UI state in app mode.
+- All share token mint/redeem logic and access control is app-owned.
+- Only OWNER may mint new app share tokens.
+- Any user may distribute an existing app share token URL.
 
 ---
 
-## Acceptance Criteria
-- Basic Results are **explicitly enumerated and exhaustive**.
-- Persona-framed outputs exist only in marketing mode.
-- No marketing-visible output exists outside the allowed list.
-- Apply semantics are respected (no silent recompute or unlock).
-- Callback responsibilities are unambiguous and host-owned.
-- App mode renders authoritative snapshot data without artificial gating.
+# Acceptance Criteria
+
+- Basic Results are explicitly enumerated and exhaustive.
+- Marketing renders no outputs outside the list.
+- DraftSnapshot is emitted as transport payload (inputs + assumptions + meta).
+- App mode renders authoritative snapshot outputs provided by host app.
+- No silent unlocks, no widget networking, no persistence.
+- ShareSummary is marketing-safe and non-binding (WGT-020).
 
 ---
 
-## Dependencies
+# Dependencies
+
 - WGT-030 — Widget UI surface + mode behavior
 - WGT-020 — Share semantics
-- WGT-040 — Draft snapshot schema + stability guarantees
+- WGT-040 — DraftSnapshot schema
 - WGT-INT-001 — Locked public interface
+
