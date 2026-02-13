@@ -10,10 +10,12 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Dev entry**: `index.html` → `src/main.tsx` (dev harness with persona/mode switcher)
 - **Lib entry**: `src/lib/index.ts` (public exports for consumers)
 - **Widget**: `src/widget/` (FractPathCalculatorWidget, wired calculator, persona config, formatting, snapshot builders, hashing)
-- **Calc engine**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
+- **Calc engine (widget)**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
+- **Canonical compute**: `packages/compute/` (@fractpath/compute v10.0.0 — single source of financial truth)
 - **Components**: `src/components/EquityChart.tsx` (SVG line chart)
 - **Contract docs**: `docs/architecture/integration-contract.md`
-- **Tests**: `src/__tests__/` (determinism, schema allowlist, mode gating)
+- **Sprint 10 specs**: `docs/financial-core/` (compute spec, runbook, integration specs)
+- **Tests**: `src/__tests__/` (widget tests) + `packages/compute/tests/` (compute module tests)
 
 ## Key Files
 - `vite.config.ts` - Vite config with ES lib build and dev server (port 5000)
@@ -41,10 +43,26 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (30 tests across 3 suites)
+- Test with `npm test` → runs vitest (102 tests across 6 suites)
+- Test compute only: `cd packages/compute && npm test` (72 tests across 3 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
+## @fractpath/compute (Sprint 10 AGENT-001)
+- **Location**: `packages/compute/`
+- **Version**: 10.0.0 (COMPUTE_VERSION)
+- **Entry**: `computeDeal(terms: DealTerms, assumptions: ScenarioAssumptions): DealResults`
+- **Pure functions only**: no DB, no network, no env vars, deterministic
+- **Key files**:
+  - `src/types.ts` — DealTerms, ScenarioAssumptions, DealResults
+  - `src/computeDeal.ts` — all 11 financial steps per sprint-10-compute-spec
+  - `src/irr.ts` — Newton-Raphson monthly IRR solver with bisection fallback
+  - `src/rounding.ts` — roundMoney(2dp), roundIRRMonthly(6dp), roundIRRAnnual(4dp)
+  - `src/version.ts` — COMPUTE_VERSION = "10.0.0"
+- **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
+
 ## Recent Changes
+- 2026-02-13: Sprint 10 AGENT-010 — Duration Yield Floor (DYF) feature: 3 optional DealTerms fields, 2 DealResults fields, applyDurationYieldFloor after standard clamp, 16 new tests (72 compute total, 102 repo total)
+- 2026-02-12: Sprint 10 AGENT-001 — Canonical compute module (@fractpath/compute) with DealTerms/ScenarioAssumptions/DealResults, computeDeal(), IRR solver, rounding, 56 tests
 - 2026-02-09: Sprint 5 implementation — marketing/app modes, DraftSnapshot, ShareSummary, SavePayload, deterministic hashing, mode-gated UI, integration contract doc, 30 vitest tests
 - 2026-02-06: Implemented WGT-030 Calculator UI shell (controlled inputs, outputs panel, settlement rows, persona-driven hero, equity chart)
 - 2026-02-06: Configured Vite dev server for Replit (port 5000, host 0.0.0.0, allowedHosts: true)
