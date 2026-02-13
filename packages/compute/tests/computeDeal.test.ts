@@ -384,13 +384,22 @@ describe("computeDeal", () => {
     };
 
     describe("DYF disabled → no change to settlement", () => {
-      const terms: DealTerms = {
+      const baseTerms: DealTerms = {
         ...DEFAULT_TERMS,
+        ceiling_multiple: 1.5,
+      };
+
+      const termsWithDyfDisabled: DealTerms = {
+        ...baseTerms,
         duration_yield_floor_enabled: false,
         duration_yield_floor_start_year: 10,
         duration_yield_floor_min_multiple: 2.0,
       };
-      const result = computeDeal(terms, { ...LATE_ASSUMPTIONS, exit_year: 15 });
+
+      const assumptions: ScenarioAssumptions = { ...LATE_ASSUMPTIONS, exit_year: 15 };
+
+      const baseline = computeDeal(baseTerms, assumptions);
+      const result = computeDeal(termsWithDyfDisabled, assumptions);
 
       it("dyf_applied is false", () => {
         expect(result.dyf_applied).toBe(false);
@@ -400,16 +409,8 @@ describe("computeDeal", () => {
         expect(result.dyf_floor_amount).toBe(0);
       });
 
-      it("settlement matches standard clamp", () => {
-        const noFlag = computeDeal(DEFAULT_TERMS, { ...LATE_ASSUMPTIONS, exit_year: 15 });
-        expect(result.isa_settlement).toBe(
-          roundMoney(
-            Math.min(
-              Math.max(result.isa_pre_floor_cap, result.floor_amount),
-              result.ceiling_amount
-            )
-          )
-        );
+      it("settlement matches baseline when DYF is disabled", () => {
+        expect(result.isa_settlement).toBe(baseline.isa_settlement);
       });
     });
 
