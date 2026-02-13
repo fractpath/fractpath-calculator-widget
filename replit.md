@@ -43,8 +43,8 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (86 tests across 6 suites)
-- Test compute only: `cd packages/compute && npm test` (56 tests across 3 suites)
+- Test with `npm test` → runs vitest (102 tests across 6 suites)
+- Test compute only: `cd packages/compute && npm test` (72 tests across 3 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
 ## @fractpath/compute (Sprint 10 AGENT-001)
@@ -58,9 +58,10 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
   - `src/irr.ts` — Newton-Raphson monthly IRR solver with bisection fallback
   - `src/rounding.ts` — roundMoney(2dp), roundIRRMonthly(6dp), roundIRRAnnual(4dp)
   - `src/version.ts` — COMPUTE_VERSION = "10.0.0"
-- **Tests**: 56 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding
+- **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-13: Sprint 10 AGENT-010 — Duration Yield Floor (DYF) feature: 3 optional DealTerms fields, 2 DealResults fields, applyDurationYieldFloor after standard clamp, 16 new tests (72 compute total, 102 repo total)
 - 2026-02-12: Sprint 10 AGENT-001 — Canonical compute module (@fractpath/compute) with DealTerms/ScenarioAssumptions/DealResults, computeDeal(), IRR solver, rounding, 56 tests
 - 2026-02-09: Sprint 5 implementation — marketing/app modes, DraftSnapshot, ShareSummary, SavePayload, deterministic hashing, mode-gated UI, integration contract doc, 30 vitest tests
 - 2026-02-06: Implemented WGT-030 Calculator UI shell (controlled inputs, outputs panel, settlement rows, persona-driven hero, equity chart)
