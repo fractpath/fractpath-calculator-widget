@@ -35,8 +35,15 @@ export function computeDeal(
   const floor_amount = roundMoney(invested_capital_total * terms.floor_multiple);
   const ceiling_amount = roundMoney(invested_capital_total * terms.ceiling_multiple);
 
-  const isa_settlement = roundMoney(
+  const isa_standard = roundMoney(
     computeSettlement(terms.downside_mode, isa_pre_floor_cap, floor_amount, ceiling_amount)
+  );
+
+  const { isa_settlement, dyf_floor_amount, dyf_applied } = applyDurationYieldFloor(
+    terms,
+    assumptions.exit_year,
+    invested_capital_total,
+    isa_standard
   );
 
   const investor_profit = roundMoney(isa_settlement - invested_capital_total);
@@ -58,6 +65,8 @@ export function computeDeal(
     floor_amount,
     ceiling_amount,
     isa_settlement,
+    dyf_floor_amount,
+    dyf_applied,
     investor_profit,
     investor_multiple,
     investor_irr_annual,
@@ -116,6 +125,29 @@ function computeSettlement(
     return Math.min(Math.max(isaPre, floor), ceiling);
   }
   return Math.min(isaPre, ceiling);
+}
+
+function applyDurationYieldFloor(
+  terms: DealTerms,
+  exitYear: number,
+  iba: number,
+  isaStandard: number
+): { isa_settlement: number; dyf_floor_amount: number; dyf_applied: boolean } {
+  if (
+    !terms.duration_yield_floor_enabled ||
+    terms.duration_yield_floor_start_year == null ||
+    terms.duration_yield_floor_min_multiple == null
+  ) {
+    return { isa_settlement: isaStandard, dyf_floor_amount: 0, dyf_applied: false };
+  }
+
+  const dyfFloor = roundMoney(iba * terms.duration_yield_floor_min_multiple);
+
+  if (exitYear >= terms.duration_yield_floor_start_year && isaStandard < dyfFloor) {
+    return { isa_settlement: dyfFloor, dyf_floor_amount: dyfFloor, dyf_applied: true };
+  }
+
+  return { isa_settlement: isaStandard, dyf_floor_amount: dyfFloor, dyf_applied: false };
 }
 
 function buildCashflows(

@@ -22,6 +22,10 @@ export interface DealTerms {
   platform_fee: number;
   servicing_fee_monthly: number;
   exit_fee_pct: number;
+
+  duration_yield_floor_enabled?: boolean;
+  duration_yield_floor_start_year?: number | null;
+  duration_yield_floor_min_multiple?: number | null;
 }
 
 export interface ScenarioAssumptions {
@@ -41,6 +45,8 @@ export interface DealResults {
   floor_amount: number;
   ceiling_amount: number;
   isa_settlement: number;
+  dyf_floor_amount: number;
+  dyf_applied: boolean;
   investor_profit: number;
   investor_multiple: number;
   investor_irr_annual: number;

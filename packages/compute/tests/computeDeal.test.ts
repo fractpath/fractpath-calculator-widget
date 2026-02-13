@@ -345,6 +345,11 @@ describe("computeDeal", () => {
       expect(result.isa_settlement).toBeLessThanOrEqual(663_000.00);
     });
 
+    it("DYF is not applied when not configured", () => {
+      expect(result.dyf_applied).toBe(false);
+      expect(result.dyf_floor_amount).toBe(0);
+    });
+
     it("all output fields are present", () => {
       const requiredFields: (keyof typeof result)[] = [
         "invested_capital_total",
@@ -356,6 +361,8 @@ describe("computeDeal", () => {
         "floor_amount",
         "ceiling_amount",
         "isa_settlement",
+        "dyf_floor_amount",
+        "dyf_applied",
         "investor_profit",
         "investor_multiple",
         "investor_irr_annual",
@@ -364,6 +371,210 @@ describe("computeDeal", () => {
       for (const f of requiredFields) {
         expect(result).toHaveProperty(f);
       }
+    });
+  });
+
+  describe("Duration Yield Floor (DYF)", () => {
+    const DYF_TERMS: DealTerms = {
+      ...DEFAULT_TERMS,
+      ceiling_multiple: 1.5,
+      duration_yield_floor_enabled: true,
+      duration_yield_floor_start_year: 15,
+      duration_yield_floor_min_multiple: 1.5,
+    };
+
+    describe("DYF disabled → no change to settlement", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        duration_yield_floor_enabled: false,
+        duration_yield_floor_start_year: 10,
+        duration_yield_floor_min_multiple: 2.0,
+      };
+      const result = computeDeal(terms, { ...LATE_ASSUMPTIONS, exit_year: 15 });
+
+      it("dyf_applied is false", () => {
+        expect(result.dyf_applied).toBe(false);
+      });
+
+      it("dyf_floor_amount is 0", () => {
+        expect(result.dyf_floor_amount).toBe(0);
+      });
+
+      it("settlement matches standard clamp", () => {
+        const noFlag = computeDeal(DEFAULT_TERMS, { ...LATE_ASSUMPTIONS, exit_year: 15 });
+        expect(result.isa_settlement).toBe(
+          roundMoney(
+            Math.min(
+              Math.max(result.isa_pre_floor_cap, result.floor_amount),
+              result.ceiling_amount
+            )
+          )
+        );
+      });
+    });
+
+    describe("DYF enabled but exit_year < start_year → no change", () => {
+      const result = computeDeal(DYF_TERMS, {
+        annual_appreciation: 0.02,
+        closing_cost_pct: 0.02,
+        exit_year: 10,
+      });
+
+      it("dyf_applied is false", () => {
+        expect(result.dyf_applied).toBe(false);
+      });
+
+      it("dyf_floor_amount is computed but not applied", () => {
+        expect(result.dyf_floor_amount).toBe(
+          roundMoney(result.invested_capital_total * 1.5)
+        );
+      });
+    });
+
+    describe("DYF enabled, exit_year >= start_year, ISA_standard < DYF floor → raised", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        ceiling_multiple: 1.2,
+        timing_factor_late: 1.0,
+        duration_yield_floor_enabled: true,
+        duration_yield_floor_start_year: 15,
+        duration_yield_floor_min_multiple: 1.5,
+      };
+      const result = computeDeal(terms, {
+        annual_appreciation: 0.01,
+        closing_cost_pct: 0.02,
+        exit_year: 20,
+      });
+
+      it("dyf_applied is true", () => {
+        expect(result.dyf_applied).toBe(true);
+      });
+
+      it("settlement equals DYF floor amount", () => {
+        expect(result.isa_settlement).toBe(result.dyf_floor_amount);
+      });
+
+      it("DYF floor = IBA * min_multiple", () => {
+        expect(result.dyf_floor_amount).toBe(
+          roundMoney(result.invested_capital_total * 1.5)
+        );
+      });
+
+      it("DYF floor exceeds ceiling (that is the point)", () => {
+        expect(result.isa_settlement).toBeGreaterThan(result.ceiling_amount);
+      });
+    });
+
+    describe("DYF enabled, exit_year >= start_year, ISA_standard >= DYF floor → unchanged", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        ceiling_multiple: 3.25,
+        duration_yield_floor_enabled: true,
+        duration_yield_floor_start_year: 10,
+        duration_yield_floor_min_multiple: 1.2,
+      };
+      const result = computeDeal(terms, {
+        annual_appreciation: 0.06,
+        closing_cost_pct: 0.02,
+        exit_year: 12,
+      });
+
+      it("dyf_applied is false (standard settlement already exceeds DYF)", () => {
+        expect(result.dyf_applied).toBe(false);
+      });
+
+      it("settlement is standard (not raised)", () => {
+        expect(result.isa_settlement).toBeGreaterThanOrEqual(result.dyf_floor_amount);
+      });
+    });
+
+    describe("DYF works under HARD_FLOOR mode", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        downside_mode: "HARD_FLOOR",
+        ceiling_multiple: 1.1,
+        duration_yield_floor_enabled: true,
+        duration_yield_floor_start_year: 15,
+        duration_yield_floor_min_multiple: 1.5,
+      };
+      const result = computeDeal(terms, {
+        annual_appreciation: 0.01,
+        closing_cost_pct: 0.02,
+        exit_year: 20,
+      });
+
+      it("DYF is applied and exceeds ceiling", () => {
+        expect(result.dyf_applied).toBe(true);
+        expect(result.isa_settlement).toBe(result.dyf_floor_amount);
+        expect(result.isa_settlement).toBeGreaterThan(result.ceiling_amount);
+      });
+    });
+
+    describe("DYF works under NO_FLOOR mode", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        downside_mode: "NO_FLOOR",
+        ceiling_multiple: 1.1,
+        duration_yield_floor_enabled: true,
+        duration_yield_floor_start_year: 15,
+        duration_yield_floor_min_multiple: 1.5,
+      };
+      const result = computeDeal(terms, {
+        annual_appreciation: 0.01,
+        closing_cost_pct: 0.02,
+        exit_year: 20,
+      });
+
+      it("DYF is applied under NO_FLOOR", () => {
+        expect(result.dyf_applied).toBe(true);
+        expect(result.isa_settlement).toBe(result.dyf_floor_amount);
+      });
+    });
+
+    describe("DYF IRR reflects updated settlement", () => {
+      const termsNoDyf: DealTerms = {
+        ...DEFAULT_TERMS,
+        ceiling_multiple: 1.1,
+      };
+      const termsDyf: DealTerms = {
+        ...termsNoDyf,
+        duration_yield_floor_enabled: true,
+        duration_yield_floor_start_year: 15,
+        duration_yield_floor_min_multiple: 1.5,
+      };
+      const assumptions: ScenarioAssumptions = {
+        annual_appreciation: 0.01,
+        closing_cost_pct: 0.02,
+        exit_year: 20,
+      };
+
+      it("IRR is higher when DYF raises settlement", () => {
+        const withoutDyf = computeDeal(termsNoDyf, assumptions);
+        const withDyf = computeDeal(termsDyf, assumptions);
+        expect(withDyf.isa_settlement).toBeGreaterThan(withoutDyf.isa_settlement);
+        expect(withDyf.investor_irr_annual).toBeGreaterThan(withoutDyf.investor_irr_annual);
+      });
+    });
+
+    describe("DYF determinism", () => {
+      it("same DYF inputs produce identical outputs", () => {
+        const terms: DealTerms = {
+          ...DEFAULT_TERMS,
+          duration_yield_floor_enabled: true,
+          duration_yield_floor_start_year: 15,
+          duration_yield_floor_min_multiple: 1.5,
+        };
+        const assumptions: ScenarioAssumptions = {
+          annual_appreciation: 0.02,
+          closing_cost_pct: 0.02,
+          exit_year: 20,
+        };
+        const results = Array.from({ length: 5 }, () => computeDeal(terms, assumptions));
+        const first = JSON.stringify(results[0]);
+        for (let i = 1; i < results.length; i++) {
+          expect(JSON.stringify(results[i])).toBe(first);
+        }
+      });
     });
   });
 });

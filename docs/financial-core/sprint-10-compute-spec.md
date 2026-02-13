@@ -179,6 +179,40 @@ IRR must be rounded to 6 decimal places before annualization, then 4 decimal pla
 
 Rounding must be consistent across environments.
 
+Step 8b — Duration Yield Floor (DYF)
+Optional ceiling-compression protection for long-duration outcomes.
+
+DealTerms fields (all optional):
+
+```ts
+duration_yield_floor_enabled?: boolean       // default false
+duration_yield_floor_start_year?: number | null  // year threshold
+duration_yield_floor_min_multiple?: number | null // minimum settlement multiple
+```
+
+Logic (applied AFTER standard floor/ceiling clamp):
+
+```
+ISA_standard = settlement after DownsideMode clamp (Step 8)
+DYF_floor_amount = IBA × duration_yield_floor_min_multiple
+
+If duration_yield_floor_enabled AND exit_year >= duration_yield_floor_start_year:
+  ISA_with_dyf = MAX(ISA_standard, DYF_floor_amount)
+Else:
+  ISA_with_dyf = ISA_standard
+```
+
+DYF constraints:
+- Must NOT apply before start_year
+- Must be deterministic and rounded per rounding policy
+- Compatible with both HARD_FLOOR and NO_FLOOR modes
+- DYF may exceed ceiling_multiple outcomes (that is its purpose)
+- If disabled or fields null, DYF has no effect on settlement
+
+DealResults includes:
+- `dyf_floor_amount: number` — computed DYF floor (0 if disabled)
+- `dyf_applied: boolean` — whether DYF raised the settlement
+
 Duration Protection
 Contract maturity and liquidity trigger are contract-layer rights.
 
