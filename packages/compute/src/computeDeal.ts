@@ -7,8 +7,8 @@ export function computeDeal(
   terms: DealTerms,
   assumptions: ScenarioAssumptions
 ): DealResults {
-  const exitMonths = assumptions.exit_year * 12;
-  const paymentsMade = Math.min(terms.number_of_payments, exitMonths);
+  const exitMonth = Math.floor(assumptions.exit_year * 12);
+  const paymentsMade = Math.min(terms.number_of_payments, exitMonth);
 
   const invested_capital_total = roundMoney(
     terms.upfront_payment + sumPayments(terms.monthly_payment, paymentsMade)
@@ -36,7 +36,12 @@ export function computeDeal(
   const ceiling_amount = roundMoney(invested_capital_total * terms.ceiling_multiple);
 
   const isa_standard = roundMoney(
-    computeSettlement(terms.downside_mode, isa_pre_floor_cap, floor_amount, ceiling_amount)
+    computeSettlement(
+      terms.downside_mode,
+      isa_pre_floor_cap,
+      floor_amount,
+      ceiling_amount
+    )
   );
 
   const { isa_settlement, dyf_floor_amount, dyf_applied } = applyDurationYieldFloor(
@@ -52,7 +57,7 @@ export function computeDeal(
     invested_capital_total > 0 ? isa_settlement / invested_capital_total : 0
   );
 
-  const cashflows = buildCashflows(terms, paymentsMade, exitMonths, isa_settlement);
+  const cashflows = buildCashflows(terms, paymentsMade, exitMonth, isa_settlement);
   const investor_irr_annual = computeIRR(cashflows);
 
   return {
@@ -73,6 +78,7 @@ export function computeDeal(
     compute_version: COMPUTE_VERSION,
   };
 }
+
 
 function sumPayments(monthly: number, count: number): number {
   return monthly * count;
