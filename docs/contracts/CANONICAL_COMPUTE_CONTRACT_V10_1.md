@@ -7,7 +7,7 @@ Eliminate compute drift across widget, app, and marketing repos by defining a si
 This document supersedes previous chat-derived summaries.
 Replit agents must reference this file when implementing compute logic.
 
-0) Non-Negotiables
+Non-Negotiables
 
 Canonical inputs + outputs use snake_case only.
 
@@ -25,8 +25,10 @@ No silent recompute if canonical snapshot validates.
 
 All math must be deterministic and reproducible.
 
-1) Canonical Inputs
+Canonical Inputs
+
 1A) DealTerms (Binding Once Approved)
+
 export type DownsideMode = "HARD_FLOOR" | "NO_FLOOR";
 
 export interface DealTerms {
@@ -63,47 +65,44 @@ export interface DealTerms {
   duration_yield_floor_min_multiple?: number | null;
 }
 
+
 1B) ScenarioAssumptions (Editable What-If Inputs)
+
 export interface ScenarioAssumptions {
   annual_appreciation: number;   // e.g. 0.04
   closing_cost_pct: number;      // % of FMV at exit
   exit_year: number;             // fractional allowed
-  fmv_override?: number | null;
+  fmv_override?: number;         // aligns with code contract (not nullable)
 }
 
-2) Canonical Outputs
+
+Canonical Outputs
+
+IMPORTANT: This output interface must match packages/compute/src/types.ts exactly.
+
 export interface DealResults {
-  // Core economics
   invested_capital_total: number;
   vested_equity_percentage: number;
   projected_fmv: number;
   base_equity_value: number;
-
   gain_above_capital: number;
-  timing_factor_applied: number;
-
   isa_pre_floor_cap: number;
-
   floor_amount: number;
   ceiling_amount: number;
-
-  isa_standard_pre_dyf: number;
-
-  dyf_floor_amount: number | null;
-  dyf_applied: boolean;
-
   isa_settlement: number;
-
-  // Investor economics
+  dyf_floor_amount: number;
+  dyf_applied: boolean;
   investor_profit: number;
   investor_multiple: number;
   investor_irr_annual: number;
-
   compute_version: string;
 }
 
-3) Deterministic Compute Rules
+
+Deterministic Compute Rules
+
 Step 0 — Exit Month Rule (LOCKED)
+
 exit_month = floor(exit_year * 12)
 payments_made_by_exit = min(number_of_payments, exit_month)
 
@@ -111,9 +110,11 @@ payments_made_by_exit = min(number_of_payments, exit_month)
 Settlement occurs at month = exit_month.
 
 Step 1 — Invested Capital (IBA)
+
 invested_capital_total =
   upfront_payment +
   (monthly_payment * payments_made_by_exit)
+
 
 Step 2 — Equity Vesting (DCA Model)
 
@@ -135,6 +136,7 @@ Total vested:
 vested_equity_percentage =
   equity_upfront + Σ equity_m
 
+
 Step 3 — FMV at Exit
 
 If override exists:
@@ -147,19 +149,28 @@ Else:
 projected_fmv =
   property_value * (1 + annual_appreciation)^exit_year
 
+
 Step 4 — Base Equity Value
+
 base_equity_value =
   projected_fmv * vested_equity_percentage
 
+
 Step 5 — Gain Above Capital
+
 gain_above_capital =
   base_equity_value - invested_capital_total
 
+
 Step 6 — Timing Factor (Gain Only)
-timing_factor_applied =
+
+Define:
+
+TF =
   timing_factor_early if exit_year < payback_window_start_year
   timing_factor_late  if exit_year > payback_window_end_year
   1 otherwise
+
 
 Step 7 — Pre Floor/Cap Settlement
 
@@ -167,31 +178,29 @@ Timing factor applies only to gain:
 
 isa_pre_floor_cap =
   invested_capital_total +
-  (gain_above_capital * timing_factor_applied)
+  (gain_above_capital * TF)
 
-Step 8 — Apply Downside Mode + Ceiling
-floor_amount =
-  invested_capital_total * floor_multiple
 
-ceiling_amount =
-  invested_capital_total * ceiling_multiple
+Step 8 — Apply Downside Mode + Ceiling (Standard Settlement)
+
+floor_amount   = invested_capital_total * floor_multiple
+ceiling_amount = invested_capital_total * ceiling_multiple
 
 
 If HARD_FLOOR:
 
-isa_standard_pre_dyf =
-  clamp(isa_pre_floor_cap, floor_amount, ceiling_amount)
+isa_standard = clamp(isa_pre_floor_cap, floor_amount, ceiling_amount)
 
 
 If NO_FLOOR:
 
-isa_standard_pre_dyf =
-  min(isa_pre_floor_cap, ceiling_amount)
+isa_standard = min(isa_pre_floor_cap, ceiling_amount)
 
-4) Duration Yield Floor (DYF)
+
+Duration Yield Floor (DYF)
+
 LOCKED DECISION:
-
-DYF may override the ceiling cap.
+DYF may override the ceiling cap (i.e., DYF can raise settlement above ceiling in long-duration cases).
 
 DYF activates if:
 
@@ -208,12 +217,8 @@ dyf_floor_amount =
 Final settlement:
 
 isa_settlement =
-  max(isa_standard_pre_dyf, dyf_floor_amount)
+  max(isa_standard, dyf_floor_amount)
 
-
-If DYF not active:
-
-isa_settlement = isa_standard_pre_dyf
 
 DYF Invariants
 
@@ -229,12 +234,16 @@ isa_settlement >= dyf_floor_amount
 
 Settlement may exceed ceiling_amount when DYF applies.
 
-5) Investor Economics
+NOTE: The canonical DealResults type does not currently expose isa_standard. It is described here as a deterministic intermediate for clarity. If required for UI/audit, add as a future versioned output field with tests.
+
+Investor Economics
+
 investor_profit =
   isa_settlement - invested_capital_total
 
 investor_multiple =
   isa_settlement / invested_capital_total
+
 
 IRR Calculation (Deterministic)
 
@@ -245,24 +254,22 @@ Month 1..payments_made_by_exit: -monthly_payment
 Month exit_month: +isa_settlement
 
 
-Solve monthly IRR (deterministic root method).
-
-Annualize:
+Solve monthly IRR deterministically (fixed tolerances). Annualize:
 
 investor_irr_annual =
   (1 + irr_monthly)^12 - 1
 
-6) Fee Model (LOCKED UNITS)
+
+Fee Model (LOCKED UNITS)
+
 Platform Fee
 platform_fee = flat USD
 
-Exit Fee
-exit_fee_amount =
-  projected_fmv * exit_fee_pct
+Exit Fee (LOCKED BASIS)
+exit_fee_amount = projected_fmv * exit_fee_pct
 
 Servicing Fee
-servicing_total =
-  servicing_fee_monthly * payments_made_by_exit
+servicing_total = servicing_fee_monthly * payments_made_by_exit
 
 Fee Policy
 
@@ -276,23 +283,24 @@ Present "net to investor" and "net to homeowner" views separately.
 
 Keep canonical isa_settlement independent of fee deductions.
 
-7) Canonical Snapshot Structure
+Canonical Snapshot Structure
 
 Persist immutably:
 
 {
   "compute_version": "10.1.0",
   "inputs": {
-    "deal_terms": { ... },
-    "scenario": { ... }
+    "deal_terms": { "...": "..." },
+    "scenario": { "...": "..." }
   },
   "outputs": {
-    "results": { ... }
+    "results": { "...": "..." }
   },
   "computed_at": "ISO-8601"
 }
 
-8) Required Drift Guards
+
+Required Drift Guards
 
 All repos must enforce:
 
@@ -306,9 +314,9 @@ Invariant tests:
 
 HARD_FLOOR never below floor_amount.
 
-Standard mode never above ceiling_amount.
+Standard mode never above ceiling_amount unless DYF applies.
 
-DYF override behavior.
+DYF override behavior + invariants.
 
 investor_multiple correctness.
 
@@ -316,7 +324,7 @@ IRR reproducibility.
 
 No legacy compute imports in app/marketing after migration.
 
-9) Explicitly Out of Scope (Not Part of Compute)
+Explicitly Out of Scope (Not Part of Compute)
 
 Default remedies
 
@@ -332,13 +340,13 @@ Dispute resolution
 
 These belong to workflow/legal layer, not compute kernel.
 
-10) Versioning Policy
+Versioning Policy
 
 Any change to:
 
 settlement formula
 
-fee base
+fee base/basis
 
 DYF behavior
 
