@@ -8,7 +8,7 @@ import type {
   ShareSummaryBasicResults,
   SavePayload,
 } from "./types.js";
-import { CONTRACT_VERSION, SCHEMA_VERSION } from "./types.js";
+import { CONTRACT_VERSION } from "./types.js"; // keep contract version dynamic
 import { deterministicHash } from "./hash.js";
 
 function extractDraftInputs(inputs: ScenarioInputs): DraftSnapshotInputs {
@@ -20,7 +20,9 @@ function extractDraftInputs(inputs: ScenarioInputs): DraftSnapshotInputs {
   };
 }
 
-function extractDraftBasicResults(outputs: ScenarioOutputs): DraftSnapshotBasicResults {
+function extractDraftBasicResults(
+  outputs: ScenarioOutputs,
+): DraftSnapshotBasicResults {
   return {
     standard_net_payout: outputs.settlements.standard.netPayout,
     early_net_payout: outputs.settlements.early.netPayout,
@@ -31,7 +33,9 @@ function extractDraftBasicResults(outputs: ScenarioOutputs): DraftSnapshotBasicR
   };
 }
 
-function extractShareBasicResults(outputs: ScenarioOutputs): ShareSummaryBasicResults {
+function extractShareBasicResults(
+  outputs: ScenarioOutputs,
+): ShareSummaryBasicResults {
   return {
     standard_net_payout: outputs.settlements.standard.netPayout,
     early_net_payout: outputs.settlements.early.netPayout,
@@ -54,7 +58,7 @@ export async function buildDraftSnapshot(
 
   return {
     contract_version: CONTRACT_VERSION,
-    schema_version: SCHEMA_VERSION,
+    schema_version: "v1", // ✅ fixed
     persona,
     mode: "marketing",
     inputs,
@@ -72,7 +76,7 @@ export function buildShareSummary(
 ): ShareSummary {
   return {
     contract_version: CONTRACT_VERSION,
-    schema_version: SCHEMA_VERSION,
+    schema_version: "v1", // ✅ fixed
     persona,
     inputs: extractDraftInputs(normalizedInputs),
     basic_results: extractShareBasicResults(outputs),
@@ -96,7 +100,7 @@ export async function buildSavePayload(
 
   return {
     contract_version: CONTRACT_VERSION,
-    schema_version: SCHEMA_VERSION,
+    schema_version: "v1", // ✅ fixed
     persona,
     mode: "app",
     inputs: normalizedInputs,
