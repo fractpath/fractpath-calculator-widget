@@ -1,5 +1,6 @@
 import { createRoot, type Root } from "react-dom/client";
 import App from "./App";
+import { mountFractpathWidget } from "./embed";
 
 type Persona = "Buyer" | "Homeowner" | "Realtor";
 
@@ -77,6 +78,7 @@ declare global {
       setPersona?: (persona: Persona) => void;
       resetScenario?: () => void;
       getScenarioSummary?: () => string;
+      mountFractpathWidget?: typeof mountFractpathWidget;
       __version?: string;
     };
   }
@@ -91,5 +93,6 @@ window.FractPathCalculator = {
   setPersona,
   resetScenario,
   getScenarioSummary,
+  mountFractpathWidget,
   __version: WIDGET_VERSION,
 };
