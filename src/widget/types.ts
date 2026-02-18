@@ -12,6 +12,20 @@ export type CalculatorMode = "marketing" | "app";
 export const CONTRACT_VERSION = "1.0.0";
 export const SCHEMA_VERSION = "1.0.0";
 
+/**
+ * Minimal canonical snapshot type for app-mode embedding.
+ * Host (fractpath-app) is source of truth; widget must not mutate shape.
+ */
+export type FullDealSnapshotV1 = {
+  contract_version: string;
+  schema_version: string;
+  deal_terms: Record<string, unknown>;
+  assumptions: Record<string, unknown>;
+  outputs: Record<string, unknown>;
+  now_iso?: string;
+  created_at?: string;
+};
+
 export type DraftSnapshotInputs = {
   homeValue: number;
   initialBuyAmount: number;
@@ -76,8 +90,15 @@ export type WidgetEvent =
 export type FractPathCalculatorWidgetProps = {
   persona: CalculatorPersona;
   mode?: CalculatorMode;
+
+  // App mode hydration (no compute on mount when provided)
+  initialSnapshot?: FullDealSnapshotV1;
+
   onDraftSnapshot?: (snapshot: DraftSnapshot) => void;
   onShareSummary?: (summary: ShareSummary) => void;
-  onSave?: (payload: SavePayload) => void;
+
+  // In app mode we will call onSave with a canonical snapshot
+  onSave?: (payload: SavePayload | FullDealSnapshotV1) => void;
+
   onEvent?: (event: WidgetEvent) => void;
 };
