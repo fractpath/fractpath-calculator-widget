@@ -1,6 +1,7 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js";
+import { DraftStateHarness } from "./widget/dev/DraftStateHarness.js";
 import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
 import "./index.css";
 
@@ -56,6 +57,7 @@ function DevHarness() {
         onSave={(payload) => console.log("[onSave]", payload)}
         onEvent={(e) => console.log("[WidgetEvent]", e)}
       />
+      <DraftStateHarness />
     </div>
   );
 }
