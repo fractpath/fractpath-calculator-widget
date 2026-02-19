@@ -16,7 +16,9 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Contract docs**: `docs/architecture/integration-contract.md`
 - **Sprint 10 specs**: `docs/financial-core/` (compute spec, runbook, integration specs)
 - **Editing layer**: `src/widget/editing/` (WGT-001 unified draft state, Tier 1 preview, blur compute, validation)
-- **Dev harness**: `src/widget/dev/DraftStateHarness.tsx` (WGT-001 dev test component)
+- **Field registry**: `src/widget/editing/fieldMeta.ts` (WGT-002 — 19-entry metadata registry with tooltips, anchors, ranges, dynamic percent anchors)
+- **Tab config**: `src/widget/editing/tabConfig.ts` (WGT-002 — 5 tabs: payments, ownership, assumptions, protections, fees)
+- **Dev harness**: `src/widget/dev/DraftStateHarness.tsx` (WGT-001) + `FieldMetaHarness.tsx` (WGT-002)
 - **Tests**: `src/__tests__/` (widget tests) + `src/widget/editing/__tests__/` (editing tests) + `packages/compute/tests/` (compute module tests)
 
 ## Key Files
@@ -45,7 +47,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (126 tests across 9 suites; 3 pre-existing version string failures in determinism.test.ts)
+- Test with `npm test` → runs vitest (138 tests across 10 suites)
 - Test compute only: `cd packages/compute && npm test` (72 tests across 3 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
@@ -63,6 +65,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-19: WGT-002 — Field metadata registry (19 entries with tooltips/anchors/ranges) + tab config (5 tabs) + FieldMetaHarness + 12 drift guard tests (138 total)
 - 2026-02-19: WGT-001 — Unified canonical draft state layer: DraftCanonicalInputs (deal_terms + scenario), Tier 1 preview (upfrontCash, installmentsLabel, totalInstallments, totalCashPaid), blur-triggered preview compute via @fractpath/compute, MVP validation, useDealDraftState hook, DraftStateHarness dev component, 21 new tests (8 deriveTier1Preview + 13 validateDraft)
 - 2026-02-13: Sprint 10 AGENT-010 — Duration Yield Floor (DYF) feature: 3 optional DealTerms fields, 2 DealResults fields, applyDurationYieldFloor after standard clamp, 16 new tests (72 compute total, 102 repo total)
 - 2026-02-12: Sprint 10 AGENT-001 — Canonical compute module (@fractpath/compute) with DealTerms/ScenarioAssumptions/DealResults, computeDeal(), IRR solver, rounding, 56 tests
