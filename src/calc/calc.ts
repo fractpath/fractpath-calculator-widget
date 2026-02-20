@@ -88,8 +88,7 @@ function settlementMonthForTiming(inputs: ScenarioInputs, timing: SettlementTimi
  * For wiring, we treat initialBuyAmount as an upfront_payment and set monthly_payment=0.
  * This makes settlements canonical (compute) without expanding UI surface area in the same step.
  */
-function toDealTerms(inputs: ScenarioInputs) {
-  const termMonths = Math.max(0, Math.round(inputs.termYears * 12));
+function toDealTerms(inputs: ScenarioInputs): import("@fractpath/compute").DealTerms {
 
   return {
     property_value: inputs.homeValue,
@@ -122,6 +121,10 @@ function toDealTerms(inputs: ScenarioInputs) {
     duration_yield_floor_enabled: false,
     duration_yield_floor_start_year: null,
     duration_yield_floor_min_multiple: null,
+
+    realtor_representation_mode: "NONE",
+    realtor_commission_pct: 0,
+    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
   };
 }
 

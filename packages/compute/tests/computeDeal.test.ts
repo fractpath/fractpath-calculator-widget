@@ -22,6 +22,9 @@ const DEFAULT_TERMS: DealTerms = {
   platform_fee: 5_000,
   servicing_fee_monthly: 49,
   exit_fee_pct: 0.01,
+  realtor_representation_mode: "NONE",
+  realtor_commission_pct: 0,
+  realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
 };
 
 const STANDARD_ASSUMPTIONS: ScenarioAssumptions = {
@@ -121,6 +124,13 @@ describe("computeDeal", () => {
         "isa_settlement",
         "investor_profit",
         "investor_multiple",
+        "timing_factor_applied",
+        "isa_standard_pre_dyf",
+        "realtor_fee_total_projected",
+        "realtor_fee_upfront_projected",
+        "realtor_fee_installments_projected",
+        "buyer_realtor_fee_total_projected",
+        "seller_realtor_fee_total_projected",
       ];
       for (const field of moneyFields) {
         const val = result[field] as number;
@@ -347,7 +357,7 @@ describe("computeDeal", () => {
 
     it("DYF is not applied when not configured", () => {
       expect(result.dyf_applied).toBe(false);
-      expect(result.dyf_floor_amount).toBe(0);
+      expect(result.dyf_floor_amount).toBe(null);
     });
 
     it("all output fields are present", () => {
@@ -357,15 +367,22 @@ describe("computeDeal", () => {
         "projected_fmv",
         "base_equity_value",
         "gain_above_capital",
+        "timing_factor_applied",
         "isa_pre_floor_cap",
         "floor_amount",
         "ceiling_amount",
+        "isa_standard_pre_dyf",
         "isa_settlement",
         "dyf_floor_amount",
         "dyf_applied",
         "investor_profit",
         "investor_multiple",
         "investor_irr_annual",
+        "realtor_fee_total_projected",
+        "realtor_fee_upfront_projected",
+        "realtor_fee_installments_projected",
+        "buyer_realtor_fee_total_projected",
+        "seller_realtor_fee_total_projected",
         "investor_irr_annual_net",
         "compute_version",
       ];
@@ -406,8 +423,8 @@ describe("computeDeal", () => {
         expect(result.dyf_applied).toBe(false);
       });
 
-      it("dyf_floor_amount is 0", () => {
-        expect(result.dyf_floor_amount).toBe(0);
+      it("dyf_floor_amount is null", () => {
+        expect(result.dyf_floor_amount).toBe(null);
       });
 
       it("settlement matches baseline when DYF is disabled", () => {
@@ -486,7 +503,8 @@ describe("computeDeal", () => {
       });
 
       it("settlement is standard (not raised)", () => {
-        expect(result.isa_settlement).toBeGreaterThanOrEqual(result.dyf_floor_amount);
+        expect(result.dyf_floor_amount).not.toBeNull();
+        expect(result.isa_settlement).toBeGreaterThanOrEqual(result.dyf_floor_amount!);
       });
     });
 
@@ -576,6 +594,200 @@ describe("computeDeal", () => {
         for (let i = 1; i < results.length; i++) {
           expect(JSON.stringify(results[i])).toBe(first);
         }
+      });
+    });
+  });
+
+  describe("Realtor commission computation", () => {
+    describe("NONE mode returns all zeros", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        realtor_representation_mode: "NONE",
+        realtor_commission_pct: 0.03,
+        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+      };
+      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
+
+      it("realtor_fee_total_projected is 0", () => {
+        expect(result.realtor_fee_total_projected).toBe(0);
+      });
+
+      it("realtor_fee_upfront_projected is 0", () => {
+        expect(result.realtor_fee_upfront_projected).toBe(0);
+      });
+
+      it("realtor_fee_installments_projected is 0", () => {
+        expect(result.realtor_fee_installments_projected).toBe(0);
+      });
+
+      it("buyer_realtor_fee_total_projected is 0", () => {
+        expect(result.buyer_realtor_fee_total_projected).toBe(0);
+      });
+
+      it("seller_realtor_fee_total_projected is 0", () => {
+        expect(result.seller_realtor_fee_total_projected).toBe(0);
+      });
+    });
+
+    describe("BUYER mode computes correct totals", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        realtor_representation_mode: "BUYER",
+        realtor_commission_pct: 0.03,
+        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+      };
+      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
+
+      it("total = upfront + installments (Section 6C)", () => {
+        expect(result.realtor_fee_total_projected).toBe(
+          roundMoney(result.realtor_fee_upfront_projected + result.realtor_fee_installments_projected)
+        );
+      });
+
+      it("upfront = upfront_payment * commission_pct", () => {
+        expect(result.realtor_fee_upfront_projected).toBe(
+          roundMoney(DEFAULT_TERMS.upfront_payment * 0.03)
+        );
+      });
+
+      it("buyer + seller splits sum to total (Section 6D)", () => {
+        expect(
+          roundMoney(result.buyer_realtor_fee_total_projected + result.seller_realtor_fee_total_projected)
+        ).toBe(result.realtor_fee_total_projected);
+      });
+
+      it("total is positive", () => {
+        expect(result.realtor_fee_total_projected).toBeGreaterThan(0);
+      });
+    });
+
+    describe("SELLER mode computes correct totals", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        realtor_representation_mode: "SELLER",
+        realtor_commission_pct: 0.025,
+        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+      };
+      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
+
+      it("total = upfront + installments", () => {
+        expect(result.realtor_fee_total_projected).toBe(
+          roundMoney(result.realtor_fee_upfront_projected + result.realtor_fee_installments_projected)
+        );
+      });
+
+      it("buyer + seller splits sum to total", () => {
+        expect(
+          roundMoney(result.buyer_realtor_fee_total_projected + result.seller_realtor_fee_total_projected)
+        ).toBe(result.realtor_fee_total_projected);
+      });
+    });
+
+    describe("DUAL mode computes correct totals", () => {
+      const terms: DealTerms = {
+        ...DEFAULT_TERMS,
+        realtor_representation_mode: "DUAL",
+        realtor_commission_pct: 0.05,
+        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+      };
+      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
+
+      it("total = upfront + installments", () => {
+        expect(result.realtor_fee_total_projected).toBe(
+          roundMoney(result.realtor_fee_upfront_projected + result.realtor_fee_installments_projected)
+        );
+      });
+
+      it("buyer + seller splits sum to total", () => {
+        expect(
+          roundMoney(result.buyer_realtor_fee_total_projected + result.seller_realtor_fee_total_projected)
+        ).toBe(result.realtor_fee_total_projected);
+      });
+
+      it("total is positive", () => {
+        expect(result.realtor_fee_total_projected).toBeGreaterThan(0);
+      });
+    });
+
+    describe("Section 6D — explicit equity-weighted attribution numerics", () => {
+      const pct = 0.03;
+      const terms: DealTerms = {
+        property_value: 500_000,
+        upfront_payment: 50_000,
+        monthly_payment: 1_000,
+        number_of_payments: 120,
+        payback_window_start_year: 3,
+        payback_window_end_year: 10,
+        timing_factor_early: 1,
+        timing_factor_late: 1,
+        floor_multiple: 1,
+        ceiling_multiple: 3,
+        downside_mode: "HARD_FLOOR",
+        contract_maturity_years: 30,
+        liquidity_trigger_year: 12,
+        minimum_hold_years: 3,
+        platform_fee: 0,
+        servicing_fee_monthly: 0,
+        exit_fee_pct: 0,
+        realtor_representation_mode: "BUYER",
+        realtor_commission_pct: pct,
+        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+      };
+      const appreciation = 0.04;
+      const assumptions: ScenarioAssumptions = {
+        annual_appreciation: appreciation,
+        closing_cost_pct: 0,
+        exit_year: 0.25,
+      };
+      const result = computeDeal(terms, assumptions);
+
+      it("upfront attribution uses vested equity AFTER upfront payment", () => {
+        const vestedAfterUpfront = terms.upfront_payment / terms.property_value;
+        const upfrontCommission = terms.upfront_payment * pct;
+        const expectedBuyerUpfront = roundMoney(upfrontCommission * vestedAfterUpfront);
+        const expectedSellerUpfront = roundMoney(upfrontCommission * (1 - vestedAfterUpfront));
+
+        let buyerManual = expectedBuyerUpfront;
+        let sellerManual = expectedSellerUpfront;
+
+        const exitMonth = Math.floor(assumptions.exit_year * 12);
+        const paymentsMade = Math.min(terms.number_of_payments, exitMonth);
+
+        let cumulativeEquity = vestedAfterUpfront;
+        for (let m = 1; m <= paymentsMade; m++) {
+          const pvAtMonth = terms.property_value * Math.pow(1 + appreciation, m / 12);
+          cumulativeEquity += terms.monthly_payment / pvAtMonth;
+          const monthCommission = terms.monthly_payment * pct;
+          buyerManual += monthCommission * cumulativeEquity;
+          sellerManual += monthCommission * (1 - cumulativeEquity);
+        }
+
+        expect(result.buyer_realtor_fee_total_projected).toBe(roundMoney(buyerManual));
+        expect(result.seller_realtor_fee_total_projected).toBe(roundMoney(sellerManual));
+      });
+
+      it("upfront buyer share equals upfront_commission * (upfront/property_value)", () => {
+        const vestedAfterUpfront = terms.upfront_payment / terms.property_value;
+        const upfrontCommission = terms.upfront_payment * pct;
+        expect(result.buyer_realtor_fee_total_projected).toBeGreaterThanOrEqual(
+          roundMoney(upfrontCommission * vestedAfterUpfront)
+        );
+      });
+
+      it("seller share is always positive when vested equity < 100%", () => {
+        expect(result.seller_realtor_fee_total_projected).toBeGreaterThan(0);
+      });
+
+      it("buyer share grows relative to seller as equity vests", () => {
+        const shortResult = computeDeal(terms, { ...assumptions, exit_year: 0.25 });
+        const longResult = computeDeal(terms, { ...assumptions, exit_year: 5 });
+
+        const shortBuyerRatio = shortResult.buyer_realtor_fee_total_projected /
+          (shortResult.buyer_realtor_fee_total_projected + shortResult.seller_realtor_fee_total_projected);
+        const longBuyerRatio = longResult.buyer_realtor_fee_total_projected /
+          (longResult.buyer_realtor_fee_total_projected + longResult.seller_realtor_fee_total_projected);
+
+        expect(longBuyerRatio).toBeGreaterThan(shortBuyerRatio);
       });
     });
   });

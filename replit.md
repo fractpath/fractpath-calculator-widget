@@ -52,8 +52,8 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (142 tests across 10 suites)
-- Test compute only: `cd packages/compute && npm test` (72 tests across 3 suites)
+- Test with `npm test` → runs vitest (160 tests across 10 suites)
+- Test compute only: `cd packages/compute && npm test` (78 tests across 3 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
 ## @fractpath/compute (Sprint 10 AGENT-001)
@@ -70,6 +70,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: v10.2 Contract Alignment — Realtor commission compute per canonical contract. DealTerms realtor fields now required (not optional). DealResults expanded with timing_factor_applied, isa_standard_pre_dyf, 5 realtor fee fields (total/upfront/installments + buyer/seller attribution). dyf_floor_amount changed to number|null. computeDeal implements Section 6C commission totals + Section 6D equity-weighted attribution per payment event with PER_PAYMENT_EVENT guard. DealSnapshotView uses canonical fee outputs. 18 new realtor commission tests incl. explicit numeric attribution verification (160 total, 10 suites). Build passing.
 - 2026-02-20: WGT-004 — Read-only Deal Snapshot View. Added DealSnapshotView (header + status badge + 5 detail tabs), DealKpiStrip (6 horizontal KPI cards), EquityTransferChart (placeholder — compute v10.2 has no schedule series). All values from canonical compute outputs, no duplicate math. Conditional DYF/FMV/realtor rendering. SnapshotViewHarness dev component. (142 tests, build passing)
 - 2026-02-20: WGT-003 — Deal Edit Modal (Wizard + Kiosk Inputs). Added DealEditModal, KioskSelect, PreviewPanel, HelpTooltip components. Metadata-driven rendering of all 27 fields via TAB_CONFIG + FIELD_META. Realtor coupling: NONE forces commission=0 and disables control. Percent fields convert display→decimal on blur. Compute triggers on blur/anchor/enum. Save disabled for realtor persona. EditModalHarness dev component. (142 tests, build passing)
 - 2026-02-20: WGT-000 — Aligned widget draft + field registry to canonical compute v10.2.0. Added 3 realtor fields (representation_mode, commission_pct, payment_mode) and investor_irr_annual_net (null) to DealTerms/DealResults. Expanded field registry from 19→27 entries (3 realtor + servicing_fee_monthly + liquidity_trigger_year + 3 DYF). Added realtor commission validation (0-6%, 0% when NONE). Updated snapshot mapper with realtor defaults. Tab config: 5 tabs with DYF section under Protections, Realtor section under Fees. 4 new validation tests (142 total, 10 suites). Build passing.

@@ -29,6 +29,10 @@ function baseTerms(overrides: Partial<DealTerms> = {}): DealTerms {
     duration_yield_floor_start_year: null,
     duration_yield_floor_min_multiple: null,
 
+    realtor_representation_mode: "NONE",
+    realtor_commission_pct: 0,
+    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+
     ...overrides,
   };
 }

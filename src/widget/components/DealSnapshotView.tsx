@@ -86,12 +86,11 @@ function buildKpis(results: DealResults, inputs: DealSnapshotViewProps["inputs"]
   ];
 
   const mode = inputs.deal_terms.realtor_representation_mode;
-  const commPct = inputs.deal_terms.realtor_commission_pct ?? 0;
-  if (mode && mode !== "NONE") {
-    const projectedFee = results.isa_settlement * commPct;
+  const commPct = inputs.deal_terms.realtor_commission_pct;
+  if (mode !== "NONE") {
     kpis.push({
       label: "Realtor Fee (est.)",
-      value: fmtCurrency(projectedFee),
+      value: fmtCurrency(results.realtor_fee_total_projected),
       sublabel: `${fmtPct(commPct)} \u00b7 ${mode}`,
     });
   } else {
@@ -113,6 +112,7 @@ function getCashFlowRows(results: DealResults): DlRow[] {
     { label: "Return multiple", value: fmtMultiple(results.investor_multiple) },
     { label: "Annual IRR", value: fmtPct(results.investor_irr_annual) },
     { label: "Annual IRR (net)", value: results.investor_irr_annual_net != null ? fmtPct(results.investor_irr_annual_net) : "Not computed" },
+    { label: "Timing factor applied", value: fmtMultiple(results.timing_factor_applied) },
   ];
 }
 
@@ -142,7 +142,7 @@ function getProtectionRows(inputs: DealSnapshotViewProps["inputs"], results: Dea
       { label: "DYF enabled", value: "Yes" },
       { label: "DYF start year", value: `${inputs.deal_terms.duration_yield_floor_start_year ?? "—"} yr` },
       { label: "DYF min multiple", value: inputs.deal_terms.duration_yield_floor_min_multiple != null ? fmtMultiple(inputs.deal_terms.duration_yield_floor_min_multiple) : "—" },
-      { label: "DYF floor amount", value: fmtCurrency(results.dyf_floor_amount) },
+      { label: "DYF floor amount", value: results.dyf_floor_amount != null ? fmtCurrency(results.dyf_floor_amount) : "—" },
       { label: "DYF applied", value: results.dyf_applied ? "Yes" : "No" },
     );
   } else {
@@ -152,17 +152,21 @@ function getProtectionRows(inputs: DealSnapshotViewProps["inputs"], results: Dea
   return rows;
 }
 
-function getFeeRows(inputs: DealSnapshotViewProps["inputs"]): DlRow[] {
+function getFeeRows(inputs: DealSnapshotViewProps["inputs"], results: DealResults): DlRow[] {
   const rows: DlRow[] = [
     { label: "Platform fee", value: fmtCurrency(inputs.deal_terms.platform_fee) },
     { label: "Servicing fee (monthly)", value: fmtCurrency(inputs.deal_terms.servicing_fee_monthly) },
     { label: "Exit fee", value: fmtPct(inputs.deal_terms.exit_fee_pct) },
   ];
 
-  const mode = inputs.deal_terms.realtor_representation_mode ?? "NONE";
+  const mode = inputs.deal_terms.realtor_representation_mode;
   rows.push({ label: "Realtor representation", value: mode === "NONE" ? "None" : mode });
-  rows.push({ label: "Realtor commission", value: fmtPct(inputs.deal_terms.realtor_commission_pct ?? 0) });
-  rows.push({ label: "Commission payment mode", value: inputs.deal_terms.realtor_commission_payment_mode ?? "PER_PAYMENT_EVENT" });
+  rows.push({ label: "Realtor commission", value: fmtPct(inputs.deal_terms.realtor_commission_pct) });
+  rows.push({ label: "Commission payment mode", value: inputs.deal_terms.realtor_commission_payment_mode });
+  rows.push({ label: "Realtor fee (upfront)", value: fmtCurrency(results.realtor_fee_upfront_projected) });
+  rows.push({ label: "Realtor fee (installments)", value: fmtCurrency(results.realtor_fee_installments_projected) });
+  rows.push({ label: "Buyer attribution", value: fmtCurrency(results.buyer_realtor_fee_total_projected) });
+  rows.push({ label: "Seller attribution", value: fmtCurrency(results.seller_realtor_fee_total_projected) });
 
   return rows;
 }
@@ -193,7 +197,7 @@ function getTabContent(tab: DetailTab, inputs: DealSnapshotViewProps["inputs"], 
     case "cash_flow": return getCashFlowRows(results);
     case "ownership": return getOwnershipRows(inputs, results);
     case "protections": return getProtectionRows(inputs, results);
-    case "fees": return getFeeRows(inputs);
+    case "fees": return getFeeRows(inputs, results);
     case "assumptions": return getAssumptionRows(inputs);
   }
 }
