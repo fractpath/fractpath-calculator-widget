@@ -16,10 +16,10 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Contract docs**: `docs/architecture/integration-contract.md`
 - **Sprint 10 specs**: `docs/financial-core/` (compute spec, runbook, integration specs)
 - **Editing layer**: `src/widget/editing/` (WGT-001 unified draft state, Tier 1 preview, blur compute, validation)
-- **Field registry**: `src/widget/editing/fieldMeta.ts` (WGT-002 — 19-entry metadata registry with tooltips, anchors, ranges, dynamic percent anchors)
+- **Field registry**: `src/widget/editing/fieldMeta.ts` (WGT-002 — 27-entry metadata registry with tooltips, anchors, ranges, dynamic percent anchors)
 - **Tab config**: `src/widget/editing/tabConfig.ts` (WGT-002 — 5 tabs: payments, ownership, assumptions, protections, fees)
 - **Dev harness**: `src/widget/dev/DraftStateHarness.tsx` (WGT-001) + `FieldMetaHarness.tsx` (WGT-002)
-- **Tests**: `src/__tests__/` (widget tests) + `src/widget/editing/__tests__/` (editing tests) + `packages/compute/tests/` (compute module tests)
+- **Tests**: `src/__tests__/` (widget tests) + `src/widget/editing/__tests__/` (editing tests) + `packages/compute/tests/` (compute module tests) — 142 tests total across 10 suites
 
 ## Key Files
 - `vite.config.ts` - Vite config with ES lib build and dev server (port 5000)
@@ -34,6 +34,8 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - `src/calc/constants.ts` - DEFAULT_INPUTS and default rates
 - `src/main.tsx` - Dev harness entry point
 - `docs/architecture/integration-contract.md` - Integration contract (WGT-INT-001)
+- `src/widget/editing/defaults.ts` - Default draft canonical inputs (incl. realtor defaults)
+- `src/widget/editing/validateDraft.ts` - Draft validation rules (incl. realtor commission constraints)
 
 ## Widget Modes
 - **marketing**: Shows Basic Results only (hero metric + settlement timing/net payout). Has "Save & Continue" (emits DraftSnapshot) and "Share" (emits ShareSummary) CTAs. No chart, no detailed fields.
@@ -48,7 +50,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (138 tests across 10 suites)
+- Test with `npm test` → runs vitest (142 tests across 10 suites)
 - Test compute only: `cd packages/compute && npm test` (72 tests across 3 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
@@ -66,6 +68,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: WGT-000 — Aligned widget draft + field registry to canonical compute v10.2.0. Added 3 realtor fields (representation_mode, commission_pct, payment_mode) and investor_irr_annual_net (null) to DealTerms/DealResults. Expanded field registry from 19→27 entries (3 realtor + servicing_fee_monthly + liquidity_trigger_year + 3 DYF). Added realtor commission validation (0-6%, 0% when NONE). Updated snapshot mapper with realtor defaults. Tab config: 5 tabs with DYF section under Protections, Realtor section under Fees. 4 new validation tests (142 total, 10 suites). Build passing.
 - 2026-02-20: Phase 1 — Widget emits canonical FullDealSnapshotV1 with 10.2 versions. FullDealSnapshotV1 type now uses canonical DealTerms/ScenarioAssumptions/DealResults from @fractpath/compute. Added mapWidgetInputsToDealTerms (with documented defaults), mapWidgetInputsToAssumptions, buildFullDealSnapshotV1 to snapshot.ts. wired.tsx handleSave emits FullDealSnapshotV1 via computeDeal. now_iso + created_at required. Exported from lib/index.ts. (138 tests, build + pack passing)
 - 2026-02-20: Phase 0 version unification — COMPUTE_VERSION → 10.2.0, CONTRACT_VERSION → 10.2.0, SCHEMA_VERSION → "1", eliminated all inline version literals, package.json aligned (138 tests passing)
 - 2026-02-19: WGT-002 — Field metadata registry (19 entries with tooltips/anchors/ranges) + tab config (5 tabs) + FieldMetaHarness + 12 drift guard tests (138 total)
