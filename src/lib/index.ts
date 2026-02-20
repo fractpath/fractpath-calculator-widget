@@ -37,6 +37,9 @@ export type {
   ValueFormat,
 } from "../widget/personaPresentation.js";
 
+// --- Marketing persona list (Sprint 11 WGT-005) ---
+export { MARKETING_PERSONAS } from "../widget/wired.js";
+
 // --- Persona translation layer (Sprint 11 WGT-UX-011) ---
 export { getLabel, getSummaryOrder, getPersonaConfig } from "../widget/persona.js";
 

@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FractPathCalculatorWidgetProps } from "./types.js";
 import type { CalculatorPersona } from "./types.js";
-import type { DealTerms, ScenarioAssumptions, RealtorRepresentationMode } from "@fractpath/compute";
+import type {
+  DealTerms,
+  ScenarioAssumptions,
+  RealtorRepresentationMode,
+} from "@fractpath/compute";
 import { computeDeal } from "@fractpath/compute";
 
 import { computeScenario } from "../calc/calc.js";
@@ -9,14 +13,15 @@ import { buildChartSeries } from "../calc/chart.js";
 import { EquityChart } from "../components/EquityChart.js";
 import { formatCurrency, formatPct, formatMonth } from "./format.js";
 import { getLabel } from "./persona.js";
-import {
-  buildFullDealSnapshotV1,
-} from "./snapshot.js";
+import { buildFullDealSnapshotV1 } from "./snapshot.js";
 import { deterministicHash } from "./hash.js";
 import { CONTRACT_VERSION, SCHEMA_VERSION } from "./types.js";
 import { FEE_DEFAULTS } from "./editing/feeDefaults.js";
 import { resolvePersonaPresentation } from "./personaPresentation.js";
 import { SimpleBarChart } from "./components/SimpleBarChart.js";
+import { DealEditModal } from "./components/DealEditModal.js";
+import { useDealDraftState } from "./editing/useDealDraftState.js";
+import type { DraftCanonicalInputs } from "./editing/types.js";
 
 export type MarketingLiteState = {
   propertyValue: number;
@@ -39,8 +44,8 @@ export function buildMarketingDealTerms(state: MarketingLiteState): DealTerms {
     payback_window_end_year: Math.max(1, Math.ceil((state.exitYear * 2) / 3)),
     timing_factor_early: 1,
     timing_factor_late: 1,
-    floor_multiple: 1.10,
-    ceiling_multiple: 2.00,
+    floor_multiple: 1.1,
+    ceiling_multiple: 2.0,
     downside_mode: "HARD_FLOOR",
     contract_maturity_years: 30,
     liquidity_trigger_year: 13,
@@ -57,7 +62,9 @@ export function buildMarketingDealTerms(state: MarketingLiteState): DealTerms {
   };
 }
 
-export function buildMarketingAssumptions(state: MarketingLiteState): ScenarioAssumptions {
+export function buildMarketingAssumptions(
+  state: MarketingLiteState,
+): ScenarioAssumptions {
   return {
     annual_appreciation: state.growthRatePct / 100,
     closing_cost_pct: 0,
@@ -65,7 +72,35 @@ export function buildMarketingAssumptions(state: MarketingLiteState): ScenarioAs
   };
 }
 
-const MARKETING_PERSONAS: CalculatorPersona[] = ["buyer", "homeowner", "realtor"];
+const MARKETING_PERSONAS: CalculatorPersona[] = [
+  "buyer",
+  "homeowner",
+  "realtor",
+];
+
+function EditModalMount(props: {
+  initial: DraftCanonicalInputs;
+  persona: CalculatorPersona;
+  onClose: () => void;
+  onSaved: (saved: DraftCanonicalInputs) => void;
+}) {
+  const { draft, errors, preview, setField, onBlurCompute } = useDealDraftState(
+    props.initial,
+  );
+
+  return (
+    <DealEditModal
+      draft={draft}
+      errors={errors}
+      preview={preview}
+      persona={props.persona}
+      setField={setField}
+      onBlurCompute={onBlurCompute}
+      onSave={(saved) => props.onSaved(saved)}
+      onClose={props.onClose}
+    />
+  );
+}
 
 const inputLabelStyle: React.CSSProperties = {
   display: "block",
@@ -135,7 +170,8 @@ function isDevMode(): boolean {
   try {
     return (
       import.meta.env.VITE_DEV_HARNESS === "true" ||
-      new URLSearchParams(window.location.search).get("DEV_HARNESS") === "true" ||
+      new URLSearchParams(window.location.search).get("DEV_HARNESS") ===
+        "true" ||
       import.meta.env.DEV === true
     );
   } catch {
@@ -148,10 +184,14 @@ function getDevAuth(): "loggedOut" | "viewer" | "editor" | null {
   if (typeof window === "undefined") return null;
   try {
     const param = new URLSearchParams(window.location.search).get("devAuth");
-    if (param === "editor" || param === "viewer" || param === "loggedOut") return param;
+    if (param === "editor" || param === "viewer" || param === "loggedOut")
+      return param;
     const envVal = import.meta.env.VITE_DEV_AUTH;
-    if (envVal === "editor" || envVal === "viewer" || envVal === "loggedOut") return envVal;
-  } catch { /* ignore */ }
+    if (envVal === "editor" || envVal === "viewer" || envVal === "loggedOut")
+      return envVal;
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 
@@ -186,7 +226,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const isMarketing = mode === "marketing";
 
   const devAuth = getDevAuth();
-  const canEdit = devAuth === "editor" ? true : devAuth === "viewer" || devAuth === "loggedOut" ? false : (canEditProp ?? false);
+  const canEdit =
+    devAuth === "editor"
+      ? true
+      : devAuth === "viewer" || devAuth === "loggedOut"
+        ? false
+        : (canEditProp ?? false);
 
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -197,26 +242,50 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const [exitYear, setExitYear] = useState(10);
   const [growthRatePct, setGrowthRatePct] = useState(3.0);
 
-  const [realtorMode, setRealtorMode] = useState<RealtorRepresentationMode>("NONE");
+  const [realtorMode, setRealtorMode] =
+    useState<RealtorRepresentationMode>("NONE");
   const [realtorPct, setRealtorPct] = useState(0);
 
   useEffect(() => {
     onEvent?.({ type: "calculator_used", persona });
   }, [persona, onEvent]);
 
-  const liteState: MarketingLiteState = useMemo(() => ({
-    propertyValue,
-    upfrontPayment,
-    monthlyPayment,
-    numberOfPayments,
-    exitYear,
-    growthRatePct,
-    realtorMode,
-    realtorPct,
-  }), [propertyValue, upfrontPayment, monthlyPayment, numberOfPayments, exitYear, growthRatePct, realtorMode, realtorPct]);
+  const liteState: MarketingLiteState = useMemo(
+    () => ({
+      propertyValue,
+      upfrontPayment,
+      monthlyPayment,
+      numberOfPayments,
+      exitYear,
+      growthRatePct,
+      realtorMode,
+      realtorPct,
+    }),
+    [
+      propertyValue,
+      upfrontPayment,
+      monthlyPayment,
+      numberOfPayments,
+      exitYear,
+      growthRatePct,
+      realtorMode,
+      realtorPct,
+    ],
+  );
 
-  const dealTerms = useMemo(() => buildMarketingDealTerms(liteState), [liteState]);
-  const assumptions = useMemo(() => buildMarketingAssumptions(liteState), [liteState]);
+  const dealTerms = useMemo(
+    () => buildMarketingDealTerms(liteState),
+    [liteState],
+  );
+  const assumptions = useMemo(
+    () => buildMarketingAssumptions(liteState),
+    [liteState],
+  );
+
+  const initialDraft = useMemo(
+    () => ({ deal_terms: dealTerms, scenario: assumptions }),
+    [dealTerms, assumptions],
+  );
 
   const canonicalResult = useMemo(
     () => computeDeal(dealTerms, assumptions),
@@ -224,7 +293,13 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   );
 
   const presentation = useMemo(
-    () => resolvePersonaPresentation(persona, dealTerms, assumptions, canonicalResult),
+    () =>
+      resolvePersonaPresentation(
+        persona,
+        dealTerms,
+        assumptions,
+        canonicalResult,
+      ),
     [persona, dealTerms, assumptions, canonicalResult],
   );
 
@@ -294,7 +369,17 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         created_at: new Date().toISOString(),
       });
     }
-  }, [persona, propertyValue, upfrontPayment, exitYear, growthRatePct, canonicalResult, settlementMonth, onDraftSnapshot, onEvent]);
+  }, [
+    persona,
+    propertyValue,
+    upfrontPayment,
+    exitYear,
+    growthRatePct,
+    canonicalResult,
+    settlementMonth,
+    onDraftSnapshot,
+    onEvent,
+  ]);
 
   const handleMarketingShare = useCallback(() => {
     onEvent?.({ type: "share_clicked", persona });
@@ -317,7 +402,16 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         created_at: new Date().toISOString(),
       });
     }
-  }, [persona, propertyValue, upfrontPayment, exitYear, growthRatePct, canonicalResult, onShareSummary, onEvent]);
+  }, [
+    persona,
+    propertyValue,
+    upfrontPayment,
+    exitYear,
+    growthRatePct,
+    canonicalResult,
+    onShareSummary,
+    onEvent,
+  ]);
 
   const readonlyChips = useMemo(() => {
     const chips: { label: string; value: string }[] = [
@@ -332,7 +426,16 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       chips.push({ label: "Realtor", value: `${realtorMode} ${realtorPct}%` });
     }
     return chips;
-  }, [propertyValue, upfrontPayment, monthlyPayment, numberOfPayments, exitYear, growthRatePct, realtorMode, realtorPct]);
+  }, [
+    propertyValue,
+    upfrontPayment,
+    monthlyPayment,
+    numberOfPayments,
+    exitYear,
+    growthRatePct,
+    realtorMode,
+    realtorPct,
+  ]);
 
   return (
     <div
@@ -408,19 +511,27 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isApp ? "1fr" : "minmax(220px, 1fr) minmax(320px, 2fr)",
+          gridTemplateColumns: isApp
+            ? "1fr"
+            : "minmax(220px, 1fr) minmax(320px, 2fr)",
           gap: 20,
         }}
       >
         {isMarketing && (
           <div>
-            <h3 style={{ margin: "0 0 12px 0", fontSize: 14, color: "#374151" }}>
+            <h3
+              style={{ margin: "0 0 12px 0", fontSize: 14, color: "#374151" }}
+            >
               Inputs
             </h3>
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel("deal_terms.property_value", persona, "Home Value ($)")}
+                {getLabel(
+                  "deal_terms.property_value",
+                  persona,
+                  "Home Value ($)",
+                )}
               </label>
               <input
                 type="text"
@@ -435,7 +546,11 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel("deal_terms.upfront_payment", persona, "Upfront Payment ($)")}
+                {getLabel(
+                  "deal_terms.upfront_payment",
+                  persona,
+                  "Upfront Payment ($)",
+                )}
               </label>
               <input
                 type="text"
@@ -452,7 +567,11 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel("deal_terms.monthly_payment", persona, "Monthly Installment ($)")}
+                {getLabel(
+                  "deal_terms.monthly_payment",
+                  persona,
+                  "Monthly Installment ($)",
+                )}
               </label>
               <input
                 type="text"
@@ -460,15 +579,15 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                 style={inputStyle}
                 value={monthlyPayment.toLocaleString()}
                 onChange={(e) => {
-                  setMonthlyPayment(parseNumber(e.target.value, monthlyPayment));
+                  setMonthlyPayment(
+                    parseNumber(e.target.value, monthlyPayment),
+                  );
                 }}
               />
             </div>
 
             <div style={inputGroupStyle}>
-              <label style={inputLabelStyle}>
-                Number of Monthly Payments
-              </label>
+              <label style={inputLabelStyle}>Number of Monthly Payments</label>
               <input
                 type="number"
                 min={0}
@@ -527,7 +646,11 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel("deal_terms.realtor_representation_mode", persona, "Realtor Representation")}
+                {getLabel(
+                  "deal_terms.realtor_representation_mode",
+                  persona,
+                  "Realtor Representation",
+                )}
               </label>
               <select
                 value={realtorMode}
@@ -550,7 +673,11 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             {realtorMode !== "NONE" && (
               <div style={inputGroupStyle}>
                 <label style={inputLabelStyle}>
-                  {getLabel("deal_terms.realtor_commission_pct", persona, "Commission (%)")}
+                  {getLabel(
+                    "deal_terms.realtor_commission_pct",
+                    persona,
+                    "Commission (%)",
+                  )}
                 </label>
                 <input
                   type="number"
@@ -571,17 +698,55 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
             {isMarketing && (
               <div style={{ marginTop: 12 }}>
-                <h4 style={{ margin: "0 0 8px 0", fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <h4
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: 12,
+                    color: "#9ca3af",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
                   Fees
                 </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ padding: "6px 10px", background: "#f3f4f6", borderRadius: 6, fontSize: 13, color: "#6b7280", border: "1px solid #e5e7eb" }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  <div
+                    style={{
+                      padding: "6px 10px",
+                      background: "#f3f4f6",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      color: "#6b7280",
+                      border: "1px solid #e5e7eb",
+                    }}
+                  >
                     Platform fee: {formatCurrency(FEE_DEFAULTS.platform_fee)}
                   </div>
-                  <div style={{ padding: "6px 10px", background: "#f3f4f6", borderRadius: 6, fontSize: 13, color: "#6b7280", border: "1px solid #e5e7eb" }}>
-                    Monthly servicing: {formatCurrency(FEE_DEFAULTS.servicing_fee_monthly)}
+                  <div
+                    style={{
+                      padding: "6px 10px",
+                      background: "#f3f4f6",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      color: "#6b7280",
+                      border: "1px solid #e5e7eb",
+                    }}
+                  >
+                    Monthly servicing:{" "}
+                    {formatCurrency(FEE_DEFAULTS.servicing_fee_monthly)}
                   </div>
-                  <div style={{ padding: "6px 10px", background: "#f3f4f6", borderRadius: 6, fontSize: 13, color: "#6b7280", border: "1px solid #e5e7eb" }}>
+                  <div
+                    style={{
+                      padding: "6px 10px",
+                      background: "#f3f4f6",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      color: "#6b7280",
+                      border: "1px solid #e5e7eb",
+                    }}
+                  >
                     Exit fee: {formatPct(FEE_DEFAULTS.exit_fee_pct)}
                   </div>
                 </div>
@@ -603,7 +768,10 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               {presentation.hero.label}
             </div>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
-              {formatChipValue(presentation.hero.value, presentation.hero.valueFormat)}
+              {formatChipValue(
+                presentation.hero.value,
+                presentation.hero.valueFormat,
+              )}
             </div>
             {presentation.hero.subtitle && (
               <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
@@ -624,7 +792,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             {presentation.strip.map((chip, i) => (
               <span key={i} style={chipStyle}>
                 <span style={chipLabelStyle}>{chip.label}:</span>
-                <span style={chipValueStyle}>{formatChipValue(chip.value, chip.valueFormat)}</span>
+                <span style={chipValueStyle}>
+                  {formatChipValue(chip.value, chip.valueFormat)}
+                </span>
               </span>
             ))}
           </div>
@@ -642,30 +812,43 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                 marginBottom: 16,
               }}
             >
-              <div>Projections assume {formatPct(growthRatePct / 100)} annual appreciation.</div>
+              <div>
+                Projections assume {formatPct(growthRatePct / 100)} annual
+                appreciation.
+              </div>
               <div style={{ marginTop: 4 }}>
-                Register free to model different growth scenarios, protections (floor/cap), and early/late settlement timing.
+                Register free to model different growth scenarios, protections
+                (floor/cap), and early/late settlement timing.
               </div>
             </div>
           )}
 
           {isMarketing && (
             <div style={{ marginBottom: 16 }}>
-              <SimpleBarChart bars={presentation.chartSpec.bars} width={480} height={200} />
+              <SimpleBarChart
+                bars={presentation.chartSpec.bars}
+                width={480}
+                height={200}
+              />
             </div>
           )}
 
           {isMarketing && (
-            <div style={{ ...cardStyle, marginBottom: 16, padding: "10px 12px" }}>
+            <div
+              style={{ ...cardStyle, marginBottom: 16, padding: "10px 12px" }}
+            >
               <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>
-                <strong>Standard</strong> · {formatMonth(settlementMonth)} · Net Payout: {formatCurrency(canonicalResult.isa_settlement)}
+                <strong>Standard</strong> · {formatMonth(settlementMonth)} · Net
+                Payout: {formatCurrency(canonicalResult.isa_settlement)}
               </div>
             </div>
           )}
 
           {!isMarketing && appOutputs && (
             <>
-              <h3 style={{ margin: "0 0 8px 0", fontSize: 14, color: "#374151" }}>
+              <h3
+                style={{ margin: "0 0 8px 0", fontSize: 14, color: "#374151" }}
+              >
                 Settlement Scenarios
               </h3>
               <div
@@ -676,11 +859,16 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                   marginBottom: 16,
                 }}
               >
-                {([
-                  { label: "Early", data: appOutputs.settlements.early },
-                  { label: "Standard", data: appOutputs.settlements.standard },
-                  { label: "Late", data: appOutputs.settlements.late },
-                ] as const).map((s) => (
+                {(
+                  [
+                    { label: "Early", data: appOutputs.settlements.early },
+                    {
+                      label: "Standard",
+                      data: appOutputs.settlements.standard,
+                    },
+                    { label: "Late", data: appOutputs.settlements.late },
+                  ] as const
+                ).map((s) => (
                   <div
                     key={s.label}
                     style={{
@@ -693,8 +881,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{s.label}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                        Timing
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {s.label}
+                      </div>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
@@ -703,26 +895,34 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                        Net Payout
+                      </div>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>
                         {formatCurrency(s.data.netPayout)}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Raw Payout</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                        Raw Payout
+                      </div>
                       <div style={{ fontSize: 13 }}>
                         {formatCurrency(s.data.rawPayout)}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Transfer Fee</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                        Transfer Fee
+                      </div>
                       <div style={{ fontSize: 13 }}>
                         {formatCurrency(s.data.transferFeeAmount)} (
                         {formatPct(s.data.transferFeeRate)})
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Clamp</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                        Clamp
+                      </div>
                       <div style={{ fontSize: 13 }}>
                         {s.data.clamp.applied === "none"
                           ? "—"
@@ -753,7 +953,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               data-testid="marketing-bullets"
             >
               {presentation.marketingBullets.map((bullet, i) => (
-                <li key={i} style={{ marginBottom: 2 }}>{bullet}</li>
+                <li key={i} style={{ marginBottom: 2 }}>
+                  {bullet}
+                </li>
               ))}
             </ul>
           )}
@@ -815,66 +1017,59 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
       {isMarketing && isDevMode() && (
         <details style={{ marginTop: 12, fontSize: 11, color: "#6b7280" }}>
-          <summary style={{ cursor: "pointer" }}>Canonical deal_terms (debug)</summary>
-          <pre style={{ whiteSpace: "pre-wrap", background: "#f9fafb", padding: 8, borderRadius: 6, marginTop: 4 }}>
-            {JSON.stringify({ deal_terms: dealTerms, assumptions, result: { isa_settlement: canonicalResult.isa_settlement, invested_capital_total: canonicalResult.invested_capital_total, vested_equity_percentage: canonicalResult.vested_equity_percentage } }, null, 2)}
+          <summary style={{ cursor: "pointer" }}>
+            Canonical deal_terms (debug)
+          </summary>
+          <pre
+            style={{
+              whiteSpace: "pre-wrap",
+              background: "#f9fafb",
+              padding: 8,
+              borderRadius: 6,
+              marginTop: 4,
+            }}
+          >
+            {JSON.stringify(
+              {
+                deal_terms: dealTerms,
+                assumptions,
+                result: {
+                  isa_settlement: canonicalResult.isa_settlement,
+                  invested_capital_total:
+                    canonicalResult.invested_capital_total,
+                  vested_equity_percentage:
+                    canonicalResult.vested_equity_percentage,
+                },
+              },
+              null,
+              2,
+            )}
           </pre>
         </details>
       )}
 
       {showEditModal && canEdit && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
+        <EditModalMount
+          initial={initialDraft}
+          persona={persona}
+          onClose={() => setShowEditModal(false)}
+          onSaved={(saved) => {
+            // Sync widget UI state to saved canonical values
+            setPropertyValue(saved.deal_terms.property_value);
+            setUpfrontPayment(saved.deal_terms.upfront_payment);
+            setMonthlyPayment(saved.deal_terms.monthly_payment);
+            setNumberOfPayments(saved.deal_terms.number_of_payments);
+
+            setExitYear(saved.scenario.exit_year);
+            setGrowthRatePct(saved.scenario.annual_appreciation * 100);
+
+            setRealtorMode(saved.deal_terms.realtor_representation_mode);
+            setRealtorPct(saved.deal_terms.realtor_commission_pct * 100);
+
+        
+            setShowEditModal(false);
           }}
-          data-testid="edit-modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowEditModal(false);
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 24,
-              maxWidth: 600,
-              width: "90%",
-              maxHeight: "80vh",
-              overflow: "auto",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 18 }}>Edit Deal Terms</h3>
-              <button
-                type="button"
-                onClick={() => setShowEditModal(false)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}
-              >
-                ×
-              </button>
-            </div>
-            <p style={{ fontSize: 13, color: "#6b7280" }}>
-              The full tabbed editor (DealEditModal) opens here. This is a placeholder for the existing edit modal integration.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowEditModal(false)}
-              style={{ ...ctaButtonStyle, background: "#111827", color: "#fff", marginTop: 12 }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        />
       )}
 
       <div
@@ -888,10 +1083,16 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         Viewing as <strong>{persona}</strong>
         {" · "}
         Mode: <strong>{mode}</strong>
-        {devAuth && <> · DEV_AUTH: <strong>{devAuth}</strong></>}
+        {devAuth && (
+          <>
+            {" "}
+            · DEV_AUTH: <strong>{devAuth}</strong>
+          </>
+        )}
         {" · "}
         {formatCurrency(propertyValue)} home · {formatCurrency(upfrontPayment)}{" "}
-        upfront · {formatCurrency(monthlyPayment)}×{numberOfPayments}mo · {exitYear}yr · {formatPct(growthRatePct / 100)} growth
+        upfront · {formatCurrency(monthlyPayment)}×{numberOfPayments}mo ·{" "}
+        {exitYear}yr · {formatPct(growthRatePct / 100)} growth
       </div>
     </div>
   );
