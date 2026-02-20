@@ -6,12 +6,13 @@ import { buildChartSeries } from "../calc/chart.js";
 import { DEFAULT_INPUTS } from "../calc/constants.js";
 import { EquityChart } from "../components/EquityChart.js";
 import { formatCurrency, formatPct, formatMonth } from "./format.js";
-import { getPersonaConfig } from "./persona.js";
+import { getPersonaConfig, getLabel } from "./persona.js";
 import {
   buildDraftSnapshot,
   buildShareSummary,
   buildFullDealSnapshotV1,
 } from "./snapshot.js";
+import { FEE_DEFAULTS } from "./editing/feeDefaults.js";
 
 const inputLabelStyle: React.CSSProperties = {
   display: "block",
@@ -52,11 +53,19 @@ const ctaButtonStyle: React.CSSProperties = {
   fontFamily: "system-ui, sans-serif",
 };
 
+const readonlyFeeStyle: React.CSSProperties = {
+  padding: "6px 10px",
+  background: "#f3f4f6",
+  borderRadius: 6,
+  fontSize: 13,
+  color: "#6b7280",
+  border: "1px solid #e5e7eb",
+};
+
 export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const {
     persona,
     mode = "marketing",
-    initialSnapshot,
     onEvent,
     onDraftSnapshot,
     onShareSummary,
@@ -64,7 +73,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   } = props;
 
   const isApp = mode === "app";
-  const [dirty, setDirty] = useState(false);
+  const isMarketing = mode === "marketing";
 
   const [homeValue, setHomeValue] = useState(DEFAULT_INPUTS.homeValue);
   const [initialBuyAmount, setInitialBuyAmount] = useState(
@@ -74,6 +83,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const [growthRatePct, setGrowthRatePct] = useState(
     DEFAULT_INPUTS.annualGrowthRate * 100,
   );
+
+  const [realtorMode, setRealtorMode] = useState<string>("NONE");
+  const [realtorPct, setRealtorPct] = useState(0);
 
   useEffect(() => {
     onEvent?.({ type: "calculator_used", persona });
@@ -94,14 +106,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
   const personaCfg = getPersonaConfig(persona);
   const heroValue = personaCfg.heroValue(outputs);
-
-  const isMarketing = mode === "marketing";
-
-  const settlements = [
-    { label: "Early", data: outputs.settlements.early },
-    { label: "Standard", data: outputs.settlements.standard },
-    { label: "Late", data: outputs.settlements.late },
-  ] as const;
 
   const parseNumber = (raw: string, fallback: number): number => {
     const n = Number(raw.replace(/,/g, ""));
@@ -135,11 +139,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const handleSave = useCallback(() => {
     onEvent?.({ type: "save_clicked", persona });
     if (onSave) {
-      // Emits FullDealSnapshotV1 with contract_version "10.2.0" and schema_version "1"
       const snapshot = buildFullDealSnapshotV1(outputs.normalizedInputs);
       onSave(snapshot);
     }
   }, [outputs, onSave, onEvent, persona]);
+
+  const standardSettlement = outputs.settlements.standard;
 
   return (
     <div
@@ -184,28 +189,30 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           </h3>
 
           <div style={inputGroupStyle}>
-            <label style={inputLabelStyle}>Home Value ($)</label>
+            <label style={inputLabelStyle}>
+              {getLabel("deal_terms.property_value", persona, "Home Value ($)")}
+            </label>
             <input
               type="text"
               inputMode="numeric"
               style={inputStyle}
               value={homeValue.toLocaleString()}
               onChange={(e) => {
-                if (isApp) setDirty(true);
                 setHomeValue(parseNumber(e.target.value, homeValue));
               }}
             />
           </div>
 
           <div style={inputGroupStyle}>
-            <label style={inputLabelStyle}>Initial Buy Amount ($)</label>
+            <label style={inputLabelStyle}>
+              {getLabel("deal_terms.upfront_payment", persona, "Initial Buy Amount ($)")}
+            </label>
             <input
               type="text"
               inputMode="numeric"
               style={inputStyle}
               value={initialBuyAmount.toLocaleString()}
               onChange={(e) => {
-                if (isApp) setDirty(true);
                 setInitialBuyAmount(
                   parseNumber(e.target.value, initialBuyAmount),
                 );
@@ -214,7 +221,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           </div>
 
           <div style={inputGroupStyle}>
-            <label style={inputLabelStyle}>Term (years)</label>
+            <label style={inputLabelStyle}>
+              {getLabel("scenario.exit_year", persona, "Term (years)")}
+            </label>
             <input
               type="number"
               min={1}
@@ -225,31 +234,97 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
                 if (Number.isFinite(v) && v >= 1 && v <= 30) {
-                  if (isApp) setDirty(true);
                   setTermYears(v);
                 }
               }}
             />
           </div>
 
+          {/* Growth rate: editable in app, read-only assumption in marketing */}
+          {isApp && (
+            <div style={inputGroupStyle}>
+              <label style={inputLabelStyle}>Annual Growth Rate (%)</label>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                step={0.1}
+                style={inputStyle}
+                value={growthRatePct}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (Number.isFinite(v) && v >= 0 && v <= 20) {
+                    setGrowthRatePct(v);
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* Realtor inputs */}
           <div style={inputGroupStyle}>
-            <label style={inputLabelStyle}>Annual Growth Rate (%)</label>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              step={0.1}
-              style={inputStyle}
-              value={growthRatePct}
+            <label style={inputLabelStyle}>
+              {getLabel("deal_terms.realtor_representation_mode", persona, "Realtor Representation")}
+            </label>
+            <select
+              value={realtorMode}
               onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                if (Number.isFinite(v) && v >= 0 && v <= 20) {
-                  if (isApp) setDirty(true);
-                  setGrowthRatePct(v);
-                }
+                setRealtorMode(e.target.value);
+                if (e.target.value === "NONE") setRealtorPct(0);
               }}
-            />
+              style={{
+                ...inputStyle,
+                padding: "7px 10px",
+              }}
+            >
+              <option value="NONE">None</option>
+              <option value="BUYER">Buyer</option>
+              <option value="SELLER">Seller</option>
+              <option value="DUAL">Dual</option>
+            </select>
           </div>
+
+          {realtorMode !== "NONE" && (
+            <div style={inputGroupStyle}>
+              <label style={inputLabelStyle}>
+                {getLabel("deal_terms.realtor_commission_pct", persona, "Commission (%)")}
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={6}
+                step={0.5}
+                style={inputStyle}
+                value={realtorPct}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (Number.isFinite(v) && v >= 0 && v <= 6) {
+                    setRealtorPct(v);
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* Fee defaults — read-only display */}
+          {isMarketing && (
+            <div style={{ marginTop: 12 }}>
+              <h4 style={{ margin: "0 0 8px 0", fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Fees
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={readonlyFeeStyle}>
+                  Platform fee: {formatCurrency(FEE_DEFAULTS.platform_fee)}
+                </div>
+                <div style={readonlyFeeStyle}>
+                  Monthly servicing: {formatCurrency(FEE_DEFAULTS.servicing_fee_monthly)}
+                </div>
+                <div style={readonlyFeeStyle}>
+                  Exit fee: {formatPct(FEE_DEFAULTS.exit_fee_pct)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Outputs Panel */}
@@ -273,88 +348,131 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             </div>
           </div>
 
+          {/* Marketing: assumption disclosure */}
+          {isMarketing && (
+            <div
+              style={{
+                padding: "10px 12px",
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
+                borderRadius: 8,
+                fontSize: 12,
+                lineHeight: 1.6,
+                color: "#92400e",
+                marginBottom: 16,
+              }}
+            >
+              <div>Projections assume {formatPct(growthRatePct / 100)} annual appreciation.</div>
+              <div style={{ marginTop: 4 }}>
+                Register free to model different growth scenarios, protections (floor/cap), and early/late settlement timing.
+              </div>
+            </div>
+          )}
+
           {/* Settlement rows */}
           <h3 style={{ margin: "0 0 8px 0", fontSize: 14, color: "#374151" }}>
-            Settlement Scenarios
+            {isMarketing ? "Settlement Projection" : "Settlement Scenarios"}
           </h3>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              marginBottom: 16,
-            }}
-          >
-            {settlements.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  ...cardStyle,
-                  display: "grid",
-                  gridTemplateColumns: isMarketing
-                    ? "1fr 1fr 1fr"
-                    : "1fr 1fr 1fr 1fr 1fr 1fr",
-                  gap: 8,
-                  alignItems: "center",
-                  padding: "10px 12px",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{s.label}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
-                  <div style={{ fontSize: 13 }}>
-                    {formatMonth(s.data.settlementMonth)}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                    Net Payout
-                  </div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>
-                    {formatCurrency(s.data.netPayout)}
-                  </div>
-                </div>
 
-                {/* App-only detailed fields */}
-                {!isMarketing && (
-                  <>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                        Raw Payout
-                      </div>
-                      <div style={{ fontSize: 13 }}>
-                        {formatCurrency(s.data.rawPayout)}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                        Transfer Fee
-                      </div>
-                      <div style={{ fontSize: 13 }}>
-                        {formatCurrency(s.data.transferFeeAmount)} (
-                        {formatPct(s.data.transferFeeRate)})
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                        Clamp
-                      </div>
-                      <div style={{ fontSize: 13 }}>
-                        {s.data.clamp.applied === "none"
-                          ? "—"
-                          : s.data.clamp.applied === "floor"
-                            ? "Floor"
-                            : "Cap"}
-                      </div>
-                    </div>
-                  </>
-                )}
+          {isMarketing ? (
+            /* Marketing: standard scenario only */
+            <div
+              style={{
+                ...cardStyle,
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 8,
+                alignItems: "center",
+                padding: "10px 12px",
+                marginBottom: 16,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>Standard</div>
               </div>
-            ))}
-          </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
+                <div style={{ fontSize: 13 }}>
+                  {formatMonth(standardSettlement.settlementMonth)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>
+                  {formatCurrency(standardSettlement.netPayout)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* App: all settlement scenarios */
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                marginBottom: 16,
+              }}
+            >
+              {([
+                { label: "Early", data: outputs.settlements.early },
+                { label: "Standard", data: outputs.settlements.standard },
+                { label: "Late", data: outputs.settlements.late },
+              ] as const).map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    ...cardStyle,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr",
+                    gap: 8,
+                    alignItems: "center",
+                    padding: "10px 12px",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{s.label}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
+                    <div style={{ fontSize: 13 }}>
+                      {formatMonth(s.data.settlementMonth)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>
+                      {formatCurrency(s.data.netPayout)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Raw Payout</div>
+                    <div style={{ fontSize: 13 }}>
+                      {formatCurrency(s.data.rawPayout)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Transfer Fee</div>
+                    <div style={{ fontSize: 13 }}>
+                      {formatCurrency(s.data.transferFeeAmount)} (
+                      {formatPct(s.data.transferFeeRate)})
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Clamp</div>
+                    <div style={{ fontSize: 13 }}>
+                      {s.data.clamp.applied === "none"
+                        ? "—"
+                        : s.data.clamp.applied === "floor"
+                          ? "Floor"
+                          : "Cap"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Chart — app mode only */}
           {!isMarketing && (

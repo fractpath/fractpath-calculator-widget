@@ -1,6 +1,7 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
 import type { DealTerms, ScenarioAssumptions } from "@fractpath/compute";
 import { computeDeal } from "@fractpath/compute";
+import { FEE_DEFAULTS } from "./editing/feeDefaults.js";
 import {
   CONTRACT_VERSION,
   SCHEMA_VERSION,
@@ -147,10 +148,9 @@ export function mapWidgetInputsToDealTerms(inputs: ScenarioInputs): DealTerms {
     // Default: minimum 1-year hold
     minimum_hold_years: 1,
 
-    // Default fees: zero (widget marketing mode has no fee inputs)
-    platform_fee: 0,
-    servicing_fee_monthly: 0,
-    exit_fee_pct: 0,
+    platform_fee: FEE_DEFAULTS.platform_fee,
+    servicing_fee_monthly: FEE_DEFAULTS.servicing_fee_monthly,
+    exit_fee_pct: FEE_DEFAULTS.exit_fee_pct,
 
     // Default realtor: NONE with 0 commission, PER_PAYMENT_EVENT locked
     realtor_representation_mode: "NONE",

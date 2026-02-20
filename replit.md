@@ -7,7 +7,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Framework**: React 19 + TypeScript + Vite 7
 - **Testing**: Vitest
 - **Build output**: ES module (`dist/index.js`) for library consumption
-- **Dev entry**: `index.html` → `src/main.tsx` (dev harness with persona/mode switcher)
+- **Dev entry**: `index.html` → `src/main.tsx` (dev harness with persona/mode switcher, harness panels gated behind DEV_HARNESS=true)
 - **Lib entry**: `src/lib/index.ts` (public exports for consumers)
 - **Widget**: `src/widget/` (FractPathCalculatorWidget, wired calculator, persona config, formatting, snapshot builders, hashing)
 - **Calc engine (widget)**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
@@ -32,6 +32,8 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - `src/widget/snapshot.ts` - Builders for DraftSnapshot, ShareSummary, SavePayload
 - `src/widget/persona.ts` - Persona config (hero label, hero value selector, helper text)
 - `src/widget/format.ts` - Formatting helpers (currency, percent, month)
+- `src/widget/editing/feeDefaults.ts` - Single-source fee defaults (platform_fee, servicing_fee_monthly, exit_fee_pct)
+- `src/widget/hooks/useKioskInput.ts` - Unified kiosk/custom input behavior hook
 - `src/calc/calc.ts` - Deterministic calc engine (computeScenario)
 - `src/calc/constants.ts` - DEFAULT_INPUTS and default rates
 - `src/main.tsx` - Dev harness entry point
@@ -70,6 +72,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: WGT-UX-011 — Marketing lite + persona translation + UX fixes. (1) Dev harness gated behind VITE_DEV_HARNESS=true or ?DEV_HARNESS=true query param. (2) Centralized fee defaults (platform_fee=2500, servicing_fee_monthly=49, exit_fee_pct=1%) in feeDefaults.ts, wired into defaults.ts + snapshot.ts. (3) Persona translation layer: getLabel(fieldId, persona) for persona-specific input labels, getSummaryOrder(persona) for summary ordering. (4) Marketing lite: standard scenario only, growth rate as read-only assumption text, no floor/ceiling/downside controls, disclosure block with CTA to register. (5) Realtor inputs (representation mode + commission %) in marketing widget. (6) Fee defaults displayed read-only in marketing view. (7) useKioskInput hook for unified kiosk/custom/slider behavior. (8) Modal fixes: portal-rendered tooltips (no clipping), stable modal height, shimmer loading indicator in PreviewPanel, underline tab style. No canonical drift — compute engine, payload shapes, and canonical keys unchanged. 160 tests, 10 suites, build passing.
 - 2026-02-20: v10.2 Contract Alignment — Realtor commission compute per canonical contract. DealTerms realtor fields now required (not optional). DealResults expanded with timing_factor_applied, isa_standard_pre_dyf, 5 realtor fee fields (total/upfront/installments + buyer/seller attribution). dyf_floor_amount changed to number|null. computeDeal implements Section 6C commission totals + Section 6D equity-weighted attribution per payment event with PER_PAYMENT_EVENT guard. DealSnapshotView uses canonical fee outputs. 18 new realtor commission tests incl. explicit numeric attribution verification (160 total, 10 suites). Build passing.
 - 2026-02-20: WGT-004 — Read-only Deal Snapshot View. Added DealSnapshotView (header + status badge + 5 detail tabs), DealKpiStrip (6 horizontal KPI cards), EquityTransferChart (placeholder — compute v10.2 has no schedule series). All values from canonical compute outputs, no duplicate math. Conditional DYF/FMV/realtor rendering. SnapshotViewHarness dev component. (142 tests, build passing)
 - 2026-02-20: WGT-003 — Deal Edit Modal (Wizard + Kiosk Inputs). Added DealEditModal, KioskSelect, PreviewPanel, HelpTooltip components. Metadata-driven rendering of all 27 fields via TAB_CONFIG + FIELD_META. Realtor coupling: NONE forces commission=0 and disables control. Percent fields convert display→decimal on blur. Compute triggers on blur/anchor/enum. Save disabled for realtor persona. EditModalHarness dev component. (142 tests, build passing)

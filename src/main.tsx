@@ -1,12 +1,17 @@
-import { StrictMode, useState } from "react";
+import { StrictMode, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js";
-import { DraftStateHarness } from "./widget/dev/DraftStateHarness.js";
-import { FieldMetaHarness } from "./widget/dev/FieldMetaHarness.js";
-import { EditModalHarness } from "./widget/dev/EditModalHarness.js";
-import { SnapshotViewHarness } from "./widget/dev/SnapshotViewHarness.js";
 import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
 import "./index.css";
+
+const showHarness =
+  import.meta.env.VITE_DEV_HARNESS === "true" ||
+  new URLSearchParams(window.location.search).get("DEV_HARNESS") === "true";
+
+const LazyEditModalHarness = lazy(() => import("./widget/dev/EditModalHarness.js").then(m => ({ default: m.EditModalHarness })));
+const LazySnapshotViewHarness = lazy(() => import("./widget/dev/SnapshotViewHarness.js").then(m => ({ default: m.SnapshotViewHarness })));
+const LazyDraftStateHarness = lazy(() => import("./widget/dev/DraftStateHarness.js").then(m => ({ default: m.DraftStateHarness })));
+const LazyFieldMetaHarness = lazy(() => import("./widget/dev/FieldMetaHarness.js").then(m => ({ default: m.FieldMetaHarness })));
 
 function DevHarness() {
   const [persona, setPersona] = useState<CalculatorPersona>("buyer");
@@ -60,10 +65,14 @@ function DevHarness() {
         onSave={(payload) => console.log("[onSave]", payload)}
         onEvent={(e) => console.log("[WidgetEvent]", e)}
       />
-      <EditModalHarness />
-      <SnapshotViewHarness />
-      <DraftStateHarness />
-      <FieldMetaHarness />
+      {showHarness && (
+        <Suspense fallback={<div style={{ padding: 12, color: "#9ca3af" }}>Loading harness...</div>}>
+          <LazyEditModalHarness />
+          <LazySnapshotViewHarness />
+          <LazyDraftStateHarness />
+          <LazyFieldMetaHarness />
+        </Suspense>
+      )}
     </div>
   );
 }

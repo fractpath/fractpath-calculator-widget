@@ -5,6 +5,7 @@ import { FIELD_META, computeDynamicAnchors } from "../editing/fieldMeta.js";
 import { TAB_CONFIG, type TabKey } from "../editing/tabConfig.js";
 import { hasErrors } from "../editing/validateDraft.js";
 import type { CalculatorPersona } from "../types.js";
+import { getLabel } from "../persona.js";
 import { KioskSelect } from "./KioskSelect.js";
 import { PreviewPanel } from "./PreviewPanel.js";
 import { HelpTooltip } from "./HelpTooltip.js";
@@ -43,8 +44,9 @@ const overlayStyle: React.CSSProperties = {
   inset: 0,
   background: "rgba(0,0,0,0.5)",
   display: "flex",
-  alignItems: "center",
+  alignItems: "flex-start",
   justifyContent: "center",
+  paddingTop: "5vh",
   zIndex: 9999,
   fontFamily: "system-ui, sans-serif",
 };
@@ -53,7 +55,7 @@ const modalStyle: React.CSSProperties = {
   background: "#fff",
   borderRadius: 12,
   width: "min(680px, 95vw)",
-  maxHeight: "90vh",
+  height: "min(85vh, 720px)",
   display: "flex",
   flexDirection: "column",
   boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
@@ -194,6 +196,7 @@ export function DealEditModal({
     const value = getFieldValue(draft, key);
     const error = errors[key];
     const disabled = meta.readOnly || isRealtorDisabled(key);
+    const fieldLabel = getLabel(key, persona, meta.label);
 
     if (meta.control === "info") {
       return (
@@ -225,7 +228,7 @@ export function DealEditModal({
       return (
         <div key={key} style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
-            {meta.label}
+            {fieldLabel}
             <HelpTooltip simpleDefinition={meta.simpleDefinition} impact={meta.impact} />
           </label>
           <select
@@ -253,7 +256,7 @@ export function DealEditModal({
       return (
         <div key={key} style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
-            {meta.label}
+            {fieldLabel}
             <HelpTooltip simpleDefinition={meta.simpleDefinition} impact={meta.impact} />
           </label>
           <div style={readonlyStyle}>{formatDisplayValue(value, meta)}</div>
@@ -265,7 +268,7 @@ export function DealEditModal({
       return (
         <div key={key} style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
-            {meta.label}
+            {fieldLabel}
             <HelpTooltip simpleDefinition={meta.simpleDefinition} impact={meta.impact} />
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -314,7 +317,7 @@ export function DealEditModal({
       return (
         <div key={key} style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
-            {meta.label}
+            {fieldLabel}
             <HelpTooltip simpleDefinition={meta.simpleDefinition} impact={meta.impact} />
           </label>
           <KioskSelect

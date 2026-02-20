@@ -1,4 +1,5 @@
 import type { DraftCanonicalInputs } from "./types.js";
+import { FEE_DEFAULTS } from "./feeDefaults.js";
 
 export function getDefaultDraftCanonicalInputs(): DraftCanonicalInputs {
   return {
@@ -17,9 +18,9 @@ export function getDefaultDraftCanonicalInputs(): DraftCanonicalInputs {
       contract_maturity_years: 30,
       liquidity_trigger_year: 15,
       minimum_hold_years: 3,
-      platform_fee: 0,
-      servicing_fee_monthly: 0,
-      exit_fee_pct: 0.02,
+      platform_fee: FEE_DEFAULTS.platform_fee,
+      servicing_fee_monthly: FEE_DEFAULTS.servicing_fee_monthly,
+      exit_fee_pct: FEE_DEFAULTS.exit_fee_pct,
       realtor_representation_mode: "NONE",
       realtor_commission_pct: 0,
       realtor_commission_payment_mode: "PER_PAYMENT_EVENT",

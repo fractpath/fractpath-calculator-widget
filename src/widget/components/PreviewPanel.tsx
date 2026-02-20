@@ -6,15 +6,25 @@ type PreviewPanelProps = {
   error?: string;
 };
 
-const statusConfig: Record<PreviewStatus, { label: string; color: string; bg: string }> = {
-  idle: { label: "Ready", color: "#6b7280", bg: "#f3f4f6" },
-  computing: { label: "Computing...", color: "#d97706", bg: "#fffbeb" },
-  ok: { label: "Up to date", color: "#059669", bg: "#ecfdf5" },
-  error: { label: "Error", color: "#dc2626", bg: "#fef2f2" },
+const shimmerKeyframes = `
+@keyframes fpShimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+`;
+
+const shimmerStyle: React.CSSProperties = {
+  display: "inline-block",
+  width: 60,
+  height: 12,
+  borderRadius: 4,
+  background: "linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)",
+  backgroundSize: "200px 100%",
+  animation: "fpShimmer 1.5s infinite",
 };
 
 export function PreviewPanel({ tier1, status, error }: PreviewPanelProps) {
-  const st = statusConfig[status];
+  const isComputing = status === "computing";
 
   return (
     <div
@@ -25,6 +35,7 @@ export function PreviewPanel({ tier1, status, error }: PreviewPanelProps) {
         padding: 14,
       }}
     >
+      <style>{shimmerKeyframes}</style>
       <div
         style={{
           display: "flex",
@@ -36,18 +47,7 @@ export function PreviewPanel({ tier1, status, error }: PreviewPanelProps) {
         <span style={{ fontWeight: 600, fontSize: 13, color: "#374151" }}>
           Preview
         </span>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 500,
-            padding: "2px 8px",
-            borderRadius: 10,
-            background: st.bg,
-            color: st.color,
-          }}
-        >
-          {st.label}
-        </span>
+        {isComputing && <span style={shimmerStyle} />}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
