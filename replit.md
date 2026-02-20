@@ -66,6 +66,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: Phase 1 — Widget emits canonical FullDealSnapshotV1 with 10.2 versions. FullDealSnapshotV1 type now uses canonical DealTerms/ScenarioAssumptions/DealResults from @fractpath/compute. Added mapWidgetInputsToDealTerms (with documented defaults), mapWidgetInputsToAssumptions, buildFullDealSnapshotV1 to snapshot.ts. wired.tsx handleSave emits FullDealSnapshotV1 via computeDeal. now_iso + created_at required. Exported from lib/index.ts. (138 tests, build + pack passing)
 - 2026-02-20: Phase 0 version unification — COMPUTE_VERSION → 10.2.0, CONTRACT_VERSION → 10.2.0, SCHEMA_VERSION → "1", eliminated all inline version literals, package.json aligned (138 tests passing)
 - 2026-02-19: WGT-002 — Field metadata registry (19 entries with tooltips/anchors/ranges) + tab config (5 tabs) + FieldMetaHarness + 12 drift guard tests (138 total)
 - 2026-02-19: WGT-001 — Unified canonical draft state layer: DraftCanonicalInputs (deal_terms + scenario), Tier 1 preview (upfrontCash, installmentsLabel, totalInstallments, totalCashPaid), blur-triggered preview compute via @fractpath/compute, MVP validation, useDealDraftState hook, DraftStateHarness dev component, 21 new tests (8 deriveTier1Preview + 13 validateDraft)
