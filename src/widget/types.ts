@@ -88,17 +88,19 @@ export type WidgetEvent =
   | { type: "save_continue_clicked"; persona: CalculatorPersona }
   | { type: "save_clicked"; persona: CalculatorPersona };
 
+export type DevAuthRole = "loggedOut" | "viewer" | "editor";
+
 export type FractPathCalculatorWidgetProps = {
   persona: CalculatorPersona;
   mode?: CalculatorMode;
 
-  // App mode hydration (no compute on mount when provided)
+  canEdit?: boolean;
+
   initialSnapshot?: FullDealSnapshotV1;
 
   onDraftSnapshot?: (snapshot: DraftSnapshot) => void;
   onShareSummary?: (summary: ShareSummary) => void;
 
-  // In app mode we will call onSave with a canonical snapshot
   onSave?: (payload: SavePayload | FullDealSnapshotV1) => void;
 
   onEvent?: (event: WidgetEvent) => void;

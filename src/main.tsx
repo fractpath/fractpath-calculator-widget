@@ -2,7 +2,7 @@ import { StrictMode, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js";
 import { MARKETING_PERSONAS } from "./widget/wired.js";
-import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
+import type { CalculatorPersona, CalculatorMode, DevAuthRole } from "./widget/types.js";
 import "./index.css";
 
 const showHarness =
@@ -10,6 +10,7 @@ const showHarness =
   new URLSearchParams(window.location.search).get("DEV_HARNESS") === "true";
 
 const ALL_PERSONAS: CalculatorPersona[] = ["buyer", "homeowner", "investor", "realtor", "ops"];
+const DEV_AUTH_ROLES: DevAuthRole[] = ["loggedOut", "viewer", "editor"];
 
 const LazyEditModalHarness = lazy(() => import("./widget/dev/EditModalHarness.js").then(m => ({ default: m.EditModalHarness })));
 const LazySnapshotViewHarness = lazy(() => import("./widget/dev/SnapshotViewHarness.js").then(m => ({ default: m.SnapshotViewHarness })));
@@ -19,10 +20,13 @@ const LazyFieldMetaHarness = lazy(() => import("./widget/dev/FieldMetaHarness.js
 function DevHarness() {
   const [persona, setPersona] = useState<CalculatorPersona>("buyer");
   const [mode, setMode] = useState<CalculatorMode>("marketing");
+  const [devAuth, setDevAuth] = useState<DevAuthRole>("loggedOut");
 
   const personaList = (mode === "marketing" && !showHarness)
     ? MARKETING_PERSONAS
     : ALL_PERSONAS;
+
+  const canEdit = devAuth === "editor";
 
   return (
     <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
@@ -63,10 +67,29 @@ function DevHarness() {
             {m}
           </button>
         ))}
+        <span style={{ marginLeft: 12, fontSize: 13, color: "#6b7280" }}>Auth:</span>
+        {DEV_AUTH_ROLES.map((role) => (
+          <button
+            key={role}
+            onClick={() => setDevAuth(role)}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 6,
+              border: devAuth === role ? "2px solid #059669" : "1px solid #d1d5db",
+              background: devAuth === role ? "#059669" : "#fff",
+              color: devAuth === role ? "#fff" : "#374151",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            {role}
+          </button>
+        ))}
       </div>
       <FractPathCalculatorWidget
         persona={persona}
         mode={mode}
+        canEdit={canEdit}
         onDraftSnapshot={(snapshot) => console.log("[onDraftSnapshot]", snapshot)}
         onShareSummary={(summary) => console.log("[onShareSummary]", summary)}
         onSave={(payload) => console.log("[onSave]", payload)}

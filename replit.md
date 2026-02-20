@@ -21,7 +21,9 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Field registry**: `src/widget/editing/fieldMeta.ts` (WGT-002 — 27-entry metadata registry with tooltips, anchors, ranges, dynamic percent anchors)
 - **Tab config**: `src/widget/editing/tabConfig.ts` (WGT-002 — 5 tabs: payments, ownership, assumptions, protections, fees)
 - **Dev harness**: `src/widget/dev/DraftStateHarness.tsx` (WGT-001) + `FieldMetaHarness.tsx` (WGT-002) + `EditModalHarness.tsx` (WGT-003)
-- **Tests**: `src/__tests__/` (widget tests) + `src/widget/editing/__tests__/` (editing tests) + `packages/compute/tests/` (compute module tests) — 142 tests total across 10 suites
+- **Persona presentation**: `src/widget/personaPresentation.ts` (central resolver for hero/strip/chart/bullets per persona — ZERO compute, type-only imports)
+- **SimpleBarChart**: `src/widget/components/SimpleBarChart.tsx` (SVG bar chart for persona charts)
+- **Tests**: `src/__tests__/` (widget tests) + `src/widget/editing/__tests__/` (editing tests) + `packages/compute/tests/` (compute module tests) — 212 tests total across 12 suites
 
 ## Key Files
 - `vite.config.ts` - Vite config with ES lib build and dev server (port 5000)
@@ -54,7 +56,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 ## Development
 - Dev server runs on port 5000 via `npm run dev`
 - Build with `npm run build` → outputs to `dist/`
-- Test with `npm test` → runs vitest (183 tests across 11 suites)
+- Test with `npm test` → runs vitest (212 tests across 12 suites)
 - Test compute only: `cd packages/compute && npm test` (78 tests across 3 suites)
 - TypeScript build uses `tsconfig.build.json` for declarations
 
@@ -72,6 +74,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: WGT-UX-012 — Persona-accurate hero metrics, summary strips, simple bar charts, and tokenized marketing bullets. (1) New personaPresentation.ts central resolver (ZERO compute, type-only imports) maps buyer→investor_profit hero, homeowner→invested_capital_total hero, realtor→realtor_fee_total_projected hero. (2) Persona-specific summary strip chips with derived tokens (implied_equity_share_pct, remaining_opportunity_value). (3) SimpleBarChart SVG component for persona-specific bar charts. (4) App mode layout: hides input panel, shows read-only deal-term chips, Edit button when canEdit=true. (5) DEV_AUTH override via ?devAuth=editor|viewer|loggedOut query param or VITE_DEV_AUTH env (dev-only, guarded). (6) DevAuthRole type and canEdit prop added to FractPathCalculatorWidgetProps. (7) 29 new tests covering hero selection, strip chips, token integrity, no-compute import guard, chart spec, bullet content, and DEV_AUTH gating (212 total, 12 suites). Build passing.
 - 2026-02-20: WGT-SPLIT-BRAIN — Fixed marketing-lite split-brain where computeScenario derived monthly_payment from vesting constants instead of user input. Marketing-lite now calls computeDeal directly with buildMarketingDealTerms/buildMarketingAssumptions from explicit UI state (propertyValue, upfrontPayment, monthlyPayment, numberOfPayments, exitYear, growthRate, realtorMode/Pct). Eliminated stale defaults bug (upfront=0 producing ~209k). Marketing personas restricted to buyer/homeowner/realtor (ops/investor gated to DEV_HARNESS). Callback handlers emit proper DraftSnapshot/ShareSummary types. 23 new tests (183 total, 11 suites). Build passing.
 - 2026-02-20: WGT-UX-011b — Content-layer bullets. (1) Marketing lite: 3-4 persona-framed bullets under settlement projection derived from existing outputs (netPayout, investment, term, growth rate). Persona controls wording (buyer "paid"/homeowner "received"/realtor "commission framing"), never values. (2) Edit modal: per-tab "What this means" explainer block under PreviewPanel — Payments (upfront + installments), Ownership (contract term + earliest settlement), Protections (floor/cap availability), Assumptions (growth/exit disclaimers), Fees (platform + servicing + exit descriptions). All content from contentBullets.ts. No compute, schema, or canonical changes. 160 tests, 10 suites, build passing.
 - 2026-02-20: WGT-UX-011 — Marketing lite + persona translation + UX fixes. (1) Dev harness gated behind VITE_DEV_HARNESS=true or ?DEV_HARNESS=true query param. (2) Centralized fee defaults (platform_fee=2500, servicing_fee_monthly=49, exit_fee_pct=1%) in feeDefaults.ts, wired into defaults.ts + snapshot.ts. (3) Persona translation layer: getLabel(fieldId, persona) for persona-specific input labels, getSummaryOrder(persona) for summary ordering. (4) Marketing lite: standard scenario only, growth rate as read-only assumption text, no floor/ceiling/downside controls, disclosure block with CTA to register. (5) Realtor inputs (representation mode + commission %) in marketing widget. (6) Fee defaults displayed read-only in marketing view. (7) useKioskInput hook for unified kiosk/custom/slider behavior. (8) Modal fixes: portal-rendered tooltips (no clipping), stable modal height, shimmer loading indicator in PreviewPanel, underline tab style. No canonical drift — compute engine, payload shapes, and canonical keys unchanged. 160 tests, 10 suites, build passing.

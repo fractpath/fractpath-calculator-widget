@@ -26,6 +26,17 @@ export {
 } from "../widget/snapshot.js";
 export { deterministicHash } from "../widget/hash.js";
 
+// --- Persona presentation resolver (Sprint 11 WGT-UX-012) ---
+export { resolvePersonaPresentation } from "../widget/personaPresentation.js";
+export type {
+  HeroSpec,
+  ChipSpec,
+  BarSpec,
+  ChartSpec,
+  PersonaPresentationResult,
+  ValueFormat,
+} from "../widget/personaPresentation.js";
+
 // --- Persona translation layer (Sprint 11 WGT-UX-011) ---
 export { getLabel, getSummaryOrder, getPersonaConfig } from "../widget/persona.js";
 
@@ -39,6 +50,7 @@ export { useKioskInput } from "../widget/hooks/useKioskInput.js";
 export type {
   CalculatorPersona,
   CalculatorMode,
+  DevAuthRole,
   FullDealSnapshotV1,
   DraftSnapshot,
   DraftSnapshotInputs,
