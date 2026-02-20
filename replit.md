@@ -13,6 +13,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Calc engine (widget)**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
 - **Canonical compute**: `packages/compute/` (@fractpath/compute v10.2.0 — single source of financial truth)
 - **Modal components**: `src/widget/components/` (DealEditModal, KioskSelect, PreviewPanel, HelpTooltip — WGT-003)
+- **Snapshot view**: `src/widget/components/` (DealSnapshotView, DealKpiStrip, EquityTransferChart — WGT-004)
 - **Components**: `src/components/EquityChart.tsx` (SVG line chart)
 - **Contract docs**: `docs/architecture/integration-contract.md`
 - **Sprint 10 specs**: `docs/financial-core/` (compute spec, runbook, integration specs)
@@ -69,6 +70,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: WGT-004 — Read-only Deal Snapshot View. Added DealSnapshotView (header + status badge + 5 detail tabs), DealKpiStrip (6 horizontal KPI cards), EquityTransferChart (placeholder — compute v10.2 has no schedule series). All values from canonical compute outputs, no duplicate math. Conditional DYF/FMV/realtor rendering. SnapshotViewHarness dev component. (142 tests, build passing)
 - 2026-02-20: WGT-003 — Deal Edit Modal (Wizard + Kiosk Inputs). Added DealEditModal, KioskSelect, PreviewPanel, HelpTooltip components. Metadata-driven rendering of all 27 fields via TAB_CONFIG + FIELD_META. Realtor coupling: NONE forces commission=0 and disables control. Percent fields convert display→decimal on blur. Compute triggers on blur/anchor/enum. Save disabled for realtor persona. EditModalHarness dev component. (142 tests, build passing)
 - 2026-02-20: WGT-000 — Aligned widget draft + field registry to canonical compute v10.2.0. Added 3 realtor fields (representation_mode, commission_pct, payment_mode) and investor_irr_annual_net (null) to DealTerms/DealResults. Expanded field registry from 19→27 entries (3 realtor + servicing_fee_monthly + liquidity_trigger_year + 3 DYF). Added realtor commission validation (0-6%, 0% when NONE). Updated snapshot mapper with realtor defaults. Tab config: 5 tabs with DYF section under Protections, Realtor section under Fees. 4 new validation tests (142 total, 10 suites). Build passing.
 - 2026-02-20: Phase 1 — Widget emits canonical FullDealSnapshotV1 with 10.2 versions. FullDealSnapshotV1 type now uses canonical DealTerms/ScenarioAssumptions/DealResults from @fractpath/compute. Added mapWidgetInputsToDealTerms (with documented defaults), mapWidgetInputsToAssumptions, buildFullDealSnapshotV1 to snapshot.ts. wired.tsx handleSave emits FullDealSnapshotV1 via computeDeal. now_iso + created_at required. Exported from lib/index.ts. (138 tests, build + pack passing)
