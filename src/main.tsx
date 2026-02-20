@@ -4,6 +4,7 @@ import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js
 import { DraftStateHarness } from "./widget/dev/DraftStateHarness.js";
 import { FieldMetaHarness } from "./widget/dev/FieldMetaHarness.js";
 import { EditModalHarness } from "./widget/dev/EditModalHarness.js";
+import { SnapshotViewHarness } from "./widget/dev/SnapshotViewHarness.js";
 import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
 import "./index.css";
 
@@ -60,6 +61,7 @@ function DevHarness() {
         onEvent={(e) => console.log("[WidgetEvent]", e)}
       />
       <EditModalHarness />
+      <SnapshotViewHarness />
       <DraftStateHarness />
       <FieldMetaHarness />
     </div>
