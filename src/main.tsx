@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js";
 import { DraftStateHarness } from "./widget/dev/DraftStateHarness.js";
 import { FieldMetaHarness } from "./widget/dev/FieldMetaHarness.js";
+import { EditModalHarness } from "./widget/dev/EditModalHarness.js";
 import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
 import "./index.css";
 
@@ -58,6 +59,7 @@ function DevHarness() {
         onSave={(payload) => console.log("[onSave]", payload)}
         onEvent={(e) => console.log("[WidgetEvent]", e)}
       />
+      <EditModalHarness />
       <DraftStateHarness />
       <FieldMetaHarness />
     </div>

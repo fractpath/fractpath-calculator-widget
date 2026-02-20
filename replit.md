@@ -12,13 +12,14 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Widget**: `src/widget/` (FractPathCalculatorWidget, wired calculator, persona config, formatting, snapshot builders, hashing)
 - **Calc engine (widget)**: `src/calc/` (computeScenario, buildChartSeries, types, constants)
 - **Canonical compute**: `packages/compute/` (@fractpath/compute v10.2.0 — single source of financial truth)
+- **Modal components**: `src/widget/components/` (DealEditModal, KioskSelect, PreviewPanel, HelpTooltip — WGT-003)
 - **Components**: `src/components/EquityChart.tsx` (SVG line chart)
 - **Contract docs**: `docs/architecture/integration-contract.md`
 - **Sprint 10 specs**: `docs/financial-core/` (compute spec, runbook, integration specs)
 - **Editing layer**: `src/widget/editing/` (WGT-001 unified draft state, Tier 1 preview, blur compute, validation)
 - **Field registry**: `src/widget/editing/fieldMeta.ts` (WGT-002 — 27-entry metadata registry with tooltips, anchors, ranges, dynamic percent anchors)
 - **Tab config**: `src/widget/editing/tabConfig.ts` (WGT-002 — 5 tabs: payments, ownership, assumptions, protections, fees)
-- **Dev harness**: `src/widget/dev/DraftStateHarness.tsx` (WGT-001) + `FieldMetaHarness.tsx` (WGT-002)
+- **Dev harness**: `src/widget/dev/DraftStateHarness.tsx` (WGT-001) + `FieldMetaHarness.tsx` (WGT-002) + `EditModalHarness.tsx` (WGT-003)
 - **Tests**: `src/__tests__/` (widget tests) + `src/widget/editing/__tests__/` (editing tests) + `packages/compute/tests/` (compute module tests) — 142 tests total across 10 suites
 
 ## Key Files
@@ -68,6 +69,7 @@ A React-based embeddable widget (ES module) for the FractPath Scenario Tool. It 
 - **Tests**: 72 tests covering standard/early/late/ceiling/floor/NO_FLOOR/zero-appreciation/FMV-override/determinism + IRR + rounding + DYF scenarios
 
 ## Recent Changes
+- 2026-02-20: WGT-003 — Deal Edit Modal (Wizard + Kiosk Inputs). Added DealEditModal, KioskSelect, PreviewPanel, HelpTooltip components. Metadata-driven rendering of all 27 fields via TAB_CONFIG + FIELD_META. Realtor coupling: NONE forces commission=0 and disables control. Percent fields convert display→decimal on blur. Compute triggers on blur/anchor/enum. Save disabled for realtor persona. EditModalHarness dev component. (142 tests, build passing)
 - 2026-02-20: WGT-000 — Aligned widget draft + field registry to canonical compute v10.2.0. Added 3 realtor fields (representation_mode, commission_pct, payment_mode) and investor_irr_annual_net (null) to DealTerms/DealResults. Expanded field registry from 19→27 entries (3 realtor + servicing_fee_monthly + liquidity_trigger_year + 3 DYF). Added realtor commission validation (0-6%, 0% when NONE). Updated snapshot mapper with realtor defaults. Tab config: 5 tabs with DYF section under Protections, Realtor section under Fees. 4 new validation tests (142 total, 10 suites). Build passing.
 - 2026-02-20: Phase 1 — Widget emits canonical FullDealSnapshotV1 with 10.2 versions. FullDealSnapshotV1 type now uses canonical DealTerms/ScenarioAssumptions/DealResults from @fractpath/compute. Added mapWidgetInputsToDealTerms (with documented defaults), mapWidgetInputsToAssumptions, buildFullDealSnapshotV1 to snapshot.ts. wired.tsx handleSave emits FullDealSnapshotV1 via computeDeal. now_iso + created_at required. Exported from lib/index.ts. (138 tests, build + pack passing)
 - 2026-02-20: Phase 0 version unification — COMPUTE_VERSION → 10.2.0, CONTRACT_VERSION → 10.2.0, SCHEMA_VERSION → "1", eliminated all inline version literals, package.json aligned (138 tests passing)
