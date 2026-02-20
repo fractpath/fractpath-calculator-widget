@@ -10,7 +10,7 @@ import { getPersonaConfig } from "./persona.js";
 import {
   buildDraftSnapshot,
   buildShareSummary,
-  buildSavePayload,
+  buildFullDealSnapshotV1,
 } from "./snapshot.js";
 
 const inputLabelStyle: React.CSSProperties = {
@@ -132,17 +132,14 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     }
   }, [persona, outputs, onShareSummary, onEvent]);
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(() => {
     onEvent?.({ type: "save_clicked", persona });
     if (onSave) {
-      const payload = await buildSavePayload(
-        persona,
-        outputs.normalizedInputs,
-        outputs,
-      );
-      onSave(payload);
+      // Emits FullDealSnapshotV1 with contract_version "10.2.0" and schema_version "1"
+      const snapshot = buildFullDealSnapshotV1(outputs.normalizedInputs);
+      onSave(snapshot);
     }
-  }, [persona, outputs, onSave, onEvent]);
+  }, [outputs, onSave, onEvent, persona]);
 
   return (
     <div

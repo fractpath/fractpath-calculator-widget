@@ -1,4 +1,9 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
+import type {
+  DealTerms,
+  ScenarioAssumptions,
+  DealResults,
+} from "@fractpath/compute";
 
 export type CalculatorPersona =
   | "homeowner"
@@ -12,18 +17,14 @@ export type CalculatorMode = "marketing" | "app";
 export const CONTRACT_VERSION = "10.2.0";
 export const SCHEMA_VERSION = "1";
 
-/**
- * Minimal canonical snapshot type for app-mode embedding.
- * Host (fractpath-app) is source of truth; widget must not mutate shape.
- */
 export type FullDealSnapshotV1 = {
   contract_version: string;
   schema_version: string;
-  deal_terms: Record<string, unknown>;
-  assumptions: Record<string, unknown>;
-  outputs: Record<string, unknown>;
-  now_iso?: string;
-  created_at?: string;
+  deal_terms: DealTerms;
+  assumptions: ScenarioAssumptions;
+  outputs: DealResults;
+  now_iso: string;
+  created_at: string;
 };
 
 export type DraftSnapshotInputs = {

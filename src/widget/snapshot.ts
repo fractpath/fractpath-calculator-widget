@@ -1,8 +1,11 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
+import type { DealTerms, ScenarioAssumptions } from "@fractpath/compute";
+import { computeDeal } from "@fractpath/compute";
 import {
   CONTRACT_VERSION,
   SCHEMA_VERSION,
   type CalculatorPersona,
+  type FullDealSnapshotV1,
   type DraftSnapshot,
   type DraftSnapshotInputs,
   type DraftSnapshotBasicResults,
@@ -109,5 +112,81 @@ export async function buildSavePayload(
     input_hash,
     output_hash,
     created_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Maps widget-level ScenarioInputs to canonical DealTerms.
+ * Missing canonical fields use deterministic defaults documented inline.
+ */
+export function mapWidgetInputsToDealTerms(inputs: ScenarioInputs): DealTerms {
+  return {
+    property_value: inputs.homeValue,
+    upfront_payment: inputs.initialBuyAmount,
+    // Default: monthly_payment derived from vesting schedule; 0 if absent
+    monthly_payment: inputs.vesting?.monthlyEquityPct
+      ? inputs.vesting.monthlyEquityPct * inputs.homeValue
+      : 0,
+    number_of_payments: inputs.vesting?.months ?? inputs.termYears * 12,
+
+    // Default payback windows: start at year 3, end at contract maturity
+    payback_window_start_year: 3,
+    payback_window_end_year: inputs.termYears,
+
+    // Default timing factors: 0.85 early penalty, 1.10 late bonus
+    timing_factor_early: 0.85,
+    timing_factor_late: 1.10,
+
+    floor_multiple: inputs.floorMultiple,
+    ceiling_multiple: inputs.capMultiple,
+    downside_mode: "HARD_FLOOR",
+
+    contract_maturity_years: inputs.termYears,
+    // Default: liquidity trigger at 70% of term
+    liquidity_trigger_year: Math.floor(inputs.termYears * 0.7),
+    // Default: minimum 1-year hold
+    minimum_hold_years: 1,
+
+    // Default fees: zero (widget marketing mode has no fee inputs)
+    platform_fee: 0,
+    servicing_fee_monthly: 0,
+    exit_fee_pct: 0,
+  };
+}
+
+/**
+ * Maps widget-level ScenarioInputs to canonical ScenarioAssumptions.
+ */
+export function mapWidgetInputsToAssumptions(
+  inputs: ScenarioInputs,
+): ScenarioAssumptions {
+  return {
+    annual_appreciation: inputs.annualGrowthRate,
+    // Default: 2% closing costs
+    closing_cost_pct: 0.02,
+    exit_year: inputs.termYears,
+  };
+}
+
+/**
+ * Builds canonical FullDealSnapshotV1 from widget inputs.
+ * Uses @fractpath/compute for deterministic outputs.
+ */
+export function buildFullDealSnapshotV1(
+  inputs: ScenarioInputs,
+): FullDealSnapshotV1 {
+  const deal_terms = mapWidgetInputsToDealTerms(inputs);
+  const assumptions = mapWidgetInputsToAssumptions(inputs);
+  const outputs = computeDeal(deal_terms, assumptions);
+  const now = new Date().toISOString();
+
+  return {
+    contract_version: CONTRACT_VERSION,
+    schema_version: SCHEMA_VERSION,
+    deal_terms,
+    assumptions,
+    outputs,
+    now_iso: now,
+    created_at: now,
   };
 }
