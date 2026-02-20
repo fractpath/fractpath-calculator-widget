@@ -1,12 +1,15 @@
 import { StrictMode, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { FractPathCalculatorWidget } from "./widget/FractPathCalculatorWidget.js";
+import { MARKETING_PERSONAS } from "./widget/wired.js";
 import type { CalculatorPersona, CalculatorMode } from "./widget/types.js";
 import "./index.css";
 
 const showHarness =
   import.meta.env.VITE_DEV_HARNESS === "true" ||
   new URLSearchParams(window.location.search).get("DEV_HARNESS") === "true";
+
+const ALL_PERSONAS: CalculatorPersona[] = ["buyer", "homeowner", "investor", "realtor", "ops"];
 
 const LazyEditModalHarness = lazy(() => import("./widget/dev/EditModalHarness.js").then(m => ({ default: m.EditModalHarness })));
 const LazySnapshotViewHarness = lazy(() => import("./widget/dev/SnapshotViewHarness.js").then(m => ({ default: m.SnapshotViewHarness })));
@@ -17,11 +20,15 @@ function DevHarness() {
   const [persona, setPersona] = useState<CalculatorPersona>("buyer");
   const [mode, setMode] = useState<CalculatorMode>("marketing");
 
+  const personaList = (mode === "marketing" && !showHarness)
+    ? MARKETING_PERSONAS
+    : ALL_PERSONAS;
+
   return (
     <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
       <div style={{ marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: 13, color: "#6b7280" }}>Persona:</span>
-        {(["buyer", "homeowner", "investor", "realtor", "ops"] as const).map((p) => (
+        {personaList.map((p) => (
           <button
             key={p}
             onClick={() => setPersona(p)}

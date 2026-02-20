@@ -1,19 +1,70 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FractPathCalculatorWidgetProps } from "./types.js";
+import type { CalculatorPersona } from "./types.js";
+import type { DealTerms, ScenarioAssumptions, RealtorRepresentationMode } from "@fractpath/compute";
+import { computeDeal } from "@fractpath/compute";
 
 import { computeScenario } from "../calc/calc.js";
 import { buildChartSeries } from "../calc/chart.js";
-import { DEFAULT_INPUTS } from "../calc/constants.js";
 import { EquityChart } from "../components/EquityChart.js";
 import { formatCurrency, formatPct, formatMonth } from "./format.js";
 import { getPersonaConfig, getLabel } from "./persona.js";
 import {
-  buildDraftSnapshot,
-  buildShareSummary,
   buildFullDealSnapshotV1,
 } from "./snapshot.js";
+import { deterministicHash } from "./hash.js";
+import { CONTRACT_VERSION, SCHEMA_VERSION } from "./types.js";
 import { FEE_DEFAULTS } from "./editing/feeDefaults.js";
 import { getMarketingBullets } from "./contentBullets.js";
+
+export type MarketingLiteState = {
+  propertyValue: number;
+  upfrontPayment: number;
+  monthlyPayment: number;
+  numberOfPayments: number;
+  exitYear: number;
+  growthRatePct: number;
+  realtorMode: RealtorRepresentationMode;
+  realtorPct: number;
+};
+
+export function buildMarketingDealTerms(state: MarketingLiteState): DealTerms {
+  return {
+    property_value: state.propertyValue,
+    upfront_payment: state.upfrontPayment,
+    monthly_payment: state.monthlyPayment,
+    number_of_payments: state.numberOfPayments,
+    payback_window_start_year: Math.max(0, Math.floor(state.exitYear / 3)),
+    payback_window_end_year: Math.max(1, Math.ceil((state.exitYear * 2) / 3)),
+    timing_factor_early: 1,
+    timing_factor_late: 1,
+    floor_multiple: 1.10,
+    ceiling_multiple: 2.00,
+    downside_mode: "HARD_FLOOR",
+    contract_maturity_years: 30,
+    liquidity_trigger_year: 13,
+    minimum_hold_years: 2,
+    platform_fee: FEE_DEFAULTS.platform_fee,
+    servicing_fee_monthly: FEE_DEFAULTS.servicing_fee_monthly,
+    exit_fee_pct: FEE_DEFAULTS.exit_fee_pct,
+    duration_yield_floor_enabled: false,
+    duration_yield_floor_start_year: null,
+    duration_yield_floor_min_multiple: null,
+    realtor_representation_mode: state.realtorMode,
+    realtor_commission_pct: state.realtorPct / 100,
+    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
+  };
+}
+
+export function buildMarketingAssumptions(state: MarketingLiteState): ScenarioAssumptions {
+  return {
+    annual_appreciation: state.growthRatePct / 100,
+    closing_cost_pct: 0,
+    exit_year: state.exitYear,
+  };
+}
+
+const MARKETING_PERSONAS: CalculatorPersona[] = ["buyer", "homeowner", "realtor"];
 
 const inputLabelStyle: React.CSSProperties = {
   display: "block",
@@ -63,6 +114,8 @@ const readonlyFeeStyle: React.CSSProperties = {
   border: "1px solid #e5e7eb",
 };
 
+export { MARKETING_PERSONAS };
+
 export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const {
     persona,
@@ -76,76 +129,137 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const isApp = mode === "app";
   const isMarketing = mode === "marketing";
 
-  const [homeValue, setHomeValue] = useState(DEFAULT_INPUTS.homeValue);
-  const [initialBuyAmount, setInitialBuyAmount] = useState(
-    DEFAULT_INPUTS.initialBuyAmount,
-  );
-  const [termYears, setTermYears] = useState(DEFAULT_INPUTS.termYears);
-  const [growthRatePct, setGrowthRatePct] = useState(
-    DEFAULT_INPUTS.annualGrowthRate * 100,
-  );
+  const [propertyValue, setPropertyValue] = useState(600_000);
+  const [upfrontPayment, setUpfrontPayment] = useState(100_000);
+  const [monthlyPayment, setMonthlyPayment] = useState(0);
+  const [numberOfPayments, setNumberOfPayments] = useState(0);
+  const [exitYear, setExitYear] = useState(10);
+  const [growthRatePct, setGrowthRatePct] = useState(3.0);
 
-  const [realtorMode, setRealtorMode] = useState<string>("NONE");
+  const [realtorMode, setRealtorMode] = useState<RealtorRepresentationMode>("NONE");
   const [realtorPct, setRealtorPct] = useState(0);
 
   useEffect(() => {
     onEvent?.({ type: "calculator_used", persona });
   }, [persona, onEvent]);
 
-  const outputs = useMemo(
-    () =>
-      computeScenario({
-        homeValue,
-        initialBuyAmount,
-        termYears,
-        annualGrowthRate: growthRatePct / 100,
-      }),
-    [homeValue, initialBuyAmount, termYears, growthRatePct],
+  const liteState: MarketingLiteState = useMemo(() => ({
+    propertyValue,
+    upfrontPayment,
+    monthlyPayment,
+    numberOfPayments,
+    exitYear,
+    growthRatePct,
+    realtorMode,
+    realtorPct,
+  }), [propertyValue, upfrontPayment, monthlyPayment, numberOfPayments, exitYear, growthRatePct, realtorMode, realtorPct]);
+
+  const dealTerms = useMemo(() => buildMarketingDealTerms(liteState), [liteState]);
+  const assumptions = useMemo(() => buildMarketingAssumptions(liteState), [liteState]);
+
+  const canonicalResult = useMemo(
+    () => computeDeal(dealTerms, assumptions),
+    [dealTerms, assumptions],
   );
 
-  const chart = useMemo(() => buildChartSeries(outputs), [outputs]);
+  const standardNetPayout = canonicalResult.isa_settlement;
+  const settlementMonth = exitYear * 12;
+
+  const appOutputs = useMemo(
+    () =>
+      isApp
+        ? computeScenario({
+            homeValue: propertyValue,
+            initialBuyAmount: upfrontPayment,
+            termYears: exitYear,
+            annualGrowthRate: growthRatePct / 100,
+          })
+        : null,
+    [isApp, propertyValue, upfrontPayment, exitYear, growthRatePct],
+  );
+
+  const chart = useMemo(
+    () => (appOutputs ? buildChartSeries(appOutputs) : null),
+    [appOutputs],
+  );
 
   const personaCfg = getPersonaConfig(persona);
-  const heroValue = personaCfg.heroValue(outputs);
+  const heroValue = isMarketing
+    ? standardNetPayout
+    : appOutputs
+      ? personaCfg.heroValue(appOutputs)
+      : 0;
 
   const parseNumber = (raw: string, fallback: number): number => {
     const n = Number(raw.replace(/,/g, ""));
     return Number.isFinite(n) && n >= 0 ? n : fallback;
   };
 
-  const handleSaveContinue = useCallback(async () => {
-    onEvent?.({ type: "save_continue_clicked", persona });
-    if (onDraftSnapshot) {
-      const snapshot = await buildDraftSnapshot(
-        persona,
-        outputs.normalizedInputs,
-        outputs,
-      );
-      onDraftSnapshot(snapshot);
-    }
-  }, [persona, outputs, onDraftSnapshot, onEvent]);
-
-  const handleShare = useCallback(() => {
-    onEvent?.({ type: "share_clicked", persona });
-    if (onShareSummary) {
-      const summary = buildShareSummary(
-        persona,
-        outputs.normalizedInputs,
-        outputs,
-      );
-      onShareSummary(summary);
-    }
-  }, [persona, outputs, onShareSummary, onEvent]);
-
   const handleSave = useCallback(() => {
     onEvent?.({ type: "save_clicked", persona });
-    if (onSave) {
-      const snapshot = buildFullDealSnapshotV1(outputs.normalizedInputs);
+    if (onSave && appOutputs) {
+      const snapshot = buildFullDealSnapshotV1(appOutputs.normalizedInputs);
       onSave(snapshot);
     }
-  }, [outputs, onSave, onEvent, persona]);
+  }, [appOutputs, onSave, onEvent, persona]);
 
-  const standardSettlement = outputs.settlements.standard;
+  const handleMarketingSave = useCallback(async () => {
+    onEvent?.({ type: "save_continue_clicked", persona });
+    if (onDraftSnapshot) {
+      const inputs = {
+        homeValue: propertyValue,
+        initialBuyAmount: upfrontPayment,
+        termYears: exitYear,
+        annualGrowthRate: growthRatePct / 100,
+      };
+      const basic_results = {
+        standard_net_payout: standardNetPayout,
+        early_net_payout: standardNetPayout,
+        late_net_payout: standardNetPayout,
+        standard_settlement_month: settlementMonth,
+        early_settlement_month: settlementMonth,
+        late_settlement_month: settlementMonth,
+      };
+      const [input_hash, output_hash] = await Promise.all([
+        deterministicHash(inputs as unknown as Record<string, unknown>),
+        deterministicHash(basic_results as unknown as Record<string, unknown>),
+      ]);
+      onDraftSnapshot({
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        persona,
+        mode: "marketing",
+        inputs,
+        basic_results,
+        input_hash,
+        output_hash,
+        created_at: new Date().toISOString(),
+      });
+    }
+  }, [persona, propertyValue, upfrontPayment, exitYear, growthRatePct, standardNetPayout, settlementMonth, onDraftSnapshot, onEvent]);
+
+  const handleMarketingShare = useCallback(() => {
+    onEvent?.({ type: "share_clicked", persona });
+    if (onShareSummary) {
+      onShareSummary({
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        persona,
+        inputs: {
+          homeValue: propertyValue,
+          initialBuyAmount: upfrontPayment,
+          termYears: exitYear,
+          annualGrowthRate: growthRatePct / 100,
+        },
+        basic_results: {
+          standard_net_payout: standardNetPayout,
+          early_net_payout: standardNetPayout,
+          late_net_payout: standardNetPayout,
+        },
+        created_at: new Date().toISOString(),
+      });
+    }
+  }, [persona, propertyValue, upfrontPayment, exitYear, growthRatePct, standardNetPayout, onShareSummary, onEvent]);
 
   return (
     <div
@@ -197,25 +311,25 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               type="text"
               inputMode="numeric"
               style={inputStyle}
-              value={homeValue.toLocaleString()}
+              value={propertyValue.toLocaleString()}
               onChange={(e) => {
-                setHomeValue(parseNumber(e.target.value, homeValue));
+                setPropertyValue(parseNumber(e.target.value, propertyValue));
               }}
             />
           </div>
 
           <div style={inputGroupStyle}>
             <label style={inputLabelStyle}>
-              {getLabel("deal_terms.upfront_payment", persona, "Initial Buy Amount ($)")}
+              {getLabel("deal_terms.upfront_payment", persona, "Upfront Payment ($)")}
             </label>
             <input
               type="text"
               inputMode="numeric"
               style={inputStyle}
-              value={initialBuyAmount.toLocaleString()}
+              value={upfrontPayment.toLocaleString()}
               onChange={(e) => {
-                setInitialBuyAmount(
-                  parseNumber(e.target.value, initialBuyAmount),
+                setUpfrontPayment(
+                  parseNumber(e.target.value, upfrontPayment),
                 );
               }}
             />
@@ -223,7 +337,42 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
           <div style={inputGroupStyle}>
             <label style={inputLabelStyle}>
-              {getLabel("scenario.exit_year", persona, "Term (years)")}
+              {getLabel("deal_terms.monthly_payment", persona, "Monthly Installment ($)")}
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              style={inputStyle}
+              value={monthlyPayment.toLocaleString()}
+              onChange={(e) => {
+                setMonthlyPayment(parseNumber(e.target.value, monthlyPayment));
+              }}
+            />
+          </div>
+
+          <div style={inputGroupStyle}>
+            <label style={inputLabelStyle}>
+              Number of Monthly Payments
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={360}
+              step={1}
+              style={inputStyle}
+              value={numberOfPayments}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (Number.isFinite(v) && v >= 0 && v <= 360) {
+                  setNumberOfPayments(v);
+                }
+              }}
+            />
+          </div>
+
+          <div style={inputGroupStyle}>
+            <label style={inputLabelStyle}>
+              {getLabel("scenario.exit_year", persona, "Target Exit Year")}
             </label>
             <input
               type="number"
@@ -231,17 +380,16 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               max={30}
               step={1}
               style={inputStyle}
-              value={termYears}
+              value={exitYear}
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
                 if (Number.isFinite(v) && v >= 1 && v <= 30) {
-                  setTermYears(v);
+                  setExitYear(v);
                 }
               }}
             />
           </div>
 
-          {/* Growth rate: editable in app, read-only assumption in marketing */}
           {isApp && (
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>Annual Growth Rate (%)</label>
@@ -270,7 +418,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             <select
               value={realtorMode}
               onChange={(e) => {
-                setRealtorMode(e.target.value);
+                setRealtorMode(e.target.value as RealtorRepresentationMode);
                 if (e.target.value === "NONE") setRealtorPct(0);
               }}
               style={{
@@ -376,7 +524,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           </h3>
 
           {isMarketing ? (
-            /* Marketing: standard scenario only */
             <div
               style={{
                 ...cardStyle,
@@ -395,88 +542,89 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               <div>
                 <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
                 <div style={{ fontSize: 13 }}>
-                  {formatMonth(standardSettlement.settlementMonth)}
+                  {formatMonth(settlementMonth)}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
                 <div style={{ fontWeight: 600, fontSize: 13 }}>
-                  {formatCurrency(standardSettlement.netPayout)}
+                  {formatCurrency(standardNetPayout)}
                 </div>
               </div>
             </div>
           ) : (
-            /* App: all settlement scenarios */
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                marginBottom: 16,
-              }}
-            >
-              {([
-                { label: "Early", data: outputs.settlements.early },
-                { label: "Standard", data: outputs.settlements.standard },
-                { label: "Late", data: outputs.settlements.late },
-              ] as const).map((s) => (
-                <div
-                  key={s.label}
-                  style={{
-                    ...cardStyle,
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr",
-                    gap: 8,
-                    alignItems: "center",
-                    padding: "10px 12px",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{s.label}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
-                    <div style={{ fontSize: 13 }}>
-                      {formatMonth(s.data.settlementMonth)}
+            appOutputs && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  marginBottom: 16,
+                }}
+              >
+                {([
+                  { label: "Early", data: appOutputs.settlements.early },
+                  { label: "Standard", data: appOutputs.settlements.standard },
+                  { label: "Late", data: appOutputs.settlements.late },
+                ] as const).map((s) => (
+                  <div
+                    key={s.label}
+                    style={{
+                      ...cardStyle,
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr",
+                      gap: 8,
+                      alignItems: "center",
+                      padding: "10px 12px",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Timing</div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{s.label}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
+                      <div style={{ fontSize: 13 }}>
+                        {formatMonth(s.data.settlementMonth)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {formatCurrency(s.data.netPayout)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Raw Payout</div>
+                      <div style={{ fontSize: 13 }}>
+                        {formatCurrency(s.data.rawPayout)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Transfer Fee</div>
+                      <div style={{ fontSize: 13 }}>
+                        {formatCurrency(s.data.transferFeeAmount)} (
+                        {formatPct(s.data.transferFeeRate)})
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Clamp</div>
+                      <div style={{ fontSize: 13 }}>
+                        {s.data.clamp.applied === "none"
+                          ? "—"
+                          : s.data.clamp.applied === "floor"
+                            ? "Floor"
+                            : "Cap"}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Net Payout</div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>
-                      {formatCurrency(s.data.netPayout)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Raw Payout</div>
-                    <div style={{ fontSize: 13 }}>
-                      {formatCurrency(s.data.rawPayout)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Transfer Fee</div>
-                    <div style={{ fontSize: 13 }}>
-                      {formatCurrency(s.data.transferFeeAmount)} (
-                      {formatPct(s.data.transferFeeRate)})
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>Clamp</div>
-                    <div style={{ fontSize: 13 }}>
-                      {s.data.clamp.applied === "none"
-                        ? "—"
-                        : s.data.clamp.applied === "floor"
-                          ? "Floor"
-                          : "Cap"}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )
           )}
 
           {/* Chart — app mode only */}
-          {!isMarketing && (
+          {!isMarketing && chart && (
             <EquityChart series={chart} width={520} height={240} />
           )}
 
@@ -493,12 +641,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               data-testid="marketing-bullets"
             >
               {getMarketingBullets(persona, {
-                netPayout: standardSettlement.netPayout,
-                initialBuyAmount,
-                homeValue,
-                termYears,
+                netPayout: standardNetPayout,
+                initialBuyAmount: upfrontPayment,
+                homeValue: propertyValue,
+                termYears: exitYear,
                 growthRatePct,
-                settlementMonth: standardSettlement.settlementMonth,
+                settlementMonth,
               }).map((bullet, i) => (
                 <li key={i} style={{ marginBottom: 2 }}>{bullet}</li>
               ))}
@@ -518,7 +666,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               <>
                 <button
                   type="button"
-                  onClick={handleSaveContinue}
+                  onClick={handleMarketingSave}
                   style={{
                     ...ctaButtonStyle,
                     background: "#111827",
@@ -530,7 +678,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={handleShare}
+                  onClick={handleMarketingShare}
                   style={{
                     ...ctaButtonStyle,
                     background: "#fff",
@@ -561,6 +709,18 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         </div>
       </div>
 
+      {/* DEV_HARNESS: canonical deal_terms debug readout */}
+      {isMarketing && typeof window !== "undefined" &&
+        (import.meta.env.VITE_DEV_HARNESS === "true" ||
+          new URLSearchParams(window.location.search).get("DEV_HARNESS") === "true") && (
+        <details style={{ marginTop: 12, fontSize: 11, color: "#6b7280" }}>
+          <summary style={{ cursor: "pointer" }}>Canonical deal_terms (debug)</summary>
+          <pre style={{ whiteSpace: "pre-wrap", background: "#f9fafb", padding: 8, borderRadius: 6, marginTop: 4 }}>
+            {JSON.stringify({ deal_terms: dealTerms, assumptions, result: { isa_settlement: canonicalResult.isa_settlement, invested_capital_total: canonicalResult.invested_capital_total, vested_equity_percentage: canonicalResult.vested_equity_percentage } }, null, 2)}
+          </pre>
+        </details>
+      )}
+
       <div
         style={{
           marginTop: 12,
@@ -573,8 +733,8 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         {" · "}
         Mode: <strong>{mode}</strong>
         {" · "}
-        {formatCurrency(homeValue)} home · {formatCurrency(initialBuyAmount)}{" "}
-        buy · {termYears}yr · {formatPct(growthRatePct / 100)} growth
+        {formatCurrency(propertyValue)} home · {formatCurrency(upfrontPayment)}{" "}
+        upfront · {formatCurrency(monthlyPayment)}×{numberOfPayments}mo · {exitYear}yr · {formatPct(growthRatePct / 100)} growth
       </div>
     </div>
   );
