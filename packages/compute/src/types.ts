@@ -1,3 +1,6 @@
+export type RealtorRepresentationMode = "BUYER" | "SELLER" | "DUAL" | "NONE";
+export type RealtorCommissionPaymentMode = "PER_PAYMENT_EVENT";
+
 export interface DealTerms {
   property_value: number;
   upfront_payment: number;
@@ -22,6 +25,10 @@ export interface DealTerms {
   platform_fee: number;
   servicing_fee_monthly: number;
   exit_fee_pct: number;
+
+  realtor_representation_mode?: RealtorRepresentationMode;
+  realtor_commission_pct?: number;
+  realtor_commission_payment_mode?: RealtorCommissionPaymentMode;
 
   duration_yield_floor_enabled?: boolean;
   duration_yield_floor_start_year?: number | null;
@@ -50,5 +57,6 @@ export interface DealResults {
   investor_profit: number;
   investor_multiple: number;
   investor_irr_annual: number;
+  investor_irr_annual_net: number | null;
   compute_version: string;
 }

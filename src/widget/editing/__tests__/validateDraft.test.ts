@@ -97,4 +97,36 @@ describe("validateDraft", () => {
     );
     expect(Object.keys(errors).length).toBe(3);
   });
+
+  it("realtor_commission_pct > 0.06 is invalid", () => {
+    const d = getDefaultDraftCanonicalInputs();
+    d.deal_terms.realtor_representation_mode = "BUYER";
+    d.deal_terms.realtor_commission_pct = 0.07;
+    const errors = validateDraft(d);
+    expect(errors["deal_terms.realtor_commission_pct"]).toBeDefined();
+  });
+
+  it("realtor_commission_pct = 0.06 is valid", () => {
+    const d = getDefaultDraftCanonicalInputs();
+    d.deal_terms.realtor_representation_mode = "BUYER";
+    d.deal_terms.realtor_commission_pct = 0.06;
+    const errors = validateDraft(d);
+    expect(errors["deal_terms.realtor_commission_pct"]).toBeUndefined();
+  });
+
+  it("realtor_commission_pct > 0 when mode=NONE is invalid", () => {
+    const d = getDefaultDraftCanonicalInputs();
+    d.deal_terms.realtor_representation_mode = "NONE";
+    d.deal_terms.realtor_commission_pct = 0.03;
+    const errors = validateDraft(d);
+    expect(errors["deal_terms.realtor_commission_pct"]).toBeDefined();
+  });
+
+  it("realtor_commission_pct = 0 when mode=NONE is valid", () => {
+    const d = getDefaultDraftCanonicalInputs();
+    d.deal_terms.realtor_representation_mode = "NONE";
+    d.deal_terms.realtor_commission_pct = 0;
+    const errors = validateDraft(d);
+    expect(errors["deal_terms.realtor_commission_pct"]).toBeUndefined();
+  });
 });

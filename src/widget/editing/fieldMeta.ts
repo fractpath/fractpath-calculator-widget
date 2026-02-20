@@ -31,8 +31,16 @@ export type FieldKey =
   | "deal_terms.timing_factor_late"
   | "deal_terms.minimum_hold_years"
   | "deal_terms.contract_maturity_years"
+  | "deal_terms.liquidity_trigger_year"
   | "deal_terms.platform_fee"
+  | "deal_terms.servicing_fee_monthly"
   | "deal_terms.exit_fee_pct"
+  | "deal_terms.realtor_representation_mode"
+  | "deal_terms.realtor_commission_pct"
+  | "deal_terms.realtor_commission_payment_mode"
+  | "deal_terms.duration_yield_floor_enabled"
+  | "deal_terms.duration_yield_floor_start_year"
+  | "deal_terms.duration_yield_floor_min_multiple"
   | "__disclosure__";
 
 export type Anchor = { label: string; value: number };
@@ -355,6 +363,24 @@ export const FIELD_META: FieldMeta[] = [
     sectionHint: "Ownership",
   },
   {
+    key: "deal_terms.liquidity_trigger_year",
+    label: "Liquidity trigger year",
+    unit: "years",
+    control: "kiosk",
+    simpleDefinition: "The year when a liquidity event can be triggered.",
+    impact: "It sets when the deal may allow early buyout or conversion options.",
+    formula: "liquidity_trigger_month = floor(liquidity_trigger_year * 12) (conceptual threshold)",
+    anchors: [
+      { label: "5", value: 5 },
+      { label: "10", value: 10 },
+      { label: "15", value: 15 },
+      { label: "20", value: 20 },
+    ],
+    recommendedRange: { min: 5, max: 20 },
+    hardRange: { min: 1, max: 30 },
+    sectionHint: "Ownership",
+  },
+  {
     key: "deal_terms.platform_fee",
     label: "Platform fee (system)",
     unit: "currency",
@@ -365,6 +391,19 @@ export const FIELD_META: FieldMeta[] = [
     formula: "net_settlement = gross_settlement - platform_fee (conceptual)",
     recommendedRange: { min: 0, max: 5_000 },
     hardRange: { min: 0, max: 50_000 },
+    sectionHint: "Fees",
+  },
+  {
+    key: "deal_terms.servicing_fee_monthly",
+    label: "Servicing fee (monthly)",
+    unit: "currency",
+    control: "readonly",
+    readOnly: true,
+    simpleDefinition: "A monthly fee for servicing the deal.",
+    impact: "It accumulates over the life of the deal and reduces net investor returns.",
+    formula: "servicing_total = servicing_fee_monthly * payments_made_by_exit",
+    recommendedRange: { min: 0, max: 100 },
+    hardRange: { min: 0, max: 500 },
     sectionHint: "Fees",
   },
   {
@@ -379,6 +418,104 @@ export const FIELD_META: FieldMeta[] = [
     recommendedRange: { min: 0.0, max: 0.02 },
     hardRange: { min: 0.0, max: 0.1 },
     sectionHint: "Fees",
+  },
+  {
+    key: "deal_terms.realtor_representation_mode",
+    label: "Realtor representation",
+    unit: "enum",
+    control: "enum",
+    simpleDefinition: "Whether a realtor is involved and which side they represent.",
+    impact: "It determines if a realtor commission applies and how it is allocated.",
+    formula: "if mode = NONE then realtor_commission_pct is treated as 0 in compute",
+    options: [
+      { label: "None", value: "NONE" },
+      { label: "Buyer", value: "BUYER" },
+      { label: "Seller", value: "SELLER" },
+      { label: "Dual", value: "DUAL" },
+    ],
+    sectionHint: "Fees",
+  },
+  {
+    key: "deal_terms.realtor_commission_pct",
+    label: "Realtor commission (%)",
+    unit: "percent",
+    control: "kiosk",
+    simpleDefinition: "The percentage paid to the realtor for their services.",
+    impact: "It reduces net proceeds. Capped at 6%. Must be 0 when representation is NONE.",
+    formula: "commission_amount = realtor_commission_pct * settlement_value (conceptual, per payment event)",
+    anchors: [
+      { label: "0%", value: 0 },
+      { label: "2%", value: 0.02 },
+      { label: "3%", value: 0.03 },
+      { label: "6%", value: 0.06 },
+    ],
+    recommendedRange: { min: 0, max: 0.06 },
+    hardRange: { min: 0, max: 0.06 },
+    sectionHint: "Fees",
+  },
+  {
+    key: "deal_terms.realtor_commission_payment_mode",
+    label: "Commission payment mode",
+    unit: "enum",
+    control: "readonly",
+    readOnly: true,
+    simpleDefinition: "How and when the realtor commission is paid.",
+    impact: "Locked to per-payment-event: commission is deducted at each payment event.",
+    formula: "realtor_commission_payment_mode = PER_PAYMENT_EVENT (locked in v10.2)",
+    options: [
+      { label: "Per payment event", value: "PER_PAYMENT_EVENT" },
+    ],
+    sectionHint: "Fees",
+  },
+  {
+    key: "deal_terms.duration_yield_floor_enabled",
+    label: "Duration Yield Floor (enabled)",
+    unit: "enum",
+    control: "enum",
+    simpleDefinition: "Whether the Duration Yield Floor protection is active.",
+    impact: "When enabled, it can raise settlement above the ceiling for long-duration deals.",
+    formula: "if enabled AND exit_year >= start_year, DYF may override standard ceiling",
+    options: [
+      { label: "Disabled", value: "false" },
+      { label: "Enabled", value: "true" },
+    ],
+    sectionHint: "Protections",
+  },
+  {
+    key: "deal_terms.duration_yield_floor_start_year",
+    label: "DYF start year",
+    unit: "years",
+    control: "kiosk",
+    simpleDefinition: "The year when Duration Yield Floor protection kicks in.",
+    impact: "After this year, the DYF minimum return guarantee becomes active.",
+    formula: "DYF activates if exit_year >= duration_yield_floor_start_year",
+    anchors: [
+      { label: "5", value: 5 },
+      { label: "7", value: 7 },
+      { label: "10", value: 10 },
+      { label: "15", value: 15 },
+    ],
+    recommendedRange: { min: 5, max: 15 },
+    hardRange: { min: 1, max: 30 },
+    sectionHint: "Protections",
+  },
+  {
+    key: "deal_terms.duration_yield_floor_min_multiple",
+    label: "DYF minimum multiple",
+    unit: "number",
+    control: "kiosk",
+    simpleDefinition: "The minimum return multiple guaranteed by the Duration Yield Floor.",
+    impact: "If DYF activates, settlement cannot be below invested_capital * this multiple.",
+    formula: "dyf_floor_amount = invested_capital_total * duration_yield_floor_min_multiple",
+    anchors: [
+      { label: "1.50\u00d7", value: 1.5 },
+      { label: "1.75\u00d7", value: 1.75 },
+      { label: "2.00\u00d7", value: 2.0 },
+      { label: "2.50\u00d7", value: 2.5 },
+    ],
+    recommendedRange: { min: 1.2, max: 3.0 },
+    hardRange: { min: 1.0, max: 5.0 },
+    sectionHint: "Protections",
   },
   {
     key: "__disclosure__",

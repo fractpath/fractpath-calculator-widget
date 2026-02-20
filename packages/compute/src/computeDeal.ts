@@ -75,6 +75,7 @@ export function computeDeal(
     investor_profit,
     investor_multiple,
     investor_irr_annual,
+    investor_irr_annual_net: null,
     compute_version: COMPUTE_VERSION,
   };
 }

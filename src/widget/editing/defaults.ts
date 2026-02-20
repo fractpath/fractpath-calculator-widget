@@ -20,6 +20,9 @@ export function getDefaultDraftCanonicalInputs(): DraftCanonicalInputs {
       platform_fee: 0,
       servicing_fee_monthly: 0,
       exit_fee_pct: 0.02,
+      realtor_representation_mode: "NONE",
+      realtor_commission_pct: 0,
+      realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
     },
     scenario: {
       annual_appreciation: 0.03,

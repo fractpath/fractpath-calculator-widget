@@ -23,6 +23,23 @@ export function validateDraft(draft: DraftCanonicalInputs): FieldErrors {
     errors["scenario.annual_appreciation"] = "Annual appreciation must be between -50% and 50%";
   }
 
+  if (
+    deal_terms.realtor_commission_pct !== undefined &&
+    (deal_terms.realtor_commission_pct < 0 || deal_terms.realtor_commission_pct > 0.06)
+  ) {
+    errors["deal_terms.realtor_commission_pct"] =
+      "Realtor commission must be between 0% and 6%";
+  }
+
+  if (
+    deal_terms.realtor_representation_mode === "NONE" &&
+    deal_terms.realtor_commission_pct !== undefined &&
+    deal_terms.realtor_commission_pct !== 0
+  ) {
+    errors["deal_terms.realtor_commission_pct"] =
+      "Commission must be 0% when representation mode is NONE";
+  }
+
   return errors;
 }
 

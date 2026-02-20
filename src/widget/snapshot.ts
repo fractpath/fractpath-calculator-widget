@@ -151,6 +151,11 @@ export function mapWidgetInputsToDealTerms(inputs: ScenarioInputs): DealTerms {
     platform_fee: 0,
     servicing_fee_monthly: 0,
     exit_fee_pct: 0,
+
+    // Default realtor: NONE with 0 commission, PER_PAYMENT_EVENT locked
+    realtor_representation_mode: "NONE",
+    realtor_commission_pct: 0,
+    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
   };
 }
 

@@ -366,6 +366,7 @@ describe("computeDeal", () => {
         "investor_profit",
         "investor_multiple",
         "investor_irr_annual",
+        "investor_irr_annual_net",
         "compute_version",
       ];
       for (const f of requiredFields) {
