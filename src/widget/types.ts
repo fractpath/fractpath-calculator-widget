@@ -9,8 +9,8 @@ export type CalculatorPersona =
 
 export type CalculatorMode = "marketing" | "app";
 
-export const CONTRACT_VERSION = "1.0.0";
-export const SCHEMA_VERSION = "v1";
+export const CONTRACT_VERSION = "10.2.0";
+export const SCHEMA_VERSION = "1";
 
 /**
  * Minimal canonical snapshot type for app-mode embedding.

@@ -1,14 +1,15 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
-import type {
-  CalculatorPersona,
-  DraftSnapshot,
-  DraftSnapshotInputs,
-  DraftSnapshotBasicResults,
-  ShareSummary,
-  ShareSummaryBasicResults,
-  SavePayload,
+import {
+  CONTRACT_VERSION,
+  SCHEMA_VERSION,
+  type CalculatorPersona,
+  type DraftSnapshot,
+  type DraftSnapshotInputs,
+  type DraftSnapshotBasicResults,
+  type ShareSummary,
+  type ShareSummaryBasicResults,
+  type SavePayload,
 } from "./types.js";
-import { CONTRACT_VERSION } from "./types.js"; // keep contract version dynamic
 import { deterministicHash } from "./hash.js";
 
 function extractDraftInputs(inputs: ScenarioInputs): DraftSnapshotInputs {
@@ -58,7 +59,7 @@ export async function buildDraftSnapshot(
 
   return {
     contract_version: CONTRACT_VERSION,
-    schema_version: "v1", // ✅ fixed
+    schema_version: SCHEMA_VERSION,
     persona,
     mode: "marketing",
     inputs,
@@ -76,7 +77,7 @@ export function buildShareSummary(
 ): ShareSummary {
   return {
     contract_version: CONTRACT_VERSION,
-    schema_version: "v1", // ✅ fixed
+    schema_version: SCHEMA_VERSION,
     persona,
     inputs: extractDraftInputs(normalizedInputs),
     basic_results: extractShareBasicResults(outputs),
@@ -100,7 +101,7 @@ export async function buildSavePayload(
 
   return {
     contract_version: CONTRACT_VERSION,
-    schema_version: "v1", // ✅ fixed
+    schema_version: SCHEMA_VERSION,
     persona,
     mode: "app",
     inputs: normalizedInputs,
