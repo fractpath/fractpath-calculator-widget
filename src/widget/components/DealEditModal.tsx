@@ -9,6 +9,7 @@ import { getLabel } from "../persona.js";
 import { KioskSelect } from "./KioskSelect.js";
 import { PreviewPanel } from "./PreviewPanel.js";
 import { HelpTooltip } from "./HelpTooltip.js";
+import { getTabExplainer } from "../contentBullets.js";
 
 type DraftPath =
   | `deal_terms.${string & keyof DraftCanonicalInputs["deal_terms"]}`
@@ -419,6 +420,35 @@ export function DealEditModal({
                 status={preview.status}
                 error={preview.error}
               />
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "10px 12px",
+                  background: "#f9fafb",
+                  borderRadius: 8,
+                  border: "1px solid #e5e7eb",
+                }}
+                data-testid="tab-explainer"
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>
+                  What this means
+                </div>
+                <ul style={{ margin: 0, padding: "0 0 0 14px", fontSize: 11, lineHeight: 1.6, color: "#374151" }}>
+                  {getTabExplainer(activeTab, persona, {
+                    upfrontPayment: draft.deal_terms.upfront_payment,
+                    monthlyPayment: draft.deal_terms.monthly_payment,
+                    numberOfPayments: draft.deal_terms.number_of_payments,
+                    contractMaturityYears: draft.deal_terms.contract_maturity_years,
+                    minimumHoldYears: draft.deal_terms.minimum_hold_years,
+                    exitYear: draft.scenario.exit_year,
+                    platformFee: draft.deal_terms.platform_fee,
+                    servicingFeeMonthly: draft.deal_terms.servicing_fee_monthly,
+                    exitFeePct: draft.deal_terms.exit_fee_pct,
+                  }).map((line, i) => (
+                    <li key={i} style={{ marginBottom: 2 }}>{line}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>

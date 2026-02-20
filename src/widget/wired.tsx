@@ -13,6 +13,7 @@ import {
   buildFullDealSnapshotV1,
 } from "./snapshot.js";
 import { FEE_DEFAULTS } from "./editing/feeDefaults.js";
+import { getMarketingBullets } from "./contentBullets.js";
 
 const inputLabelStyle: React.CSSProperties = {
   display: "block",
@@ -477,6 +478,31 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           {/* Chart — app mode only */}
           {!isMarketing && (
             <EquityChart series={chart} width={520} height={240} />
+          )}
+
+          {/* Marketing summary bullets */}
+          {isMarketing && (
+            <ul
+              style={{
+                margin: "0 0 12px 0",
+                padding: "0 0 0 18px",
+                fontSize: 12,
+                lineHeight: 1.7,
+                color: "#374151",
+              }}
+              data-testid="marketing-bullets"
+            >
+              {getMarketingBullets(persona, {
+                netPayout: standardSettlement.netPayout,
+                initialBuyAmount,
+                homeValue,
+                termYears,
+                growthRatePct,
+                settlementMonth: standardSettlement.settlementMonth,
+              }).map((bullet, i) => (
+                <li key={i} style={{ marginBottom: 2 }}>{bullet}</li>
+              ))}
+            </ul>
           )}
 
           {/* CTAs */}
