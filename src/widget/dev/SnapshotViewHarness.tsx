@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { computeDeal } from "../packages/compute/src/index.js";
+import { computeDeal } from "@fractpath/compute";
 import { getDefaultDraftCanonicalInputs } from "../editing/defaults.js";
 import { DealSnapshotView } from "../components/DealSnapshotView.js";
 import type { CalculatorPersona } from "../types.js";

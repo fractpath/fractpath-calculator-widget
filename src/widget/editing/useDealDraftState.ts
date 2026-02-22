@@ -1,14 +1,17 @@
 import { useState, useCallback, useMemo } from "react";
 import type { DraftCanonicalInputs, FieldErrors, PreviewState } from "./types.js";
-import type { DealResults } from "../packages/compute/src/index.js";
+import type { DealResults } from "@fractpath/compute";
 import { getDefaultDraftCanonicalInputs } from "./defaults.js";
 import { deriveTier1Preview } from "./deriveTier1Preview.js";
 import { validateDraft, hasErrors } from "./validateDraft.js";
 import { previewCompute } from "./previewCompute.js";
 
+type DealTermsKey = Extract<keyof DraftCanonicalInputs["deal_terms"], string>;
+type ScenarioKey = Extract<keyof DraftCanonicalInputs["scenario"], string>;
+
 type DraftPath =
-  | `deal_terms.${keyof DraftCanonicalInputs["deal_terms"]}`
-  | `scenario.${keyof DraftCanonicalInputs["scenario"]}`;
+  | `deal_terms.${DealTermsKey}`
+  | `scenario.${ScenarioKey}`;
 
 function setNestedField(
   draft: DraftCanonicalInputs,

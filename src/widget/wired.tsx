@@ -5,8 +5,8 @@ import type {
   DealTerms,
   ScenarioAssumptions,
   RealtorRepresentationMode,
-} from "../packages/compute/src/index.js";
-import { computeDeal } from "../packages/compute/src/index.js";
+} from "@fractpath/compute";
+import { computeDeal } from "@fractpath/compute";
 
 import { computeScenario } from "../calc/calc.js";
 import { buildChartSeries } from "../calc/chart.js";

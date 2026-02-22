@@ -1,4 +1,4 @@
-import type { DealTerms, ScenarioAssumptions, DealResults } from "../packages/compute/src/index.js";
+import type { DealTerms, ScenarioAssumptions, DealResults } from "@fractpath/compute";
 
 export interface DraftCanonicalInputs {
   deal_terms: DealTerms;

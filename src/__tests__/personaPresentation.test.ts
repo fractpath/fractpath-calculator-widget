@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { computeDeal } from "../packages/compute/src/index.js";
-import type { DealTerms, ScenarioAssumptions, DealResults } from "../packages/compute/src/index.js";
+import { computeDeal } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions, DealResults } from "@fractpath/compute";
 import {
   resolvePersonaPresentation,
 } from "../widget/personaPresentation.js";
@@ -191,7 +191,7 @@ describe("no-compute import in personaPresentation module", () => {
   it("personaPresentation.ts only imports types from compute", async () => {
     const fs = await (import("fs") as Promise<typeof import("fs")>);
     const content = fs.readFileSync("src/widget/personaPresentation.ts", "utf-8");
-    const importLines = content.split("\n").filter((l: string) => l.includes("../packages/compute/src/index.js"));
+    const importLines = content.split("\n").filter((l: string) => l.includes("@fractpath/compute"));
     for (const line of importLines) {
       expect(line).toMatch(/import\s+type/);
     }
