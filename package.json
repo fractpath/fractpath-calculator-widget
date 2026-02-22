@@ -40,5 +40,10 @@
       "types": "./dist-types/lib/index.d.ts",
       "import": "./dist/index.js"
     }
-  }
+  },
+  "files": [
+    "dist",
+    "packages/compute",
+    "packages/compute/dist"
+  ]
 }
