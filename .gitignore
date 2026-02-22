@@ -25,3 +25,6 @@ dist-ssr
 dist/
 dist-types/
 attached_assets/
+
+# Ignore npm pack tarballs
+*.tgz

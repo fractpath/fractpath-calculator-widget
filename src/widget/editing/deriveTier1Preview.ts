@@ -1,7 +1,9 @@
 import type { DraftCanonicalInputs, Tier1Preview } from "./types.js";
+import { formatCurrency } from "../format.js";
 
 export function deriveTier1Preview(draft: DraftCanonicalInputs): Tier1Preview {
-  const { upfront_payment, monthly_payment, number_of_payments } = draft.deal_terms;
+  const { upfront_payment, monthly_payment, number_of_payments } =
+    draft.deal_terms;
   const { exit_year } = draft.scenario;
 
   const exitMonth = Math.floor(exit_year * 12);
@@ -12,7 +14,7 @@ export function deriveTier1Preview(draft: DraftCanonicalInputs): Tier1Preview {
   const installmentsLabel =
     paymentsMadeByExit === 0
       ? "No installments"
-      : `${paymentsMadeByExit} payments of $${monthly_payment.toLocaleString("en-US")}`;
+      : `${paymentsMadeByExit} payments of ${formatCurrency(monthly_payment)}`;
 
   return {
     upfrontCash: upfront_payment,

@@ -1,4 +1,4 @@
-export type Unit =
+import { formatCurrency } from "../format.js";export type Unit =
   | "currency"
   | "percent"
   | "years"
@@ -549,7 +549,7 @@ export function computeDynamicAnchors(
     }
     const rounded = Math.round(raw / 100) * 100;
     const value = dpa.min != null ? Math.max(dpa.min, rounded) : rounded;
-    const label = `$${value.toLocaleString("en-US")}`;
+    const label = formatCurrency(value);
     return { label, value };
   });
 }

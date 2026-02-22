@@ -1,3 +1,4 @@
+import { formatCurrency } from "../format.js";
 import { useState, useCallback, useMemo } from "react";
 import type { DraftCanonicalInputs, FieldErrors, PreviewState } from "../editing/types.js";
 import type { FieldMeta, FieldKey, Anchor } from "../editing/fieldMeta.js";
@@ -185,7 +186,7 @@ export function DealEditModal({
   const formatDisplayValue = (val: unknown, meta: FieldMeta): string => {
     if (val === null || val === undefined) return "—";
     if (meta.unit === "percent") return `${((val as number) * 100).toFixed(2)}%`;
-    if (meta.unit === "currency") return `$${(val as number).toLocaleString("en-US")}`;
+    if (meta.unit === "currency") return formatCurrency(val as number);
     if (meta.unit === "years") return `${val} yr`;
     if (meta.unit === "months") return `${val} mo`;
     if (typeof val === "boolean") return val ? "Yes" : "No";

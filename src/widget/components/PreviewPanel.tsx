@@ -1,4 +1,5 @@
 import type { Tier1Preview, PreviewStatus } from "../editing/types.js";
+import { formatCurrency } from "../format.js";
 
 type PreviewPanelProps = {
   tier1: Tier1Preview;
@@ -36,6 +37,7 @@ export function PreviewPanel({ tier1, status, error }: PreviewPanelProps) {
       }}
     >
       <style>{shimmerKeyframes}</style>
+
       <div
         style={{
           display: "flex",
@@ -54,25 +56,30 @@ export function PreviewPanel({ tier1, status, error }: PreviewPanelProps) {
         <div>
           <div style={{ fontSize: 11, color: "#9ca3af" }}>Upfront cash</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
-            ${tier1.upfrontCash.toLocaleString("en-US")}
+            {formatCurrency(tier1.upfrontCash)}
           </div>
         </div>
+
         <div>
           <div style={{ fontSize: 11, color: "#9ca3af" }}>Installments</div>
           <div style={{ fontSize: 13, color: "#374151" }}>
             {tier1.installmentsLabel}
           </div>
         </div>
+
         <div>
-          <div style={{ fontSize: 11, color: "#9ca3af" }}>Total installments</div>
+          <div style={{ fontSize: 11, color: "#9ca3af" }}>
+            Total installments
+          </div>
           <div style={{ fontSize: 13, color: "#374151" }}>
-            ${tier1.totalInstallments.toLocaleString("en-US")}
+            {formatCurrency(tier1.totalInstallments)}
           </div>
         </div>
+
         <div>
           <div style={{ fontSize: 11, color: "#9ca3af" }}>Total cash paid</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
-            ${tier1.totalCashPaid.toLocaleString("en-US")}
+            {formatCurrency(tier1.totalCashPaid)}
           </div>
         </div>
       </div>

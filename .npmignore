@@ -1,0 +1,39 @@
+# Ignore deps
+node_modules
+**/node_modules
+
+# Ignore logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Ignore local/dev artifacts
+*.local
+.DS_Store
+.vscode
+.idea
+attached_assets
+
+# Ignore source and docs (we only ship built artifacts)
+src
+packages
+docs
+widget-host
+
+# Ignore project/config files not needed by consumers
+.replit
+eslint.config.js
+tsconfig*.json
+vite.config.ts
+index.html
+
+# IMPORTANT: do NOT ignore dist/ or dist-types/
+
+# Replit/runner artifacts (MUST NOT SHIP)
+.cache
+.upm
+.local
+.git
