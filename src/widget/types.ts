@@ -3,7 +3,7 @@ import type {
   DealTerms,
   ScenarioAssumptions,
   DealResults,
-} from "@fractpath/compute";
+} from "../packages/compute/src/index.js";
 
 export type CalculatorPersona =
   | "homeowner"

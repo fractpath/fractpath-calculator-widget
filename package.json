@@ -8,15 +8,12 @@
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run",
-    "build:compute": "npm -w @fractpath/compute run build",
-    "prebuild": "npm run build:compute"
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "vitest": "^4.0.18",
-    "@fractpath/compute": "workspace:*"
+    "vitest": "^4.0.18"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -40,8 +37,5 @@
       "types": "./dist-types/lib/index.d.ts",
       "import": "./dist/index.js"
     }
-  },
-  "workspaces": [
-    "packages/*"
-  ]
+  }
 }

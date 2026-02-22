@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import type { DraftCanonicalInputs, FieldErrors, PreviewState } from "./types.js";
-import type { DealResults } from "@fractpath/compute";
+import type { DealResults } from "../packages/compute/src/index.js";
 import { getDefaultDraftCanonicalInputs } from "./defaults.js";
 import { deriveTier1Preview } from "./deriveTier1Preview.js";
 import { validateDraft, hasErrors } from "./validateDraft.js";
