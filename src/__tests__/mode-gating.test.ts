@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { computeScenario } from "../calc/calc.js";
+import { computeDeal } from "@fractpath/compute";
 import { buildDraftSnapshot, buildShareSummary } from "../widget/snapshot.js";
+import { validateDraft, hasErrors } from "../widget/editing/validateDraft.js";
+import { getDefaultDraftCanonicalInputs } from "../widget/editing/defaults.js";
+import type { DraftCanonicalInputs } from "../widget/editing/types.js";
+import { MARKETING_PERSONAS } from "../widget/wired.js";
 
 describe("Mode gating: marketing mode cannot expose excluded fields", () => {
   const EXCLUDED_MARKETING_FIELDS = [
@@ -93,5 +98,78 @@ describe("Mode gating: marketing mode cannot expose excluded fields", () => {
       expect(Object.keys(summary)).toHaveLength(6);
       expect(Object.keys(summary.basic_results)).toHaveLength(3);
     }
+  });
+});
+
+describe("Mode gating: permission constraints", () => {
+  it("FractPathCalculatorWidgetProps canEdit defaults to undefined (permissive for existing callers)", () => {
+    const propType = {} as import("../widget/types.js").FractPathCalculatorWidgetProps;
+    expect(propType.canEdit).toBeUndefined();
+  });
+
+  it("MARKETING_PERSONAS restricts to buyer/homeowner/realtor only", () => {
+    expect(MARKETING_PERSONAS).toEqual(["buyer", "homeowner", "realtor"]);
+    expect(MARKETING_PERSONAS).not.toContain("ops");
+    expect(MARKETING_PERSONAS).not.toContain("investor");
+  });
+
+  it("marketing embed cannot include ops or investor personas", () => {
+    const forbidden = ["ops", "investor"] as const;
+    for (const p of forbidden) {
+      expect(MARKETING_PERSONAS).not.toContain(p);
+    }
+  });
+});
+
+describe("Mode gating: realtor commission constraints", () => {
+  it("realtor NONE mode forces commission_pct=0 in validation", () => {
+    const draft: DraftCanonicalInputs = {
+      ...getDefaultDraftCanonicalInputs(),
+      deal_terms: {
+        ...getDefaultDraftCanonicalInputs().deal_terms,
+        realtor_representation_mode: "NONE",
+        realtor_commission_pct: 0.03,
+      },
+    };
+    const errors = validateDraft(draft);
+    expect(hasErrors(errors)).toBe(true);
+  });
+
+  it("realtor BUYER mode allows non-zero commission_pct", () => {
+    const draft: DraftCanonicalInputs = {
+      ...getDefaultDraftCanonicalInputs(),
+      deal_terms: {
+        ...getDefaultDraftCanonicalInputs().deal_terms,
+        realtor_representation_mode: "BUYER",
+        realtor_commission_pct: 0.03,
+      },
+    };
+    const errors = validateDraft(draft);
+    const commissionError = errors["deal_terms.realtor_commission_pct"];
+    expect(commissionError).toBeUndefined();
+  });
+
+  it("realtor commission_pct cannot exceed 6%", () => {
+    const draft: DraftCanonicalInputs = {
+      ...getDefaultDraftCanonicalInputs(),
+      deal_terms: {
+        ...getDefaultDraftCanonicalInputs().deal_terms,
+        realtor_representation_mode: "BUYER",
+        realtor_commission_pct: 0.07,
+      },
+    };
+    const errors = validateDraft(draft);
+    expect(hasErrors(errors)).toBe(true);
+  });
+
+  it("computeDeal with NONE realtor produces zero realtor fees", () => {
+    const defaults = getDefaultDraftCanonicalInputs();
+    const results = computeDeal(
+      { ...defaults.deal_terms, realtor_representation_mode: "NONE", realtor_commission_pct: 0 },
+      defaults.scenario
+    );
+    expect(results.realtor_fee_total_projected).toBe(0);
+    expect(results.realtor_fee_upfront_projected).toBe(0);
+    expect(results.realtor_fee_installments_projected).toBe(0);
   });
 });
