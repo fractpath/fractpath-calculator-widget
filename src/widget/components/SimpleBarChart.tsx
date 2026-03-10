@@ -11,28 +11,46 @@ type SimpleBarChartProps = {
   height?: number;
 };
 
-export function SimpleBarChart({ bars, width = 480, height = 200 }: SimpleBarChartProps) {
+export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarChartProps) {
   const maxVal = Math.max(...bars.map((b) => b.value), 1);
-  const barWidth = Math.min(80, (width - 40) / bars.length - 20);
-  const chartTop = 30;
-  const chartBottom = height - 40;
+  const barWidth = Math.min(80, (width - 60) / bars.length - 20);
+  const chartTop = 36;
+  const chartBottom = height - 44;
   const chartHeight = chartBottom - chartTop;
-  const barSpacing = (width - 20) / bars.length;
+  const barSpacing = (width - 40) / bars.length;
+
+  const colors = ["#111827", "#6b7280", "#d1d5db", "#9ca3af", "#374151"];
+  const uniqueId = `bar-anim-${Math.random().toString(36).slice(2, 8)}`;
 
   return (
     <svg
-      width={width}
+      width="100%"
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      style={{ display: "block", margin: "0 auto" }}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ display: "block" }}
+      role="img"
+      aria-label="Scenario comparison chart"
       data-testid="simple-bar-chart"
     >
+      <style>{`
+        @keyframes ${uniqueId} {
+          from { transform: scaleY(0); }
+          to { transform: scaleY(1); }
+        }
+      `}</style>
+      <line
+        x1={20}
+        x2={width - 20}
+        y1={chartBottom}
+        y2={chartBottom}
+        stroke="#e5e7eb"
+        strokeWidth={1}
+      />
       {bars.map((bar, i) => {
         const barH = maxVal > 0 ? (bar.value / maxVal) * chartHeight : 0;
-        const x = 10 + i * barSpacing + (barSpacing - barWidth) / 2;
+        const x = 20 + i * barSpacing + (barSpacing - barWidth) / 2;
         const y = chartBottom - barH;
-
-        const colors = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
         const fill = colors[i % colors.length];
 
         return (
@@ -41,30 +59,36 @@ export function SimpleBarChart({ bars, width = 480, height = 200 }: SimpleBarCha
               x={x}
               y={y}
               width={barWidth}
-              height={Math.max(barH, 1)}
-              rx={4}
+              height={Math.max(barH, 2)}
+              rx={6}
+              ry={6}
               fill={fill}
+              opacity={i === 0 ? 1 : 0.7}
+              style={{
+                transformOrigin: `${x + barWidth / 2}px ${chartBottom}px`,
+                animation: `${uniqueId} 0.5s ease-out ${i * 0.1}s both`,
+              }}
             />
             <text
               x={x + barWidth / 2}
-              y={y - 6}
+              y={y - 10}
               textAnchor="middle"
-              fontSize={10}
+              fontSize={11}
               fontWeight={600}
-              fill="#374151"
+              fill="#111827"
               fontFamily="system-ui, sans-serif"
             >
               {formatCurrency(bar.value)}
             </text>
             <text
               x={x + barWidth / 2}
-              y={chartBottom + 14}
+              y={chartBottom + 18}
               textAnchor="middle"
-              fontSize={9}
+              fontSize={10}
               fill="#6b7280"
               fontFamily="system-ui, sans-serif"
             >
-              {bar.label.length > 18 ? bar.label.slice(0, 16) + "…" : bar.label}
+              {bar.label.length > 20 ? bar.label.slice(0, 18) + "…" : bar.label}
             </text>
           </g>
         );
