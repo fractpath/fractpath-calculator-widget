@@ -1,9 +1,9 @@
 // --- Existing public widget wrapper (keep stable) ---
 export { FractPathCalculatorWidget } from "../widget/FractPathCalculatorWidget.js";
 
-// --- NEW: Shared UI primitives for App + Marketing (Sprint 11) ---
+// --- Shared UI primitives for App + Marketing ---
 export { DealSnapshotView } from "../widget/components/DealSnapshotView.js";
-export { DealEditModal } from "../widget/components/DealEditModal.js";
+export { DealEditModalMount as DealEditModal } from "../widget/wired.js";
 
 // Optional: expose subcomponents (OK to export, not required by embeds)
 export { DealKpiStrip } from "../widget/components/DealKpiStrip.js";
@@ -26,7 +26,7 @@ export {
 } from "../widget/snapshot.js";
 export { deterministicHash } from "../widget/hash.js";
 
-// --- Persona presentation resolver (Sprint 11 WGT-UX-012) ---
+// --- Persona presentation resolver ---
 export { resolvePersonaPresentation } from "../widget/personaPresentation.js";
 export type {
   HeroSpec,
@@ -37,16 +37,16 @@ export type {
   ValueFormat,
 } from "../widget/personaPresentation.js";
 
-// --- Marketing persona list (Sprint 11 WGT-005) ---
+// --- Marketing persona list ---
 export { MARKETING_PERSONAS } from "../widget/wired.js";
 
-// --- Persona translation layer (Sprint 11 WGT-UX-011) ---
+// --- Persona translation layer ---
 export { getLabel, getSummaryOrder, getPersonaConfig } from "../widget/persona.js";
 
-// --- Fee defaults (Sprint 11 WGT-UX-011) ---
+// --- Fee defaults ---
 export { FEE_DEFAULTS } from "../widget/editing/feeDefaults.js";
 
-// --- Kiosk input hook (Sprint 11 WGT-UX-011) ---
+// --- Kiosk input hook ---
 export { useKioskInput } from "../widget/hooks/useKioskInput.js";
 
 // --- Existing public types (keep stable) ---

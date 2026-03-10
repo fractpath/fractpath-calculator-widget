@@ -1,6 +1,6 @@
 export { FractPathCalculatorWidget } from "../widget/FractPathCalculatorWidget.js";
 export { DealSnapshotView } from "../widget/components/DealSnapshotView.js";
-export { DealEditModal } from "../widget/components/DealEditModal.js";
+export { DealEditModalMount as DealEditModal } from "../widget/wired.js";
 export { DealKpiStrip } from "../widget/components/DealKpiStrip.js";
 export { EquityTransferChart } from "../widget/components/EquityTransferChart.js";
 export type { DraftCanonicalInputs } from "../widget/editing/types.js";

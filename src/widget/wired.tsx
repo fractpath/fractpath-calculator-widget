@@ -22,6 +22,7 @@ import { SimpleBarChart } from "./components/SimpleBarChart.js";
 import { DealEditModal } from "./components/DealEditModal.js";
 import { useDealDraftState } from "./editing/useDealDraftState.js";
 import type { DraftCanonicalInputs } from "./editing/types.js";
+import { getDefaultDraftCanonicalInputs } from "./editing/defaults.js";
 
 export type MarketingLiteState = {
   propertyValue: number;
@@ -78,15 +79,31 @@ const MARKETING_PERSONAS: CalculatorPersona[] = [
   "realtor",
 ];
 
-function EditModalMount(props: {
+export function DealEditModalMount(props: {
   initial: DraftCanonicalInputs;
   persona: CalculatorPersona;
   onClose: () => void;
   onSaved: (saved: DraftCanonicalInputs) => void;
 }) {
-  const { draft, errors, preview, setField, onBlurCompute } = useDealDraftState(
-    props.initial,
-  );
+  const safeInitial = useMemo(() => {
+    const defaults = getDefaultDraftCanonicalInputs();
+
+    return {
+      ...defaults,
+      ...props.initial,
+      deal_terms: {
+        ...defaults.deal_terms,
+        ...(props.initial?.deal_terms ?? {}),
+      },
+      scenario: {
+        ...defaults.scenario,
+        ...(props.initial?.scenario ?? {}),
+      },
+    } satisfies DraftCanonicalInputs;
+  }, [props.initial]);
+
+  const { draft, errors, preview, setField, onBlurCompute } =
+    useDealDraftState(safeInitial);
 
   return (
     <DealEditModal
@@ -1049,7 +1066,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       )}
 
       {showEditModal && canEdit && (
-        <EditModalMount
+        <DealEditModalMount
           initial={initialDraft}
           persona={persona}
           onClose={() => setShowEditModal(false)}
@@ -1066,7 +1083,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             setRealtorMode(saved.deal_terms.realtor_representation_mode);
             setRealtorPct(saved.deal_terms.realtor_commission_pct * 100);
 
-        
             setShowEditModal(false);
           }}
         />
