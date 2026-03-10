@@ -175,17 +175,20 @@ function AnimatedNumber({ value, format }: { value: number; format: "currency" |
   return <span ref={ref}>{display}</span>;
 }
 
-const PERSONA_VALUE_PANEL: Record<"homeowner" | "buyer", { headline: string; body: string; chips: string[] }> = {
-  homeowner: {
-    headline: "Unlock value tied to future home appreciation",
-    body: "Model a structured agreement where a homeowner receives capital today while sharing a portion of future appreciation.",
-    chips: ["Access value today", "Stay in the home", "Model future outcomes"],
-  },
-  buyer: {
-    headline: "Explore participation in future home appreciation",
-    body: "Model a scenario where a buyer participates in future property appreciation through a structured agreement.",
-    chips: ["Model appreciation scenarios", "Compare outcomes", "Save and continue in FractPath"],
-  },
+const PERSONA_VALUE_LINE: Record<CalculatorPersona, string> = {
+  homeowner: "Model how a homeowner could unlock value today while sharing future appreciation.",
+  buyer: "Model how a buyer could participate in future appreciation through a structured agreement.",
+  realtor: "Explore structured scenarios to help clients evaluate flexible paths to homeownership.",
+  investor: "Model how an investor could participate in future appreciation through a structured agreement.",
+  ops: "Model how a structured agreement works across different scenarios.",
+};
+
+const TAB_LABELS: Record<CalculatorPersona, string> = {
+  homeowner: "Homeowner",
+  buyer: "Buyer",
+  realtor: "Realtor",
+  investor: "Investor",
+  ops: "Ops",
 };
 
 export { MARKETING_PERSONAS };
@@ -234,6 +237,11 @@ function formatChipValue(value: number | string, fmt: string): string {
     default:
       return String(value);
   }
+}
+
+function formatHorizonLabel(years: number): string {
+  if (years === 1) return "1 Year";
+  return `${years} Years`;
 }
 
 const WIDGET_CSS = `
@@ -528,10 +536,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
   const projectedAppreciation = propertyValue * Math.pow(1 + growthRatePct / 100, exitYear);
 
-  const tabPersonas: CalculatorPersona[] = MARKETING_PERSONAS.filter(
-    (p): p is "homeowner" | "buyer" => p === "homeowner" || p === "buyer"
-  );
-
   const inputLabelStyle: React.CSSProperties = {
     display: "block",
     fontSize: isMobile ? 14 : 13,
@@ -581,6 +585,31 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     color: "#111827",
   };
 
+  const kpiCards = [
+    {
+      label: "Home Value Today",
+      value: propertyValue,
+      format: "currency" as const,
+    },
+    {
+      label: "Cash Unlocked Today",
+      value: upfrontPayment,
+      format: "currency" as const,
+    },
+    {
+      label: numberOfPayments > 0
+        ? `Monthly Contribution / ${numberOfPayments} Month${numberOfPayments === 1 ? "" : "s"}`
+        : "Monthly Contribution",
+      value: monthlyPayment,
+      format: "currency" as const,
+    },
+    {
+      label: `Projected Value in ${formatHorizonLabel(exitYear)}`,
+      value: projectedAppreciation,
+      format: "currency" as const,
+    },
+  ];
+
   return (
     <div
       style={{
@@ -619,90 +648,58 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       </p>
 
       {isMarketing && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{
-            display: "flex",
-            gap: 0,
-            borderBottom: "1px solid #e5e7eb",
-            marginBottom: 20,
-          }}>
-            {tabPersonas.map((tp) => {
+        <div style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              gap: 4,
+              padding: 4,
+              background: "#f3f4f6",
+              borderRadius: 10,
+              marginBottom: 12,
+            }}
+            role="tablist"
+          >
+            {MARKETING_PERSONAS.map((tp) => {
               const isActive = persona === tp;
-              const label = tp === "homeowner" ? "Homeowner" : "Buyer";
               return (
                 <button
                   key={tp}
                   type="button"
                   onClick={() => setActivePersona(tp)}
                   style={{
-                    padding: isMobile ? "10px 16px" : "10px 24px",
-                    fontSize: isMobile ? 14 : 15,
+                    padding: isMobile ? "8px 14px" : "8px 20px",
+                    fontSize: isMobile ? 13 : 14,
                     fontWeight: isActive ? 600 : 400,
-                    color: isActive ? "#111827" : "#9ca3af",
-                    background: "transparent",
+                    color: isActive ? "#fff" : "#6b7280",
+                    background: isActive ? "#111827" : "transparent",
                     border: "none",
-                    borderBottom: isActive ? "2px solid #111827" : "2px solid transparent",
+                    borderRadius: 7,
                     cursor: "pointer",
                     fontFamily: "system-ui, sans-serif",
-                    transition: "color 0.2s, border-color 0.2s",
-                    marginBottom: -1,
+                    transition: "all 0.15s",
                   }}
                   aria-selected={isActive}
                   role="tab"
                 >
-                  {label}
+                  {TAB_LABELS[tp]}
                 </button>
               );
             })}
           </div>
 
-          {(persona === "homeowner" || persona === "buyer") && (
-            <div
-              key={persona}
-              style={{
-                animation: "fp-tabSwitch 0.25s ease-out",
-                marginBottom: 4,
-              }}
-            >
-              <h3 style={{
-                margin: "0 0 6px 0",
-                fontSize: isMobile ? 18 : 20,
-                fontWeight: 600,
-                color: "#111827",
-                letterSpacing: "-0.01em",
-              }}>
-                {PERSONA_VALUE_PANEL[persona].headline}
-              </h3>
-              <p style={{
-                margin: "0 0 12px 0",
-                fontSize: isMobile ? 14 : 15,
-                color: "#6b7280",
-                lineHeight: 1.5,
-              }}>
-                {PERSONA_VALUE_PANEL[persona].body}
-              </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {PERSONA_VALUE_PANEL[persona].chips.map((chip) => (
-                  <span
-                    key={chip}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      padding: "6px 14px",
-                      background: "#f9fafb",
-                      borderRadius: 20,
-                      fontSize: 13,
-                      color: "#374151",
-                      border: "1px solid #e5e7eb",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <p
+            key={persona}
+            style={{
+              margin: 0,
+              fontSize: isMobile ? 14 : 15,
+              color: "#6b7280",
+              lineHeight: 1.5,
+              animation: "fp-tabSwitch 0.2s ease-out",
+            }}
+          >
+            {PERSONA_VALUE_LINE[persona]}
+          </p>
         </div>
       )}
 
@@ -763,7 +760,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             <h3
               style={{
                 margin: "0 0 16px 0",
-                fontSize: 14,
+                fontSize: 13,
                 color: "#9ca3af",
                 fontWeight: 500,
                 textTransform: "uppercase",
@@ -1010,20 +1007,15 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                 display: "grid",
                 gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
                 gap: isMobile ? 10 : 12,
-                marginBottom: 24,
+                marginBottom: 20,
               }}
               data-testid="summary-cards"
             >
-              {[
-                { label: "Home Value", value: propertyValue, format: "currency" as const },
-                { label: "Agreement Amount", value: upfrontPayment, format: "currency" as const },
-                { label: "Monthly Contribution", value: monthlyPayment, format: "currency" as const },
-                { label: "Projected Appreciation", value: projectedAppreciation, format: "currency" as const },
-              ].map((card) => (
+              {kpiCards.map((card) => (
                 <div
                   key={card.label}
                   style={{
-                    padding: isMobile ? "14px 12px" : "16px",
+                    padding: isMobile ? "14px 10px" : "16px",
                     background: "#f9fafb",
                     borderRadius: 12,
                     border: "1px solid #f3f4f6",
@@ -1042,11 +1034,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                     <AnimatedNumber value={card.value} format={card.format} />
                   </div>
                   <div style={{
-                    fontSize: isMobile ? 11 : 12,
+                    fontSize: isMobile ? 10 : 11,
                     color: "#9ca3af",
                     fontWeight: 500,
                     textTransform: "uppercase",
-                    letterSpacing: "0.04em",
+                    letterSpacing: "0.03em",
+                    lineHeight: 1.3,
                   }}>
                     {card.label}
                   </div>
@@ -1061,7 +1054,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               background: "#f9fafb",
               borderRadius: 12,
               border: "1px solid #f3f4f6",
-              marginBottom: 20,
+              marginBottom: 16,
               textAlign: "center",
             }}
             data-testid="hero-metric"
@@ -1087,12 +1080,22 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             )}
           </div>
 
+          {isMarketing && (
+            <div style={{ marginBottom: 20, padding: isMobile ? "4px 0" : "8px 0" }}>
+              <SimpleBarChart
+                bars={presentation.chartSpec.bars}
+                width={480}
+                height={isMobile ? 180 : 220}
+              />
+            </div>
+          )}
+
           <div
             style={{
               display: "flex",
               flexWrap: "wrap",
               gap: 6,
-              marginBottom: 20,
+              marginBottom: 16,
             }}
             data-testid="summary-strip"
           >
@@ -1109,45 +1112,11 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           {isMarketing && (
             <div
               style={{
-                padding: "12px 14px",
-                background: "#fafafa",
-                border: "1px solid #f3f4f6",
-                borderRadius: 10,
-                fontSize: 13,
-                lineHeight: 1.6,
-                color: "#6b7280",
-                marginBottom: 20,
-              }}
-            >
-              <div>
-                Projections assume {formatPct(growthRatePct / 100)} annual
-                appreciation.
-              </div>
-              <div style={{ marginTop: 4 }}>
-                Register free to model different growth scenarios, protections
-                (floor/cap), and early/late settlement timing.
-              </div>
-            </div>
-          )}
-
-          {isMarketing && (
-            <div style={{ marginBottom: 24, padding: isMobile ? "8px 0" : "12px 0" }}>
-              <SimpleBarChart
-                bars={presentation.chartSpec.bars}
-                width={480}
-                height={isMobile ? 180 : 220}
-              />
-            </div>
-          )}
-
-          {isMarketing && (
-            <div
-              style={{
                 padding: "10px 14px",
                 background: "#f9fafb",
                 borderRadius: 10,
                 border: "1px solid #f3f4f6",
-                marginBottom: 20,
+                marginBottom: 16,
               }}
             >
               <div style={{ fontSize: 12, color: "#9ca3af" }}>
@@ -1242,7 +1211,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                           </div>
                           <div style={{ fontSize: 13, color: "#111827" }}>
                             {s.data.clamp.applied === "none"
-                              ? "—"
+                              ? "\u2014"
                               : s.data.clamp.applied === "floor"
                                 ? "Floor"
                                 : "Cap"}
@@ -1260,25 +1229,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             <div style={{ marginBottom: 20 }}>
               <EquityChart series={chart} width={520} height={isMobile ? 200 : 260} />
             </div>
-          )}
-
-          {isMarketing && (
-            <ul
-              style={{
-                margin: "0 0 16px 0",
-                padding: "0 0 0 20px",
-                fontSize: isMobile ? 14 : 13,
-                lineHeight: 1.7,
-                color: "#374151",
-              }}
-              data-testid="marketing-bullets"
-            >
-              {presentation.marketingBullets.map((bullet, i) => (
-                <li key={i} style={{ marginBottom: 4 }}>
-                  {bullet}
-                </li>
-              ))}
-            </ul>
           )}
 
           <div
@@ -1435,18 +1385,18 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         }}
       >
         Viewing as <strong>{persona}</strong>
-        {" · "}
+        {" \u00b7 "}
         Mode: <strong>{mode}</strong>
         {devAuth && (
           <>
             {" "}
-            · DEV_AUTH: <strong>{devAuth}</strong>
+            {"\u00b7"} DEV_AUTH: <strong>{devAuth}</strong>
           </>
         )}
-        {" · "}
-        {formatCurrency(propertyValue)} home · {formatCurrency(upfrontPayment)}{" "}
-        upfront · {formatCurrency(monthlyPayment)}×{numberOfPayments}mo ·{" "}
-        {exitYear}yr · {formatPct(growthRatePct / 100)} growth
+        {" \u00b7 "}
+        {formatCurrency(propertyValue)} home {"\u00b7"} {formatCurrency(upfrontPayment)}{" "}
+        upfront {"\u00b7"} {formatCurrency(monthlyPayment)}\u00d7{numberOfPayments}mo {"\u00b7"}{" "}
+        {exitYear}yr {"\u00b7"} {formatPct(growthRatePct / 100)} growth
       </div>
     </div>
   );

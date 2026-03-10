@@ -11,6 +11,8 @@ type SimpleBarChartProps = {
   height?: number;
 };
 
+const CHART_COLORS = ["#0891b2", "#c026d3", "#ca8a04", "#6b7280", "#374151"];
+
 export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarChartProps) {
   const maxVal = Math.max(...bars.map((b) => b.value), 1);
   const barWidth = Math.min(80, (width - 60) / bars.length - 20);
@@ -19,7 +21,6 @@ export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarCha
   const chartHeight = chartBottom - chartTop;
   const barSpacing = (width - 40) / bars.length;
 
-  const colors = ["#111827", "#6b7280", "#d1d5db", "#9ca3af", "#374151"];
   const uniqueId = `bar-anim-${Math.random().toString(36).slice(2, 8)}`;
 
   return (
@@ -51,7 +52,7 @@ export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarCha
         const barH = maxVal > 0 ? (bar.value / maxVal) * chartHeight : 0;
         const x = 20 + i * barSpacing + (barSpacing - barWidth) / 2;
         const y = chartBottom - barH;
-        const fill = colors[i % colors.length];
+        const fill = CHART_COLORS[i % CHART_COLORS.length];
 
         return (
           <g key={i}>
@@ -63,7 +64,6 @@ export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarCha
               rx={6}
               ry={6}
               fill={fill}
-              opacity={i === 0 ? 1 : 0.7}
               style={{
                 transformOrigin: `${x + barWidth / 2}px ${chartBottom}px`,
                 animation: `${uniqueId} 0.5s ease-out ${i * 0.1}s both`,
@@ -88,7 +88,7 @@ export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarCha
               fill="#6b7280"
               fontFamily="system-ui, sans-serif"
             >
-              {bar.label.length > 20 ? bar.label.slice(0, 18) + "…" : bar.label}
+              {bar.label.length > 20 ? bar.label.slice(0, 18) + "\u2026" : bar.label}
             </text>
           </g>
         );

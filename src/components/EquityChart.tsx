@@ -25,6 +25,12 @@ function markerLabel(m: SettlementMarker) {
   return "Std";
 }
 
+const MARKER_COLORS: Record<string, string> = {
+  early: "#ca8a04",
+  standard: "#0891b2",
+  late: "#c026d3",
+};
+
 export function EquityChart({ series, width = 640, height = 260 }: Props) {
   const { points, markers } = series;
 
@@ -156,6 +162,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
 
       {markers.map((m) => {
         const x = xScale(m.month);
+        const color = MARKER_COLORS[m.timing] || "#d1d5db";
         return (
           <g key={m.timing}>
             <line
@@ -163,7 +170,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
               x2={x}
               y1={padding.top}
               y2={padding.top + innerH}
-              stroke="#d1d5db"
+              stroke={color}
               strokeWidth={1}
               strokeDasharray="4 4"
             />
@@ -174,7 +181,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
               height={18}
               rx={9}
               fill="#f9fafb"
-              stroke="#e5e7eb"
+              stroke={color}
               strokeWidth={1}
             />
             <text
@@ -182,9 +189,9 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
               y={padding.top + 10}
               fontSize={10}
               textAnchor="middle"
-              fill="#6b7280"
+              fill={color}
               fontFamily="system-ui, sans-serif"
-              fontWeight={500}
+              fontWeight={600}
             >
               {markerLabel(m)}
             </text>
@@ -195,7 +202,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       <path
         d={pathD}
         fill="none"
-        stroke="#111827"
+        stroke="#0891b2"
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
