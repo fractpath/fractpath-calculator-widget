@@ -1,5 +1,5 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
-import type { DealTerms, ScenarioAssumptions, DealResults } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions, DealResults } from "../compute.js";
 export type CalculatorPersona = "homeowner" | "buyer" | "realtor" | "investor" | "ops";
 export type CalculatorMode = "marketing" | "app";
 export declare const CONTRACT_VERSION = "10.2.0";

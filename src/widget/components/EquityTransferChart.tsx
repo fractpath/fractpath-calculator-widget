@@ -1,4 +1,4 @@
-import type { DealResults } from "@fractpath/compute";
+import type { DealResults } from "../../compute.js";
 
 export type EquityTransferChartProps = {
   results: DealResults;

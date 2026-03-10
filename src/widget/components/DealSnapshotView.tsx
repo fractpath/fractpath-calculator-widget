@@ -3,7 +3,7 @@ import type {
   DealTerms,
   ScenarioAssumptions,
   DealResults,
-} from "@fractpath/compute";
+} from "../../compute.js";
 import type { CalculatorPersona } from "../types.js";
 import { DealKpiStrip, type KpiItem } from "./DealKpiStrip.js";
 import { EquityTransferChart } from "./EquityTransferChart.js";

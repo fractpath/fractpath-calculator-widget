@@ -8,7 +8,7 @@
  * This wrapper maps draft.deal_terms → terms, draft.scenario → assumptions.
  * No field renames needed — canonical names match exactly.
  */
-import { type DealResults } from "@fractpath/compute";
+import { type DealResults } from "../../compute.js";
 import type { DraftCanonicalInputs } from "./types.js";
 export declare function previewCompute(draft: DraftCanonicalInputs): DealResults;
 //# sourceMappingURL=previewCompute.d.ts.map

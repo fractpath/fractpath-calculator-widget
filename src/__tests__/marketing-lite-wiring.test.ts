@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { computeDeal } from "@fractpath/compute";
-import type { DealTerms } from "@fractpath/compute";
+import { computeDeal } from "../compute.js";
+import type { DealTerms } from "../compute.js";
 import {
   buildMarketingDealTerms,
   buildMarketingAssumptions,

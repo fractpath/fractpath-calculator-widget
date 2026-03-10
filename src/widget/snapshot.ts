@@ -1,6 +1,6 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
-import type { DealTerms, ScenarioAssumptions } from "@fractpath/compute";
-import { computeDeal } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions } from "../compute.js";
+import { computeDeal } from "../compute.js";
 import { FEE_DEFAULTS } from "./editing/feeDefaults.js";
 import {
   CONTRACT_VERSION,
@@ -175,7 +175,7 @@ export function mapWidgetInputsToAssumptions(
 
 /**
  * Builds canonical FullDealSnapshotV1 from widget inputs.
- * Uses @fractpath/compute for deterministic outputs.
+ * Uses ../compute.js for deterministic outputs.
  */
 export function buildFullDealSnapshotV1(
   inputs: ScenarioInputs,

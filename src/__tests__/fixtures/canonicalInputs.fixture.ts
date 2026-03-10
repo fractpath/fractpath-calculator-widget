@@ -1,4 +1,4 @@
-import type { DealTerms, ScenarioAssumptions } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions } from "../compute.js";
 import type { DraftCanonicalInputs } from "../../widget/editing/types.js";
 
 export const FIXTURE_DEAL_TERMS: DealTerms = {

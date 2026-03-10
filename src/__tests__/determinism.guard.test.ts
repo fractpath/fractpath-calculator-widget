@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeDeal } from "@fractpath/compute";
+import { computeDeal } from "../compute.js";
 import { previewCompute } from "../widget/editing/previewCompute.js";
 import { deriveTier1Preview } from "../widget/editing/deriveTier1Preview.js";
 import { buildChartSeries } from "../calc/chart.js";

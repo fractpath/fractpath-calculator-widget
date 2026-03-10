@@ -1,5 +1,5 @@
 import type { DraftCanonicalInputs } from "./types.js";
-import type { DealResults } from "@fractpath/compute";
+import type { DealResults } from "../../compute.js";
 type DealTermsKey = Extract<keyof DraftCanonicalInputs["deal_terms"], string>;
 type ScenarioKey = Extract<keyof DraftCanonicalInputs["scenario"], string>;
 type DraftPath = `deal_terms.${DealTermsKey}` | `scenario.${ScenarioKey}`;

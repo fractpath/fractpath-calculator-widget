@@ -1,4 +1,4 @@
-import type { DealTerms, ScenarioAssumptions, DealResults } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions, DealResults } from "../compute.js";
 import type { CalculatorPersona } from "./types.js";
 import { formatCurrency, formatPct } from "./format.js";
 

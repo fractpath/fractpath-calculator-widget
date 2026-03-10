@@ -1,6 +1,6 @@
 import type { FractPathCalculatorWidgetProps } from "./types.js";
 import type { CalculatorPersona } from "./types.js";
-import type { DealTerms, ScenarioAssumptions, RealtorRepresentationMode } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions, RealtorRepresentationMode } from "../compute.js";
 import type { DraftCanonicalInputs } from "./editing/types.js";
 export type MarketingLiteState = {
     propertyValue: number;

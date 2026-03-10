@@ -1,5 +1,5 @@
 import type { ScenarioInputs, ScenarioOutputs } from "../calc/types.js";
-import type { DealTerms, ScenarioAssumptions } from "@fractpath/compute";
+import type { DealTerms, ScenarioAssumptions } from "../compute.js";
 import { type CalculatorPersona, type FullDealSnapshotV1, type DraftSnapshot, type ShareSummary, type SavePayload } from "./types.js";
 export declare function buildDraftSnapshot(persona: CalculatorPersona, normalizedInputs: ScenarioInputs, outputs: ScenarioOutputs): Promise<DraftSnapshot>;
 export declare function buildShareSummary(persona: CalculatorPersona, normalizedInputs: ScenarioInputs, outputs: ScenarioOutputs): ShareSummary;
@@ -15,7 +15,7 @@ export declare function mapWidgetInputsToDealTerms(inputs: ScenarioInputs): Deal
 export declare function mapWidgetInputsToAssumptions(inputs: ScenarioInputs): ScenarioAssumptions;
 /**
  * Builds canonical FullDealSnapshotV1 from widget inputs.
- * Uses @fractpath/compute for deterministic outputs.
+ * Uses ../compute.js for deterministic outputs.
  */
 export declare function buildFullDealSnapshotV1(inputs: ScenarioInputs): FullDealSnapshotV1;
 //# sourceMappingURL=snapshot.d.ts.map

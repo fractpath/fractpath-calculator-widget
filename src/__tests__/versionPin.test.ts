@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CONTRACT_VERSION, SCHEMA_VERSION } from "../widget/types.js";
-import { COMPUTE_VERSION } from "@fractpath/compute";
+import { COMPUTE_VERSION } from "../compute.js";
 import { buildFullDealSnapshotV1 } from "../widget/snapshot.js";
 import { computeScenario } from "../calc/calc.js";
 import { previewCompute } from "../widget/editing/previewCompute.js";

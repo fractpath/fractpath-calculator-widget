@@ -7,7 +7,7 @@ import type {
 } from "./types.js";
 
 import { DEFAULT_INPUTS } from "./constants.js";
-import { computeDeal } from "@fractpath/compute";
+import { computeDeal } from "../compute.js";
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
@@ -88,7 +88,7 @@ function settlementMonthForTiming(inputs: ScenarioInputs, timing: SettlementTimi
  * For wiring, we treat initialBuyAmount as an upfront_payment and set monthly_payment=0.
  * This makes settlements canonical (compute) without expanding UI surface area in the same step.
  */
-function toDealTerms(inputs: ScenarioInputs): import("@fractpath/compute").DealTerms {
+function toDealTerms(inputs: ScenarioInputs): import("../compute.js").DealTerms {
 
   return {
     property_value: inputs.homeValue,
@@ -173,7 +173,7 @@ function toSettlementResult(
 
 /**
  * Main deterministic engine.
- * Now delegates settlement math to @fractpath/compute (single source of truth).
+ * Now delegates settlement math to ../compute.js (single source of truth).
  */
 export function computeScenario(partialInputs: Partial<ScenarioInputs> = {}): ScenarioOutputs {
   const inputs = normalizeInputs(partialInputs);
