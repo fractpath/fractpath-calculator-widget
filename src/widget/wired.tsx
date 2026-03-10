@@ -1320,39 +1320,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         </div>
       </div>
 
-      {isMarketing && isDevMode() && (
-        <details style={{ marginTop: 16, fontSize: 11, color: "#6b7280" }}>
-          <summary style={{ cursor: "pointer" }}>
-            Canonical deal_terms (debug)
-          </summary>
-          <pre
-            style={{
-              whiteSpace: "pre-wrap",
-              background: "#f9fafb",
-              padding: 10,
-              borderRadius: 8,
-              marginTop: 4,
-              fontSize: 11,
-            }}
-          >
-            {JSON.stringify(
-              {
-                deal_terms: dealTerms,
-                assumptions,
-                result: {
-                  isa_settlement: canonicalResult.isa_settlement,
-                  invested_capital_total:
-                    canonicalResult.invested_capital_total,
-                  vested_equity_percentage:
-                    canonicalResult.vested_equity_percentage,
-                },
-              },
-              null,
-              2,
-            )}
-          </pre>
-        </details>
-      )}
 
       {showEditModal && canEdit && (
         <DealEditModalMount
