@@ -932,10 +932,8 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isMobile
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(4, minmax(0, 1fr))",
-                gap: isMobile ? 10 : 12,
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: isMobile ? 8 : 10,
                 marginBottom: 20,
               }}
               data-testid="summary-cards"
@@ -955,20 +953,17 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                   }}
                 >
                   <div style={{
-                    fontSize: isMobile ? 18 : 24,
+                    fontSize: isMobile ? 16 : 18,
                     fontWeight: 700,
                     color: "#111827",
                     letterSpacing: "-0.02em",
                     lineHeight: 1.2,
                     marginBottom: 4,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
                   }}>
                     <AnimatedNumber value={card.value} format={card.format} />
                   </div>
                   <div style={{
-                    fontSize: isMobile ? 9 : 11,
+                    fontSize: isMobile ? 9 : 10,
                     color: "#9ca3af",
                     fontWeight: 500,
                     textTransform: "uppercase",
@@ -999,7 +994,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               {presentation.hero.label}
             </div>
             <div style={{
-              fontSize: isMobile ? 28 : 34,
+              fontSize: isMobile ? 22 : 26,
               fontWeight: 700,
               color: "#111827",
               letterSpacing: "-0.02em",

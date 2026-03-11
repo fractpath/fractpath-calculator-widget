@@ -2978,8 +2978,8 @@ function xn(e) {
                   {
                     style: {
                       display: "grid",
-                      gridTemplateColumns: d ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
-                      gap: d ? 10 : 12,
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: d ? 8 : 10,
                       marginBottom: 20
                     },
                     "data-testid": "summary-cards",
@@ -2998,18 +2998,15 @@ function xn(e) {
                         },
                         children: [
                           /* @__PURE__ */ a("div", { style: {
-                            fontSize: d ? 18 : 24,
+                            fontSize: d ? 16 : 18,
                             fontWeight: 700,
                             color: "#111827",
                             letterSpacing: "-0.02em",
                             lineHeight: 1.2,
-                            marginBottom: 4,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap"
+                            marginBottom: 4
                           }, children: /* @__PURE__ */ a(yn, { value: p.value, format: p.format }) }),
                           /* @__PURE__ */ a("div", { style: {
-                            fontSize: d ? 9 : 11,
+                            fontSize: d ? 9 : 10,
                             color: "#9ca3af",
                             fontWeight: 500,
                             textTransform: "uppercase",
@@ -3039,7 +3036,7 @@ function xn(e) {
                     children: [
                       /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#6b7280", marginBottom: 4, fontWeight: 500 }, children: Q.hero.label }),
                       /* @__PURE__ */ a("div", { style: {
-                        fontSize: d ? 28 : 34,
+                        fontSize: d ? 22 : 26,
                         fontWeight: 700,
                         color: "#111827",
                         letterSpacing: "-0.02em"
