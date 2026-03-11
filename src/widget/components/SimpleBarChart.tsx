@@ -13,7 +13,7 @@ type SimpleBarChartProps = {
 
 const CHART_COLORS = ["#0891b2", "#c026d3", "#ca8a04", "#6b7280", "#374151"];
 
-export function SimpleBarChart({ bars, width = 480, height = 220 }: SimpleBarChartProps) {
+export function SimpleBarChart({ bars, width = 400, height = 220 }: SimpleBarChartProps) {
   const maxVal = Math.max(...bars.map((b) => b.value), 1);
   const barWidth = Math.min(80, (width - 60) / bars.length - 20);
   const chartTop = 36;

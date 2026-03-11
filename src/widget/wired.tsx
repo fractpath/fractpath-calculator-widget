@@ -296,6 +296,10 @@ const WIDGET_CSS = `
     outline-offset: 1px;
     border-color: #111827;
   }
+  [data-fractpath-widget] svg {
+    max-width: 100%;
+    height: auto;
+  }
 `;
 
 export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
@@ -569,10 +573,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     padding: "5px 12px",
     background: "#f9fafb",
     borderRadius: 20,
-    fontSize: 12,
+    fontSize: isMobile ? 11 : 12,
     color: "#374151",
     border: "1px solid #e5e7eb",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    wordBreak: "break-word",
+    maxWidth: "100%",
   };
 
   const chipLabelStyle: React.CSSProperties = {
@@ -615,6 +621,8 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
       style={{
         fontFamily: "system-ui, sans-serif",
         maxWidth: 960,
+        width: "100%",
+        overflow: "hidden",
       }}
       data-fractpath-widget
       data-persona={persona}
@@ -670,12 +678,12 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           display: "grid",
           gridTemplateColumns: isApp || isMobile
             ? "1fr"
-            : "minmax(240px, 1fr) minmax(340px, 2fr)",
+            : "minmax(0, 1fr) minmax(0, 2fr)",
           gap: isMobile ? 16 : 24,
         }}
       >
         {isMarketing && (
-          <div>
+          <div style={{ minWidth: 0, overflow: "hidden" }}>
             <h3
               style={{
                 margin: "0 0 16px 0",
@@ -919,12 +927,14 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           </div>
         )}
 
-        <div>
+        <div style={{ minWidth: 0 }}>
           {isMarketing && (
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr",
+                gridTemplateColumns: isMobile
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
                 gap: isMobile ? 10 : 12,
                 marginBottom: 20,
               }}
@@ -934,31 +944,38 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                 <div
                   key={card.label}
                   style={{
-                    padding: isMobile ? "14px 10px" : "16px",
+                    padding: isMobile ? "14px 8px" : "16px 12px",
                     background: "#f9fafb",
                     borderRadius: 12,
                     border: "1px solid #f3f4f6",
                     textAlign: "center",
                     animation: "fp-fadeIn 0.3s ease-out",
+                    overflow: "hidden",
+                    minWidth: 0,
                   }}
                 >
                   <div style={{
-                    fontSize: isMobile ? 20 : 24,
+                    fontSize: isMobile ? 18 : 24,
                     fontWeight: 700,
                     color: "#111827",
                     letterSpacing: "-0.02em",
                     lineHeight: 1.2,
                     marginBottom: 4,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}>
                     <AnimatedNumber value={card.value} format={card.format} />
                   </div>
                   <div style={{
-                    fontSize: isMobile ? 10 : 11,
+                    fontSize: isMobile ? 9 : 11,
                     color: "#9ca3af",
                     fontWeight: 500,
                     textTransform: "uppercase",
                     letterSpacing: "0.03em",
                     lineHeight: 1.3,
+                    wordBreak: "break-word",
+                    hyphens: "auto" as const,
                   }}>
                     {card.label}
                   </div>
@@ -1000,10 +1017,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           </div>
 
           {isMarketing && (
-            <div style={{ marginBottom: 20, padding: isMobile ? "4px 0" : "8px 0" }}>
+            <div style={{ marginBottom: 20, padding: isMobile ? "4px 0" : "8px 0", width: "100%", overflow: "hidden" }}>
               <SimpleBarChart
                 bars={presentation.chartSpec.bars}
-                width={480}
                 height={isMobile ? 180 : 220}
               />
             </div>
@@ -1015,6 +1031,8 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               flexWrap: "wrap",
               gap: 6,
               marginBottom: 16,
+              width: "100%",
+              overflow: "hidden",
             }}
             data-testid="summary-strip"
           >
@@ -1078,7 +1096,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                       borderRadius: 10,
                       border: "1px solid #f3f4f6",
                       display: "grid",
-                      gridTemplateColumns: isMobile ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr 1fr 1fr",
+                      gridTemplateColumns: isMobile
+                        ? "repeat(3, minmax(0, 1fr))"
+                        : "repeat(6, minmax(0, 1fr))",
                       gap: 8,
                       alignItems: "center",
                     }}
@@ -1145,7 +1165,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           )}
 
           {!isMarketing && chart && (
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 20, width: "100%", overflow: "hidden" }}>
               <EquityChart series={chart} width={520} height={isMobile ? 200 : 260} />
             </div>
           )}
