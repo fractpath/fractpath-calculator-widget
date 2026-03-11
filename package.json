@@ -13,6 +13,7 @@
     "prebuild": "npm run build:compute"
   },
   "dependencies": {
+    "@fractpath/compute": "file:./packages/compute",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "vitest": "^4.0.18"

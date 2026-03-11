@@ -613,95 +613,14 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   return (
     <div
       style={{
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 16,
-        padding: isMobile ? 16 : 24,
         fontFamily: "system-ui, sans-serif",
         maxWidth: 960,
-        background: "#ffffff",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
       }}
       data-fractpath-widget
       data-persona={persona}
       data-mode={mode}
     >
       <style>{WIDGET_CSS}</style>
-
-      <h2 style={{
-        margin: 0,
-        marginBottom: 4,
-        fontSize: isMobile ? 26 : 32,
-        fontWeight: 700,
-        color: "#111827",
-        letterSpacing: "-0.02em",
-        lineHeight: 1.2,
-      }}>
-        Model Your Scenario
-      </h2>
-      <p style={{
-        margin: "0 0 20px 0",
-        fontSize: isMobile ? 14 : 16,
-        color: "#6b7280",
-        lineHeight: 1.5,
-      }}>
-        Estimate how a home appreciation agreement could work based on your scenario.
-      </p>
-
-      {isMarketing && (
-        <div style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              gap: 4,
-              padding: 4,
-              background: "#f3f4f6",
-              borderRadius: 10,
-              marginBottom: 12,
-            }}
-            role="tablist"
-          >
-            {MARKETING_PERSONAS.map((tp) => {
-              const isActive = persona === tp;
-              return (
-                <button
-                  key={tp}
-                  type="button"
-                  onClick={() => setActivePersona(tp)}
-                  style={{
-                    padding: isMobile ? "8px 14px" : "8px 20px",
-                    fontSize: isMobile ? 13 : 14,
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? "#fff" : "#6b7280",
-                    background: isActive ? "#111827" : "transparent",
-                    border: "none",
-                    borderRadius: 7,
-                    cursor: "pointer",
-                    fontFamily: "system-ui, sans-serif",
-                    transition: "all 0.15s",
-                  }}
-                  aria-selected={isActive}
-                  role="tab"
-                >
-                  {TAB_LABELS[tp]}
-                </button>
-              );
-            })}
-          </div>
-
-          <p
-            key={persona}
-            style={{
-              margin: 0,
-              fontSize: isMobile ? 14 : 15,
-              color: "#6b7280",
-              lineHeight: 1.5,
-              animation: "fp-tabSwitch 0.2s ease-out",
-            }}
-          >
-            {PERSONA_VALUE_LINE[persona]}
-          </p>
-        </div>
-      )}
 
       {isApp && (
         <div style={{ marginBottom: 20 }}>
