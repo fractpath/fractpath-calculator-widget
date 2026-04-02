@@ -11,12 +11,14 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
-function formatPct(x: number) {
-  return `${Math.round(x * 100)}%`;
+function formatK(v: number): string {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${Math.round(v / 1_000)}k`;
+  return `$${Math.round(v)}`;
 }
 
 function formatYear(y: number) {
-  return `${Math.round(y * 10) / 10}y`;
+  return `Yr ${Math.round(y)}`;
 }
 
 function markerLabel(m: SettlementMarker) {
@@ -35,7 +37,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
   const { points, markers } = series;
 
   const uniqueId = useMemo(
-    () => `eq-${Math.random().toString(36).slice(2, 8)}`,
+    () => `cv-${Math.random().toString(36).slice(2, 8)}`,
     [],
   );
 
@@ -43,48 +45,49 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
     return <div style={{ fontFamily: "system-ui, sans-serif" }}>No data</div>;
   }
 
-  const padding = { top: 20, right: 24, bottom: 36, left: 50 };
+  const padding = { top: 24, right: 24, bottom: 40, left: 64 };
 
   const innerW = Math.max(10, width - padding.left - padding.right);
   const innerH = Math.max(10, height - padding.top - padding.bottom);
 
-  const xMin = points[0].month;
-  const xMax = points[points.length - 1].month;
+  const allYears = points.map((p) => p.year);
+  const xMin = Math.min(...allYears);
+  const xMax = Math.max(...allYears);
 
+  const allValues = points.flatMap((p) => [p.buyoutAmount, p.contractValue]);
   const yMin = 0;
-  const yMax = 1;
+  const yMax = Math.max(...allValues, 1);
 
-  const xScale = (month: number) => {
+  const xScale = (year: number) => {
     if (xMax === xMin) return padding.left;
-    return padding.left + ((month - xMin) / (xMax - xMin)) * innerW;
+    return padding.left + ((year - xMin) / (xMax - xMin)) * innerW;
   };
 
-  const yScale = (equityPct: number) => {
-    const v = clamp(equityPct, yMin, yMax);
+  const yScale = (value: number) => {
+    const v = clamp(value, yMin, yMax);
     return padding.top + (1 - (v - yMin) / (yMax - yMin)) * innerH;
   };
 
-  const pathD = points
+  const buyoutPathD = points
     .map((p, i) => {
-      const x = xScale(p.month);
-      const y = yScale(p.equityPct);
+      const x = xScale(p.year);
+      const y = yScale(p.buyoutAmount);
       return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
     })
     .join(" ");
 
-  const pathLength = points.length * 20;
+  const pathLength = points.length * 40;
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((v) => ({
-    v,
-    y: yScale(v),
-    label: formatPct(v),
-  }));
+  const yTickCount = 4;
+  const yTicks = Array.from({ length: yTickCount + 1 }, (_, i) => {
+    const v = (yMax * i) / yTickCount;
+    return { v, y: yScale(v), label: formatK(v) };
+  });
 
-  const midMonth = Math.round((xMin + xMax) / 2);
-  const xTicks = [xMin, midMonth, xMax].map((m) => ({
-    m,
-    x: xScale(m),
-    label: formatYear(m / 12),
+  const xTicks = points.map((p) => ({
+    year: p.year,
+    x: xScale(p.year),
+    label: p.label,
   }));
 
   return (
@@ -94,7 +97,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label="Equity over time"
+      aria-label="Contract value over time"
       style={{ display: "block" }}
     >
       <style>{`
@@ -105,8 +108,8 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       `}</style>
       <rect x={0} y={0} width={width} height={height} fill="white" rx={8} />
 
-      {yTicks.map((t) => (
-        <g key={t.v}>
+      {yTicks.map((t, i) => (
+        <g key={i}>
           <line
             x1={padding.left}
             x2={width - padding.right}
@@ -116,7 +119,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
             strokeWidth={1}
           />
           <text
-            x={padding.left - 10}
+            x={padding.left - 8}
             y={t.y + 4}
             fontSize={11}
             textAnchor="end"
@@ -138,30 +141,40 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       />
 
       {xTicks.map((t) => (
-        <g key={t.m}>
+        <g key={t.year}>
           <line
             x1={t.x}
             x2={t.x}
             y1={padding.top + innerH}
-            y2={padding.top + innerH + 6}
+            y2={padding.top + innerH + 5}
             stroke="#d1d5db"
             strokeWidth={1}
           />
           <text
             x={t.x}
-            y={padding.top + innerH + 24}
-            fontSize={11}
+            y={padding.top + innerH + 20}
+            fontSize={10}
             textAnchor="middle"
             fill="#9ca3af"
             fontFamily="system-ui, sans-serif"
           >
             {t.label}
           </text>
+          <text
+            x={t.x}
+            y={padding.top + innerH + 33}
+            fontSize={9}
+            textAnchor="middle"
+            fill="#d1d5db"
+            fontFamily="system-ui, sans-serif"
+          >
+            {formatYear(t.year)}
+          </text>
         </g>
       ))}
 
       {markers.map((m) => {
-        const x = xScale(m.month);
+        const x = xScale(m.year);
         const color = MARKER_COLORS[m.timing] || "#d1d5db";
         return (
           <g key={m.timing}>
@@ -175,9 +188,9 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
               strokeDasharray="4 4"
             />
             <rect
-              x={x - 18}
+              x={x - 20}
               y={padding.top - 4}
-              width={36}
+              width={40}
               height={18}
               rx={9}
               fill="#f9fafb"
@@ -200,7 +213,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       })}
 
       <path
-        d={pathD}
+        d={buyoutPathD}
         fill="none"
         stroke="#0891b2"
         strokeWidth={2.5}
@@ -213,6 +226,18 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
         }}
       />
 
+      {points.slice(1).map((p) => (
+        <circle
+          key={p.year}
+          cx={xScale(p.year)}
+          cy={yScale(p.buyoutAmount)}
+          r={4}
+          fill="#0891b2"
+          stroke="white"
+          strokeWidth={2}
+        />
+      ))}
+
       <text
         x={padding.left}
         y={14}
@@ -221,7 +246,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
         fontFamily="system-ui, sans-serif"
         fontWeight={500}
       >
-        Equity ownership over time
+        Contract Value Over Time
       </text>
     </svg>
   );

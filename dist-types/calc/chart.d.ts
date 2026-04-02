@@ -1,25 +1,24 @@
-import type { ScenarioOutputs, SettlementTiming } from "./types.js";
+import type { ScenarioOutputs } from "./types.js";
 export type ChartPoint = {
-    month: number;
     year: number;
-    homeValue: number;
-    equityPct: number;
+    label: string;
+    contractValue: number;
+    participationValue: number;
+    buyoutAmount: number;
+    discountPurchasePrice: number | null;
 };
 export type SettlementMarker = {
-    timing: SettlementTiming;
-    month: number;
+    timing: "early" | "standard" | "late";
     year: number;
-    homeValueAtSettlement: number;
-    equityPctAtSettlement: number;
-    netPayout: number;
+    buyoutAmount: number;
 };
 export type ChartSeries = {
     points: ChartPoint[];
     markers: SettlementMarker[];
 };
 /**
- * Pure transformer: converts ScenarioOutputs into chart-ready points + settlement markers.
- * No additional math beyond selecting fields and formatting structure.
+ * Pure transformer: converts ScenarioOutputs (v11-backed) into v11 milestone chart points.
+ * Uses the three settlement scenarios (early / standard / late) as the milestone years.
  */
 export declare function buildChartSeries(outputs: ScenarioOutputs): ChartSeries;
 //# sourceMappingURL=chart.d.ts.map

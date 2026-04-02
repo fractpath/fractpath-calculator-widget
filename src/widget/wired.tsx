@@ -1107,66 +1107,41 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                       display: "grid",
                       gridTemplateColumns: isMobile
                         ? "repeat(3, minmax(0, 1fr))"
-                        : "repeat(6, minmax(0, 1fr))",
+                        : "repeat(4, minmax(0, 1fr))",
                       gap: 8,
                       alignItems: "center",
                     }}
                   >
                     <div>
                       <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                        Timing
+                        Scenario
                       </div>
                       <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>
                         {s.label}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>When</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>Exit Year</div>
                       <div style={{ fontSize: 13, color: "#111827" }}>
-                        {formatMonth(s.data.settlementMonth)}
+                        Yr {Math.round(s.data.settlementMonth / 12)}
                       </div>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                        Net Payout
+                        Base Buyout
+                      </div>
+                      <div style={{ fontSize: 13, color: "#111827" }}>
+                        {formatCurrency(s.data.rawPayout)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                        Adj. Buyout
                       </div>
                       <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>
                         {formatCurrency(s.data.netPayout)}
                       </div>
                     </div>
-                    {!isMobile && (
-                      <>
-                        <div>
-                          <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                            Raw Payout
-                          </div>
-                          <div style={{ fontSize: 13, color: "#111827" }}>
-                            {formatCurrency(s.data.rawPayout)}
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                            Transfer Fee
-                          </div>
-                          <div style={{ fontSize: 13, color: "#111827" }}>
-                            {formatCurrency(s.data.transferFeeAmount)} (
-                            {formatPct(s.data.transferFeeRate)})
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                            Clamp
-                          </div>
-                          <div style={{ fontSize: 13, color: "#111827" }}>
-                            {s.data.clamp.applied === "none"
-                              ? "\u2014"
-                              : s.data.clamp.applied === "floor"
-                                ? "Floor"
-                                : "Cap"}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 ))}
               </div>

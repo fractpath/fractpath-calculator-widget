@@ -1,19 +1,18 @@
-import type { ScenarioOutputs, SettlementTiming, TimePoint } from "./types.js";
+import type { ScenarioOutputs } from "./types.js";
 
 export type ChartPoint = {
-  month: number;
   year: number;
-  homeValue: number;
-  equityPct: number;
+  label: string;
+  contractValue: number;
+  participationValue: number;
+  buyoutAmount: number;
+  discountPurchasePrice: number | null;
 };
 
 export type SettlementMarker = {
-  timing: SettlementTiming;
-  month: number;
+  timing: "early" | "standard" | "late";
   year: number;
-  homeValueAtSettlement: number;
-  equityPctAtSettlement: number;
-  netPayout: number;
+  buyoutAmount: number;
 };
 
 export type ChartSeries = {
@@ -22,28 +21,60 @@ export type ChartSeries = {
 };
 
 /**
- * Pure transformer: converts ScenarioOutputs into chart-ready points + settlement markers.
- * No additional math beyond selecting fields and formatting structure.
+ * Pure transformer: converts ScenarioOutputs (v11-backed) into v11 milestone chart points.
+ * Uses the three settlement scenarios (early / standard / late) as the milestone years.
  */
 export function buildChartSeries(outputs: ScenarioOutputs): ChartSeries {
-  const points: ChartPoint[] = outputs.series.map((p: TimePoint) => ({
-    month: p.month,
-    year: p.year,
-    homeValue: p.homeValue,
-    equityPct: p.equityPct
-  }));
+  const { early, standard, late } = outputs.settlements;
 
-  const markers: SettlementMarker[] = (["early", "standard", "late"] as const).map((timing) => {
-    const s = outputs.settlements[timing];
+  const originPoint: ChartPoint = {
+    year: 0,
+    label: "Start",
+    contractValue: 0,
+    participationValue: 0,
+    buyoutAmount: 0,
+    discountPurchasePrice: null,
+  };
+
+  function settlementToPoint(
+    s: typeof standard,
+    label: string,
+  ): ChartPoint {
+    const year = Math.round((s.settlementMonth / 12) * 10) / 10;
     return {
-      timing,
-      month: s.settlementMonth,
-      year: s.settlementMonth / 12,
-      homeValueAtSettlement: s.homeValueAtSettlement,
-      equityPctAtSettlement: s.equityPctAtSettlement,
-      netPayout: s.netPayout
+      year,
+      label,
+      contractValue: s.rawPayout,
+      participationValue: s.rawPayout,
+      buyoutAmount: s.netPayout,
+      discountPurchasePrice: null,
     };
-  });
+  }
+
+  const points: ChartPoint[] = [
+    originPoint,
+    settlementToPoint(early, "Early exit"),
+    settlementToPoint(standard, "Target exit"),
+    settlementToPoint(late, "Late exit"),
+  ];
+
+  const markers: SettlementMarker[] = [
+    {
+      timing: "early",
+      year: Math.round((early.settlementMonth / 12) * 10) / 10,
+      buyoutAmount: early.netPayout,
+    },
+    {
+      timing: "standard",
+      year: Math.round((standard.settlementMonth / 12) * 10) / 10,
+      buyoutAmount: standard.netPayout,
+    },
+    {
+      timing: "late",
+      year: Math.round((late.settlementMonth / 12) * 10) / 10,
+      buyoutAmount: late.netPayout,
+    },
+  ];
 
   return { points, markers };
 }

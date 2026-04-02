@@ -1,6 +1,8 @@
 /**
- * FractPath calculator deterministic contract.
- * Keep this file stable; other modules (calc, chart, UI, lead payload) depend on it.
+ * FractPath calculator adapter contract.
+ * These types represent the internal adapter layer between the widget's
+ * legacy ScenarioInputs API surface and the canonical v11 computeDeal engine.
+ * Keep this file stable; snapshot, chart, and UI layers depend on it.
  */
 
 export type SettlementTiming = "standard" | "early" | "late";
@@ -9,42 +11,38 @@ export type ScenarioInputs = {
   /** Current home value (FMV today) */
   homeValue: number;
 
-  /** Initial Buy Amount (cash advanced to homeowner) */
+  /** Initial Buy Amount (cash advanced to homeowner / buyer upfront payment) */
   initialBuyAmount: number;
 
-  /** Term in years */
+  /** Term in years — used as target_exit_year for computeDeal */
   termYears: number;
 
-  /** Expected annual home appreciation rate (g), e.g. 0.03 */
+  /** Expected annual home appreciation rate, e.g. 0.03 */
   annualGrowthRate: number;
 
-  /** Transfer Fee rate for settlement timing (applies to payout amount), e.g. 0.035 */
+  /** Transfer fee rates — maintained for schema compatibility; set to 0 by the v11 adapter */
   transferFeeRate_standard: number;
   transferFeeRate_early: number;
   transferFeeRate_late: number;
 
-  /** Floor multiplier (FM): minimum payout = IBA * FM */
+  /** Not used for settlement math in v11; retained for schema compatibility */
   floorMultiple: number;
 
-  /** Cap multiplier (CM): maximum payout = IBA * CM */
+  /** Not used for settlement math in v11; retained for schema compatibility */
   capMultiple: number;
 
   /**
-   * Percent of equity "owned" by buyer over time.
-   * Modeled as: upfront + monthly vesting (linear).
+   * Vesting schedule inputs — used to derive monthly_payment and number_of_payments
+   * for the v11 computeDeal adapter. Not a direct v11 concept.
    */
   vesting: {
-    /** Equity percentage immediately owned at close, e.g. 0.10 for 10% */
     upfrontEquityPct: number;
-    /** Equity percentage added per month, e.g. 0.0025 for 0.25%/mo */
     monthlyEquityPct: number;
-    /** Total months equity vests over; typically termYears * 12 */
     months: number;
   };
 
   /**
-   * Cost/coverage inputs (CPW), modeled as a percent range of home value,
-   * typically used for comparison/bands in the UI (not part of settlement math yet).
+   * Cost/coverage percent range — not part of settlement math; retained for schema compatibility.
    */
   cpw: {
     startPct: number;
@@ -55,61 +53,60 @@ export type ScenarioInputs = {
 export type TimePoint = {
   /** month index starting at 0 */
   month: number;
-  /** year index as float (month / 12) */
+  /** year as float (month / 12) */
   year: number;
   /** projected home value at this point */
   homeValue: number;
-  /** cumulative vested equity percentage (0..1) */
+  /** vesting-derived equity percentage (0..1) — adapter internal only */
   equityPct: number;
 };
 
 /**
- * Settlement outputs for a given timing.
- * Payout is clamped by floor/cap, then transfer fee applied to payout amount.
+ * Settlement result for a given exit scenario.
+ * In v11: rawPayout = base_buyout_amount, netPayout = extension_adjusted_buyout_amount.
+ * transferFeeAmount, transferFeeRate, clamp.applied are zero/none — no v10 clamp semantics.
  */
 export type SettlementResult = {
   timing: SettlementTiming;
 
-  /** Settlement at month index (0..months) */
   settlementMonth: number;
 
-  /** Home value at settlement */
   homeValueAtSettlement: number;
 
-  /** Equity percent at settlement */
+  /** funding_completion_factor from v11 computeDeal */
   equityPctAtSettlement: number;
 
-  /** Raw payout before floor/cap and transfer fee: homeValueAtSettlement * equityPctAtSettlement */
+  /** base_buyout_amount from v11 computeDeal */
   rawPayout: number;
 
-  /** Payout after floor/cap clamp */
+  /** extension_adjusted_buyout_amount from v11 computeDeal */
   clampedPayout: number;
 
-  /** Transfer fee amount (rate * clampedPayout) */
+  /** Always 0 — no transfer fee in v11 */
   transferFeeAmount: number;
 
-  /** Net payout to buyer after transfer fee */
+  /** extension_adjusted_buyout_amount — the final buyout amount */
   netPayout: number;
 
-  /** Clamp metadata */
+  /** No-op in v11 — always { floor: 0, cap: 0, applied: "none" } */
   clamp: {
     floor: number;
     cap: number;
     applied: "none" | "floor" | "cap";
   };
 
-  /** Transfer fee rate used */
+  /** Always 0 in v11 */
   transferFeeRate: number;
 };
 
 export type ScenarioOutputs = {
-  /** Inputs echoed back after defaults normalization (calc will fill defaults) */
+  /** Inputs echoed back after defaults normalization */
   normalizedInputs: ScenarioInputs;
 
-  /** Vesting / home value time series */
+  /** Month-by-month time series (homeValue + vesting-derived equityPct) */
   series: TimePoint[];
 
-  /** Settlement results at three timings */
+  /** Buyout results at three exit scenarios */
   settlements: {
     standard: SettlementResult;
     early: SettlementResult;
