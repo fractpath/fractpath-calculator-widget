@@ -22,22 +22,32 @@ describe("Canonical Field Coverage Guard", () => {
       "deal_terms.upfront_payment",
       "deal_terms.monthly_payment",
       "deal_terms.number_of_payments",
-      "deal_terms.payback_window_start_year",
-      "deal_terms.payback_window_end_year",
-      "deal_terms.timing_factor_early",
-      "deal_terms.timing_factor_late",
-      "deal_terms.floor_multiple",
-      "deal_terms.ceiling_multiple",
-      "deal_terms.downside_mode",
-      "deal_terms.contract_maturity_years",
-      "deal_terms.liquidity_trigger_year",
       "deal_terms.minimum_hold_years",
-      "deal_terms.platform_fee",
+      "deal_terms.contract_maturity_years",
+      "deal_terms.target_exit_year",
+      "deal_terms.target_exit_window_start_year",
+      "deal_terms.target_exit_window_end_year",
+      "deal_terms.long_stop_year",
+      "deal_terms.first_extension_start_year",
+      "deal_terms.first_extension_end_year",
+      "deal_terms.first_extension_premium_pct",
+      "deal_terms.second_extension_start_year",
+      "deal_terms.second_extension_end_year",
+      "deal_terms.second_extension_premium_pct",
+      "deal_terms.partial_buyout_allowed",
+      "deal_terms.partial_buyout_min_fraction",
+      "deal_terms.partial_buyout_increment_fraction",
+      "deal_terms.buyer_purchase_option_enabled",
+      "deal_terms.buyer_purchase_notice_days",
+      "deal_terms.buyer_purchase_closing_days",
+      "deal_terms.setup_fee_pct",
+      "deal_terms.setup_fee_floor",
+      "deal_terms.setup_fee_cap",
       "deal_terms.servicing_fee_monthly",
-      "deal_terms.exit_fee_pct",
+      "deal_terms.payment_admin_fee",
+      "deal_terms.exit_admin_fee_amount",
       "deal_terms.realtor_representation_mode",
       "deal_terms.realtor_commission_pct",
-      "deal_terms.realtor_commission_payment_mode",
     ];
 
     const REQUIRED_SCENARIO_KEYS = [
@@ -53,28 +63,38 @@ describe("Canonical Field Coverage Guard", () => {
     }
   });
 
-  it("defaults do not contain unexpected extra keys beyond canonical + DYF optional fields", () => {
+  it("defaults do not contain unexpected extra keys beyond canonical v11 fields", () => {
     const KNOWN_KEYS = [
       "deal_terms.property_value",
       "deal_terms.upfront_payment",
       "deal_terms.monthly_payment",
       "deal_terms.number_of_payments",
-      "deal_terms.payback_window_start_year",
-      "deal_terms.payback_window_end_year",
-      "deal_terms.timing_factor_early",
-      "deal_terms.timing_factor_late",
-      "deal_terms.floor_multiple",
-      "deal_terms.ceiling_multiple",
-      "deal_terms.downside_mode",
-      "deal_terms.contract_maturity_years",
-      "deal_terms.liquidity_trigger_year",
       "deal_terms.minimum_hold_years",
-      "deal_terms.platform_fee",
+      "deal_terms.contract_maturity_years",
+      "deal_terms.target_exit_year",
+      "deal_terms.target_exit_window_start_year",
+      "deal_terms.target_exit_window_end_year",
+      "deal_terms.long_stop_year",
+      "deal_terms.first_extension_start_year",
+      "deal_terms.first_extension_end_year",
+      "deal_terms.first_extension_premium_pct",
+      "deal_terms.second_extension_start_year",
+      "deal_terms.second_extension_end_year",
+      "deal_terms.second_extension_premium_pct",
+      "deal_terms.partial_buyout_allowed",
+      "deal_terms.partial_buyout_min_fraction",
+      "deal_terms.partial_buyout_increment_fraction",
+      "deal_terms.buyer_purchase_option_enabled",
+      "deal_terms.buyer_purchase_notice_days",
+      "deal_terms.buyer_purchase_closing_days",
+      "deal_terms.setup_fee_pct",
+      "deal_terms.setup_fee_floor",
+      "deal_terms.setup_fee_cap",
       "deal_terms.servicing_fee_monthly",
-      "deal_terms.exit_fee_pct",
+      "deal_terms.payment_admin_fee",
+      "deal_terms.exit_admin_fee_amount",
       "deal_terms.realtor_representation_mode",
       "deal_terms.realtor_commission_pct",
-      "deal_terms.realtor_commission_payment_mode",
       "scenario.annual_appreciation",
       "scenario.closing_cost_pct",
       "scenario.exit_year",
@@ -99,22 +119,16 @@ describe("Canonical Field Coverage Guard", () => {
   it("every FIELD_META key (except non-UI) corresponds to a canonical draft default key", () => {
     const nonUiSet = new Set<string>(NON_UI_KEYS);
     const optionalSet = new Set<string>(OPTIONAL_COMPUTE_KEYS);
-    const dyfKeys = new Set([
-      "deal_terms.duration_yield_floor_enabled",
-      "deal_terms.duration_yield_floor_start_year",
-      "deal_terms.duration_yield_floor_min_multiple",
-    ]);
 
     for (const meta of FIELD_META) {
       if (nonUiSet.has(meta.key)) continue;
       if (optionalSet.has(meta.key)) continue;
-      if (dyfKeys.has(meta.key)) continue;
       expect(defaultKeys, `FIELD_META key "${meta.key}" not found in draft defaults`).toContain(meta.key);
     }
   });
 
-  it("FIELD_META count matches expected (27 entries + disclosure)", () => {
-    expect(FIELD_META.length).toBe(27);
+  it("FIELD_META count matches expected (20 entries including disclosure)", () => {
+    expect(FIELD_META.length).toBe(20);
   });
 
   it("TAB_CONFIG covers all 5 tabs", () => {

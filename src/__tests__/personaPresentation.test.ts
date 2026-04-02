@@ -11,22 +11,32 @@ function makeDealTerms(overrides: Partial<DealTerms> = {}): DealTerms {
     upfront_payment: 100_000,
     monthly_payment: 500,
     number_of_payments: 24,
-    payback_window_start_year: 3,
-    payback_window_end_year: 7,
-    timing_factor_early: 1,
-    timing_factor_late: 1,
-    floor_multiple: 1.10,
-    ceiling_multiple: 2.00,
-    downside_mode: "HARD_FLOOR",
-    contract_maturity_years: 30,
-    liquidity_trigger_year: 13,
     minimum_hold_years: 2,
-    platform_fee: 2500,
+    contract_maturity_years: 15,
+    target_exit_year: 10,
+    target_exit_window_start_year: 9,
+    target_exit_window_end_year: 11,
+    long_stop_year: 15,
+    first_extension_start_year: 11,
+    first_extension_end_year: 14,
+    first_extension_premium_pct: 0.05,
+    second_extension_start_year: 14,
+    second_extension_end_year: 15,
+    second_extension_premium_pct: 0.08,
+    partial_buyout_allowed: false,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
+    buyer_purchase_option_enabled: false,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+    setup_fee_pct: 0.02,
+    setup_fee_floor: 2000,
+    setup_fee_cap: 10000,
     servicing_fee_monthly: 49,
-    exit_fee_pct: 0.01,
+    payment_admin_fee: 5,
+    exit_admin_fee_amount: 500,
     realtor_representation_mode: "NONE",
     realtor_commission_pct: 0,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
     ...overrides,
   };
 }
@@ -49,17 +59,18 @@ describe("persona hero metric selection", () => {
   const assumptions = makeAssumptions();
   const outputs = getOutputs(terms, assumptions);
 
-  it("buyer hero uses investor_profit and label 'Projected Net Return'", () => {
+  it("buyer hero has label 'Projected Net Return' and value = buyout minus invested", () => {
     const result = resolvePersonaPresentation("buyer", terms, assumptions, outputs);
     expect(result.hero.label).toBe("Projected Net Return");
-    expect(result.hero.value).toBe(outputs.investor_profit);
+    const expectedProfit = outputs.extension_adjusted_buyout_amount - outputs.actual_buyer_funding_to_date;
+    expect(result.hero.value).toBeCloseTo(expectedProfit, 2);
     expect(result.hero.valueFormat).toBe("currency");
   });
 
-  it("homeowner hero uses invested_capital_total and label 'Lifetime Cash Unlocked'", () => {
+  it("homeowner hero uses actual_buyer_funding_to_date and label 'Lifetime Cash Unlocked'", () => {
     const result = resolvePersonaPresentation("homeowner", terms, assumptions, outputs);
     expect(result.hero.label).toBe("Lifetime Cash Unlocked");
-    expect(result.hero.value).toBe(outputs.invested_capital_total);
+    expect(result.hero.value).toBe(outputs.actual_buyer_funding_to_date);
     expect(result.hero.valueFormat).toBe("currency");
   });
 
@@ -74,7 +85,7 @@ describe("persona hero metric selection", () => {
     expect(result.hero.value).toBe(realtorOutputs.realtor_fee_total_projected);
   });
 
-  it("realtor hero value is NOT the buyer settlement (isa_settlement) when commission differs", () => {
+  it("realtor hero value is NOT the buyer buyout when commission differs", () => {
     const realtorTerms = makeDealTerms({
       realtor_representation_mode: "BUYER",
       realtor_commission_pct: 0.03,
@@ -83,19 +94,21 @@ describe("persona hero metric selection", () => {
     const result = resolvePersonaPresentation("realtor", realtorTerms, assumptions, realtorOutputs);
 
     expect(result.hero.value).toBe(realtorOutputs.realtor_fee_total_projected);
-    expect(result.hero.value).not.toBe(realtorOutputs.isa_settlement);
+    expect(result.hero.value).not.toBe(realtorOutputs.extension_adjusted_buyout_amount);
   });
 
   it("investor persona falls back to buyer hero mapping", () => {
     const result = resolvePersonaPresentation("investor", terms, assumptions, outputs);
     expect(result.hero.label).toBe("Projected Net Return");
-    expect(result.hero.value).toBe(outputs.investor_profit);
+    const expectedProfit = outputs.extension_adjusted_buyout_amount - outputs.actual_buyer_funding_to_date;
+    expect(result.hero.value).toBeCloseTo(expectedProfit, 2);
   });
 
   it("ops persona falls back to buyer hero mapping", () => {
     const result = resolvePersonaPresentation("ops", terms, assumptions, outputs);
     expect(result.hero.label).toBe("Projected Net Return");
-    expect(result.hero.value).toBe(outputs.investor_profit);
+    const expectedProfit = outputs.extension_adjusted_buyout_amount - outputs.actual_buyer_funding_to_date;
+    expect(result.hero.value).toBeCloseTo(expectedProfit, 2);
   });
 });
 
@@ -108,19 +121,20 @@ describe("persona strip chips", () => {
     const result = resolvePersonaPresentation("buyer", terms, assumptions, outputs);
     expect(result.strip).toHaveLength(5);
     expect(result.strip.map(c => c.label)).toEqual([
-      "Net payout at settlement",
+      "Net payout at buyout",
       "Total cash paid",
       "Projected home value",
-      "Implied equity share",
+      "Effective appreciation share",
       "Return multiple",
     ]);
   });
 
   it("buyer strip values come from canonical outputs", () => {
     const result = resolvePersonaPresentation("buyer", terms, assumptions, outputs);
-    expect(result.strip[0].value).toBe(outputs.isa_settlement);
-    expect(result.strip[1].value).toBe(outputs.invested_capital_total);
-    expect(result.strip[2].value).toBe(outputs.projected_fmv);
+    expect(result.strip[0].value).toBe(outputs.extension_adjusted_buyout_amount);
+    expect(result.strip[1].value).toBe(outputs.actual_buyer_funding_to_date);
+    const expectedFmv = terms.property_value * Math.pow(1 + assumptions.annual_appreciation, assumptions.exit_year);
+    expect(result.strip[2].value as number).toBeCloseTo(expectedFmv, 2);
   });
 
   it("homeowner strip has 5 chips", () => {
@@ -148,15 +162,14 @@ describe("token integrity (derived values)", () => {
   const assumptions = makeAssumptions();
   const outputs = getOutputs(terms, assumptions);
 
-  it("implied_equity_share_pct == isa_settlement / projected_fmv", () => {
+  it("effective appreciation share chip matches outputs.effective_buyer_appreciation_share", () => {
     const result = resolvePersonaPresentation("buyer", terms, assumptions, outputs);
-    const equityChip = result.strip.find(c => c.label === "Implied equity share");
+    const equityChip = result.strip.find(c => c.label === "Effective appreciation share");
     expect(equityChip).toBeDefined();
-    const expected = outputs.isa_settlement / outputs.projected_fmv;
-    expect(equityChip!.value).toBeCloseTo(expected, 6);
+    expect(equityChip!.value).toBeCloseTo(outputs.effective_buyer_appreciation_share, 6);
   });
 
-  it("remaining_opportunity_value == projected_fmv - isa_settlement", () => {
+  it("remaining_opportunity_value == projected_fmv - extension_adjusted_buyout_amount", () => {
     const realtorTerms = makeDealTerms({
       realtor_representation_mode: "BUYER",
       realtor_commission_pct: 0.03,
@@ -165,23 +178,23 @@ describe("token integrity (derived values)", () => {
     const result = resolvePersonaPresentation("realtor", realtorTerms, assumptions, realtorOutputs);
     const remainingChip = result.strip.find(c => c.label === "Remaining opportunity");
     expect(remainingChip).toBeDefined();
-    const expected = realtorOutputs.projected_fmv - realtorOutputs.isa_settlement;
-    expect(remainingChip!.value).toBeCloseTo(expected, 2);
+    const fmv = realtorTerms.property_value * Math.pow(1 + assumptions.annual_appreciation, assumptions.exit_year);
+    const expected = Math.max(0, fmv - realtorOutputs.extension_adjusted_buyout_amount);
+    expect(remainingChip!.value as number).toBeCloseTo(expected, 2);
   });
 
-  it("implied_equity_share_pct handles zero projected_fmv gracefully", () => {
+  it("effective appreciation share handles zero property value gracefully", () => {
     const zeroTerms = makeDealTerms({ property_value: 0, upfront_payment: 0, monthly_payment: 0, number_of_payments: 0 });
     const zeroOutputs = getOutputs(zeroTerms);
     const result = resolvePersonaPresentation("buyer", zeroTerms, assumptions, zeroOutputs);
-    const equityChip = result.strip.find(c => c.label === "Implied equity share");
+    const equityChip = result.strip.find(c => c.label === "Effective appreciation share");
     expect(equityChip).toBeDefined();
-    expect(Number.isFinite(equityChip!.value)).toBe(true);
+    expect(Number.isFinite(equityChip!.value as number)).toBe(true);
   });
 });
 
 describe("no-compute import in personaPresentation module", () => {
   it("personaPresentation.ts does not import compute engine", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const fs = await (import("fs") as Promise<typeof import("fs")>);
     const content = fs.readFileSync("src/widget/personaPresentation.ts", "utf-8");
     expect(content).not.toContain("computeDeal(");
@@ -208,7 +221,7 @@ describe("persona chart spec", () => {
     expect(result.chartSpec.type).toBe("bar");
     expect(result.chartSpec.bars).toHaveLength(3);
     expect(result.chartSpec.bars[0].label).toBe("Total cash paid");
-    expect(result.chartSpec.bars[1].label).toBe("Settlement payout");
+    expect(result.chartSpec.bars[1].label).toBe("Buyout payout");
     expect(result.chartSpec.bars[2].label).toBe("Projected home value");
   });
 
@@ -233,10 +246,10 @@ describe("persona marketing bullets", () => {
   const assumptions = makeAssumptions();
   const outputs = getOutputs(terms, assumptions);
 
-  it("buyer bullets mention equity, no financing, and growth assumption", () => {
+  it("buyer bullets mention appreciation share, no financing, and growth assumption", () => {
     const result = resolvePersonaPresentation("buyer", terms, assumptions, outputs);
     expect(result.marketingBullets).toHaveLength(4);
-    expect(result.marketingBullets[0]).toContain("equity built over");
+    expect(result.marketingBullets[0]).toContain("effective appreciation share");
     expect(result.marketingBullets[0]).toContain("no financing or interest");
     expect(result.marketingBullets[3]).toContain("annual appreciation");
   });

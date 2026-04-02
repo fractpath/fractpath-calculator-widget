@@ -28,18 +28,18 @@ export function getMarketingBullets(
 
   if (persona === "realtor") {
     return [
-      `Projected net ${payoutWord} of ${payoutLabel} at standard settlement (${whenLabel}).`,
+      `Projected net ${payoutWord} of ${payoutLabel} at standard buyout (${whenLabel}).`,
       `Based on a ${homeLabel} property with ${investLabel} upfront, assuming ${pctLabel} annual growth.`,
       `Commission and fees are tracked separately and do not reduce this figure.`,
-      `Settlement timing and growth rate affect the final amount.`,
+      `Buyout timing and growth rate affect the final amount.`,
     ];
   }
 
   return [
     `Projected net ${payoutWord} of ${payoutLabel} based on ${investLabel} ${cashWord} upfront.`,
     `Assumes ${subjectWord} grows at ${pctLabel} per year over ${termYears} years.`,
-    `Standard settlement is expected at ${whenLabel}.`,
-    `Earlier or later settlement timing may change this result.`,
+    `Standard buyout is expected at ${whenLabel}.`,
+    `Earlier or later buyout timing may change this result.`,
   ];
 }
 
@@ -50,9 +50,9 @@ type TabExplainerInputs = {
   contractMaturityYears?: number;
   minimumHoldYears?: number;
   exitYear?: number;
-  platformFee?: number;
+  setupFeePct?: number;
   servicingFeeMonthly?: number;
-  exitFeePct?: number;
+  exitAdminFeeAmount?: number;
 };
 
 export function getTabExplainer(
@@ -77,7 +77,7 @@ export function getTabExplainer(
       if (lines.length === 0) {
         lines.push(`The upfront amount is set at closing. Monthly installments, if any, follow.`);
       }
-      lines.push(`These amounts go directly toward the equity position.`);
+      lines.push(`These amounts make up the total scheduled buyer funding.`);
       return lines;
     }
 
@@ -87,22 +87,22 @@ export function getTabExplainer(
         lines.push(`The contract lasts up to ${inputs.contractMaturityYears} years.`);
       }
       if (inputs.minimumHoldYears != null) {
-        lines.push(`Earliest allowed settlement is at year ${inputs.minimumHoldYears}.`);
+        lines.push(`Earliest allowed buyout is at year ${inputs.minimumHoldYears}.`);
       }
       if (inputs.exitYear != null) {
-        lines.push(`Expected settlement is at year ${inputs.exitYear}.`);
+        lines.push(`Expected buyout is at year ${inputs.exitYear}.`);
       }
       if (lines.length === 0) {
-        lines.push(`This tab controls how long the deal lasts and when settlement can happen.`);
+        lines.push(`This tab controls how long the deal lasts and when buyout can happen.`);
       }
       return lines;
     }
 
     case "protections": {
       return [
-        `A floor sets the minimum ${payoutWord} — the ${payoutWord} won't go below this level.`,
-        `A ceiling caps the maximum ${payoutWord}. Both are adjustable in this tab.`,
-        `Duration yield floor, if enabled, adds extra protection for longer hold periods.`,
+        `Extension premiums apply if the deal extends beyond the target exit window.`,
+        `A higher premium compensates FractPath for a longer hold period.`,
+        `Partial buyouts let the homeowner buy out FractPath\u2019s stake in stages.`,
       ];
     }
 
@@ -115,17 +115,17 @@ export function getTabExplainer(
 
     case "fees": {
       const lines: string[] = [];
-      if (inputs.platformFee != null) {
-        lines.push(`Platform fee: ${formatCurrency(inputs.platformFee)} (one-time at closing).`);
+      if (inputs.setupFeePct != null) {
+        lines.push(`Setup fee: ${formatPct(inputs.setupFeePct)} of upfront payment at closing.`);
       }
       if (inputs.servicingFeeMonthly != null) {
         lines.push(`Monthly servicing: ${formatCurrency(inputs.servicingFeeMonthly)}/mo for account management.`);
       }
-      if (inputs.exitFeePct != null) {
-        lines.push(`Exit fee: ${formatPct(inputs.exitFeePct)} of the settlement amount at exit.`);
+      if (inputs.exitAdminFeeAmount != null) {
+        lines.push(`Exit admin fee: ${formatCurrency(inputs.exitAdminFeeAmount)} flat at settlement.`);
       }
       if (lines.length === 0) {
-        lines.push(`Fees include a platform fee, monthly servicing, and an exit fee at settlement.`);
+        lines.push(`Fees include a setup fee at closing, monthly servicing, and an exit admin fee at settlement.`);
       }
       if (persona === "realtor") {
         lines.push(`Realtor commission is tracked separately below.`);

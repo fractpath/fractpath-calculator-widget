@@ -87,10 +87,10 @@ describe("Determinism Guard: computeDeal canonical", () => {
 
   it("key numeric outputs are stable and non-trivial", () => {
     const r = computeDeal(FIXTURE_DEAL_TERMS, FIXTURE_ASSUMPTIONS);
-    expect(r.invested_capital_total).toBe(80_000 + 500 * 36);
-    expect(r.projected_fmv).toBeGreaterThan(750_000);
-    expect(r.isa_settlement).toBeGreaterThan(0);
-    expect(r.investor_profit).toBeDefined();
-    expect(r.compute_version).toBe("10.2.0");
+    expect(r.actual_buyer_funding_to_date).toBe(80_000 + 500 * 36);
+    expect(r.current_participation_value).toBeGreaterThan(0);
+    expect(r.extension_adjusted_buyout_amount).toBeGreaterThan(0);
+    expect(r.funding_completion_factor).toBeDefined();
+    expect(r.compute_version).toBe("11.0.0");
   });
 });

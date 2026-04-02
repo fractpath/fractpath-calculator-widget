@@ -38,7 +38,7 @@ export const TAB_CONFIG: TabConfig[] = [
         fieldKeys: [
           "deal_terms.minimum_hold_years",
           "deal_terms.contract_maturity_years",
-          "deal_terms.liquidity_trigger_year",
+          "deal_terms.target_exit_year",
         ],
       },
     ],
@@ -63,31 +63,19 @@ export const TAB_CONFIG: TabConfig[] = [
   },
   {
     key: "protections",
-    label: "Protections",
+    label: "Exit Terms",
     sections: [
       {
-        label: "Floor & ceiling",
+        label: "Extension premiums",
         fieldKeys: [
-          "deal_terms.floor_multiple",
-          "deal_terms.ceiling_multiple",
-          "deal_terms.downside_mode",
+          "deal_terms.first_extension_premium_pct",
+          "deal_terms.second_extension_premium_pct",
         ],
       },
       {
-        label: "Timing window",
+        label: "Partial buyout",
         fieldKeys: [
-          "deal_terms.payback_window_start_year",
-          "deal_terms.payback_window_end_year",
-          "deal_terms.timing_factor_early",
-          "deal_terms.timing_factor_late",
-        ],
-      },
-      {
-        label: "Duration Yield Floor",
-        fieldKeys: [
-          "deal_terms.duration_yield_floor_enabled",
-          "deal_terms.duration_yield_floor_start_year",
-          "deal_terms.duration_yield_floor_min_multiple",
+          "deal_terms.partial_buyout_allowed",
         ],
       },
     ],
@@ -99,9 +87,10 @@ export const TAB_CONFIG: TabConfig[] = [
       {
         label: "System fees",
         fieldKeys: [
-          "deal_terms.platform_fee",
+          "deal_terms.setup_fee_pct",
           "deal_terms.servicing_fee_monthly",
-          "deal_terms.exit_fee_pct",
+          "deal_terms.payment_admin_fee",
+          "deal_terms.exit_admin_fee_amount",
         ],
       },
       {
@@ -109,7 +98,6 @@ export const TAB_CONFIG: TabConfig[] = [
         fieldKeys: [
           "deal_terms.realtor_representation_mode",
           "deal_terms.realtor_commission_pct",
-          "deal_terms.realtor_commission_payment_mode",
         ],
       },
     ],

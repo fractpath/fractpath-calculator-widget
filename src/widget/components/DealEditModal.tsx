@@ -115,7 +115,7 @@ export function DealEditModal({
 
   const handleEnumChange = useCallback(
     (key: FieldKey, value: string) => {
-      if (key === "deal_terms.duration_yield_floor_enabled") {
+      if (key === "deal_terms.partial_buyout_allowed") {
         setField(key as DraftPath, value === "true");
         onBlurCompute();
         return;
@@ -177,9 +177,6 @@ export function DealEditModal({
     if (key === "deal_terms.realtor_commission_pct") {
       return draft.deal_terms.realtor_representation_mode === "NONE";
     }
-    if (key === "deal_terms.realtor_commission_payment_mode") {
-      return true;
-    }
     return false;
   };
 
@@ -223,7 +220,7 @@ export function DealEditModal({
     if (meta.control === "enum") {
       const options = meta.options ?? [];
       const currentValue =
-        key === "deal_terms.duration_yield_floor_enabled"
+        key === "deal_terms.partial_buyout_allowed"
           ? String(value)
           : (value as string);
 
@@ -442,9 +439,9 @@ export function DealEditModal({
                     contractMaturityYears: draft.deal_terms.contract_maturity_years,
                     minimumHoldYears: draft.deal_terms.minimum_hold_years,
                     exitYear: draft.scenario.exit_year,
-                    platformFee: draft.deal_terms.platform_fee,
+                    setupFeePct: draft.deal_terms.setup_fee_pct,
                     servicingFeeMonthly: draft.deal_terms.servicing_fee_monthly,
-                    exitFeePct: draft.deal_terms.exit_fee_pct,
+                    exitAdminFeeAmount: draft.deal_terms.exit_admin_fee_amount,
                   }).map((line, i) => (
                     <li key={i} style={{ marginBottom: 2 }}>{line}</li>
                   ))}

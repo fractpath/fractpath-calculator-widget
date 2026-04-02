@@ -90,7 +90,7 @@ describe("Versioning", () => {
     const snap = await buildDraftSnapshot("buyer", out.normalizedInputs, out);
     expect(snap.contract_version).toBe(CONTRACT_VERSION);
     expect(snap.schema_version).toBe(SCHEMA_VERSION);
-    expect(snap.contract_version).toBe("10.2.0");
+    expect(snap.contract_version).toBe("11.0.0");
   });
 
   it("ShareSummary contains correct version fields", () => {

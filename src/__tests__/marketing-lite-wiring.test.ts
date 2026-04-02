@@ -34,9 +34,9 @@ describe("marketing-lite compute wiring (split-brain fix)", () => {
     expect(terms.upfront_payment).toBe(50_000);
     expect(terms.monthly_payment).toBe(500);
     expect(terms.number_of_payments).toBe(24);
-    expect(terms.platform_fee).toBe(FEE_DEFAULTS.platform_fee);
+    expect(terms.setup_fee_pct).toBe(FEE_DEFAULTS.setup_fee_pct);
     expect(terms.servicing_fee_monthly).toBe(FEE_DEFAULTS.servicing_fee_monthly);
-    expect(terms.exit_fee_pct).toBe(FEE_DEFAULTS.exit_fee_pct);
+    expect(terms.exit_admin_fee_amount).toBe(FEE_DEFAULTS.exit_admin_fee_amount);
   });
 
   it("buildMarketingAssumptions maps UI state to canonical ScenarioAssumptions", () => {
@@ -48,7 +48,7 @@ describe("marketing-lite compute wiring (split-brain fix)", () => {
     expect(assumptions.closing_cost_pct).toBe(0);
   });
 
-  it("upfront=0 + installments=0/0 produces near-zero or zero isa_settlement", () => {
+  it("upfront=0 + installments=0/0 produces near-zero buyout", () => {
     const state = makeState({ upfrontPayment: 0, monthlyPayment: 0, numberOfPayments: 0 });
     const terms = buildMarketingDealTerms(state);
     const assumptions = buildMarketingAssumptions(state);
@@ -57,19 +57,19 @@ describe("marketing-lite compute wiring (split-brain fix)", () => {
     expect(terms.upfront_payment).toBe(0);
     expect(terms.monthly_payment).toBe(0);
     expect(terms.number_of_payments).toBe(0);
-    expect(result.invested_capital_total).toBe(0);
-    expect(result.isa_settlement).toBe(0);
+    expect(result.actual_buyer_funding_to_date).toBe(0);
+    expect(result.extension_adjusted_buyout_amount).toBeLessThanOrEqual(FEE_DEFAULTS.exit_admin_fee_amount);
   });
 
-  it("upfront=0 MUST NOT produce ~209k or ~343k (stale defaults regression)", () => {
+  it("upfront=0 MUST NOT produce large stale-defaults buyout", () => {
     const state = makeState({ upfrontPayment: 0, monthlyPayment: 0, numberOfPayments: 0 });
     const terms = buildMarketingDealTerms(state);
     const assumptions = buildMarketingAssumptions(state);
     const result = computeDeal(terms, assumptions);
 
-    expect(result.isa_settlement).not.toBeGreaterThan(1000);
-    expect(result.isa_settlement).not.toBe(209_000);
-    expect(result.isa_settlement).not.toBe(343_564);
+    expect(result.extension_adjusted_buyout_amount).not.toBe(209_000);
+    expect(result.extension_adjusted_buyout_amount).not.toBe(343_564);
+    expect(result.extension_adjusted_buyout_amount).toBeLessThan(10_000);
   });
 
   it("changing upfront_payment changes canonical compute result", () => {
@@ -79,20 +79,20 @@ describe("marketing-lite compute wiring (split-brain fix)", () => {
     const result100k = computeDeal(buildMarketingDealTerms(state100k), buildMarketingAssumptions(state100k));
     const result50k = computeDeal(buildMarketingDealTerms(state50k), buildMarketingAssumptions(state50k));
 
-    expect(result100k.isa_settlement).not.toBe(result50k.isa_settlement);
-    expect(result100k.isa_settlement).toBeGreaterThan(result50k.isa_settlement);
+    expect(result100k.extension_adjusted_buyout_amount).not.toBe(result50k.extension_adjusted_buyout_amount);
+    expect(result100k.extension_adjusted_buyout_amount).toBeGreaterThan(result50k.extension_adjusted_buyout_amount);
   });
 
-  it("monthly_payment=500 x 24 months changes settlement vs zero installments", () => {
+  it("monthly_payment=500 x 24 months changes buyout vs zero installments", () => {
     const stateNoInstall = makeState({ upfrontPayment: 0, monthlyPayment: 0, numberOfPayments: 0 });
     const stateWithInstall = makeState({ upfrontPayment: 0, monthlyPayment: 500, numberOfPayments: 24 });
 
     const resultNo = computeDeal(buildMarketingDealTerms(stateNoInstall), buildMarketingAssumptions(stateNoInstall));
     const resultWith = computeDeal(buildMarketingDealTerms(stateWithInstall), buildMarketingAssumptions(stateWithInstall));
 
-    expect(resultNo.isa_settlement).toBe(0);
-    expect(resultWith.isa_settlement).toBeGreaterThan(0);
-    expect(resultWith.invested_capital_total).toBe(500 * 24);
+    expect(resultNo.extension_adjusted_buyout_amount).toBeLessThanOrEqual(FEE_DEFAULTS.exit_admin_fee_amount);
+    expect(resultWith.extension_adjusted_buyout_amount).toBeGreaterThan(0);
+    expect(resultWith.actual_buyer_funding_to_date).toBe(500 * 24);
   });
 
   it("realtor fields flow through to canonical DealTerms", () => {
@@ -101,7 +101,6 @@ describe("marketing-lite compute wiring (split-brain fix)", () => {
 
     expect(terms.realtor_representation_mode).toBe("BUYER");
     expect(terms.realtor_commission_pct).toBeCloseTo(0.03);
-    expect(terms.realtor_commission_payment_mode).toBe("PER_PAYMENT_EVENT");
   });
 
   it("realtor NONE defaults commission to 0", () => {
@@ -114,45 +113,21 @@ describe("marketing-lite compute wiring (split-brain fix)", () => {
 });
 
 describe("stale defaults regression", () => {
-  it("computeDeal with zero investment returns zero settlement", () => {
-    const terms: DealTerms = {
-      property_value: 600_000,
-      upfront_payment: 0,
-      monthly_payment: 0,
-      number_of_payments: 0,
-      payback_window_start_year: 3,
-      payback_window_end_year: 7,
-      timing_factor_early: 1,
-      timing_factor_late: 1,
-      floor_multiple: 1.10,
-      ceiling_multiple: 2.00,
-      downside_mode: "HARD_FLOOR",
-      contract_maturity_years: 30,
-      liquidity_trigger_year: 13,
-      minimum_hold_years: 2,
-      platform_fee: 2500,
-      servicing_fee_monthly: 49,
-      exit_fee_pct: 0.01,
-      duration_yield_floor_enabled: false,
-      duration_yield_floor_start_year: null,
-      duration_yield_floor_min_multiple: null,
-      realtor_representation_mode: "NONE",
-      realtor_commission_pct: 0,
-      realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
-    };
-
+  it("computeDeal with zero investment returns zero funding and near-zero buyout", () => {
+    const state = makeState({ upfrontPayment: 0, monthlyPayment: 0, numberOfPayments: 0 });
+    const terms = buildMarketingDealTerms(state);
     const result = computeDeal(terms, { annual_appreciation: 0.03, closing_cost_pct: 0, exit_year: 10 });
 
-    expect(result.invested_capital_total).toBe(0);
-    expect(result.isa_settlement).toBe(0);
+    expect(result.actual_buyer_funding_to_date).toBe(0);
+    expect(result.extension_adjusted_buyout_amount).toBeLessThanOrEqual(FEE_DEFAULTS.exit_admin_fee_amount);
   });
 
-  it("default marketing state (100k upfront) produces a positive settlement", () => {
+  it("default marketing state (100k upfront) produces a positive buyout", () => {
     const state = makeState();
     const result = computeDeal(buildMarketingDealTerms(state), buildMarketingAssumptions(state));
 
-    expect(result.invested_capital_total).toBe(100_000);
-    expect(result.isa_settlement).toBeGreaterThan(0);
+    expect(result.actual_buyer_funding_to_date).toBe(100_000);
+    expect(result.extension_adjusted_buyout_amount).toBeGreaterThan(0);
   });
 });
 

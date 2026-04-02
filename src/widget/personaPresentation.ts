@@ -49,6 +49,10 @@ function fmtToken(value: number, fmt: ValueFormat): string {
   }
 }
 
+function projectedFmv(dealTerms: DealTerms, assumptions: ScenarioAssumptions): number {
+  return dealTerms.property_value * Math.pow(1 + assumptions.annual_appreciation, assumptions.exit_year);
+}
+
 export function resolvePersonaPresentation(
   persona: CalculatorPersona,
   dealTerms: DealTerms,
@@ -69,44 +73,43 @@ export function resolvePersonaPresentation(
 }
 
 function resolveBuyer(
-  _dealTerms: DealTerms,
+  dealTerms: DealTerms,
   assumptions: ScenarioAssumptions,
   outputs: DealResults,
 ): PersonaPresentationResult {
-  const buyerProfit = outputs.investor_profit;
-  const buyerSettlement = outputs.isa_settlement;
-  const buyerTotalInvested = outputs.invested_capital_total;
-  const projectedFmv = outputs.projected_fmv;
-  const buyerMultiple = outputs.investor_multiple;
-  const impliedEquitySharePct =
-    projectedFmv > 0 ? buyerSettlement / projectedFmv : 0;
+  const buyerPayout = outputs.extension_adjusted_buyout_amount;
+  const buyerInvested = outputs.actual_buyer_funding_to_date;
+  const buyerProfit = buyerPayout - buyerInvested;
+  const fmv = projectedFmv(dealTerms, assumptions);
+  const buyerMultiple = buyerInvested > 0 ? buyerPayout / buyerInvested : 1;
+  const impliedEquitySharePct = fmv > 0 ? outputs.effective_buyer_appreciation_share : 0;
 
   return {
     hero: {
       label: "Projected Net Return",
       value: buyerProfit,
       valueFormat: "currency",
-      subtitle: `Profit at standard settlement (Year ${assumptions.exit_year}).`,
+      subtitle: `Profit at standard buyout (Year ${assumptions.exit_year}).`,
     },
     strip: [
-      { label: "Net payout at settlement", value: buyerSettlement, valueFormat: "currency" },
-      { label: "Total cash paid", value: buyerTotalInvested, valueFormat: "currency" },
-      { label: "Projected home value", value: projectedFmv, valueFormat: "currency" },
-      { label: "Implied equity share", value: impliedEquitySharePct, valueFormat: "percent" },
+      { label: "Net payout at buyout", value: buyerPayout, valueFormat: "currency" },
+      { label: "Total cash paid", value: buyerInvested, valueFormat: "currency" },
+      { label: "Projected home value", value: fmv, valueFormat: "currency" },
+      { label: "Effective appreciation share", value: impliedEquitySharePct, valueFormat: "percent" },
       { label: "Return multiple", value: buyerMultiple, valueFormat: "multiple" },
     ],
     chartSpec: {
       type: "bar",
       bars: [
-        { label: "Total cash paid", value: buyerTotalInvested },
-        { label: "Settlement payout", value: buyerSettlement },
-        { label: "Projected home value", value: projectedFmv },
+        { label: "Total cash paid", value: buyerInvested },
+        { label: "Buyout payout", value: buyerPayout },
+        { label: "Projected home value", value: fmv },
       ],
     },
     marketingBullets: [
-      `~${fmtToken(impliedEquitySharePct, "percent")} equity built over ${assumptions.exit_year} years — with no financing or interest.`,
-      `You contribute ${fmtToken(buyerTotalInvested, "currency")} total. At settlement, payout is ${fmtToken(buyerSettlement, "currency")}.`,
-      `Projected home value at settlement: ${fmtToken(projectedFmv, "currency")} (base assumptions).`,
+      `~${fmtToken(impliedEquitySharePct, "percent")} effective appreciation share over ${assumptions.exit_year} years — with no financing or interest.`,
+      `You contribute ${fmtToken(buyerInvested, "currency")} total. At buyout, payout is ${fmtToken(buyerPayout, "currency")}.`,
+      `Projected home value at buyout: ${fmtToken(fmv, "currency")} (base assumptions).`,
       `Assumes ${fmtToken(assumptions.annual_appreciation, "percent")} annual appreciation — Save & Continue free to model different growth and timing.`,
     ],
   };
@@ -117,8 +120,8 @@ function resolveHomeowner(
   assumptions: ScenarioAssumptions,
   outputs: DealResults,
 ): PersonaPresentationResult {
-  const homeownerCashReceived = outputs.invested_capital_total;
-  const projectedFmv = outputs.projected_fmv;
+  const homeownerCashReceived = outputs.actual_buyer_funding_to_date;
+  const fmv = projectedFmv(dealTerms, assumptions);
 
   return {
     hero: {
@@ -132,19 +135,19 @@ function resolveHomeowner(
       { label: "Monthly cash received", value: dealTerms.monthly_payment, valueFormat: "currency" },
       { label: "Installment months", value: dealTerms.number_of_payments, valueFormat: "months" },
       { label: "Total cash unlocked", value: homeownerCashReceived, valueFormat: "currency" },
-      { label: "Projected home value", value: projectedFmv, valueFormat: "currency" },
+      { label: "Projected home value", value: fmv, valueFormat: "currency" },
     ],
     chartSpec: {
       type: "bar",
       bars: [
         { label: "Cash unlocked", value: homeownerCashReceived },
-        { label: "Projected home value", value: projectedFmv },
+        { label: "Projected home value", value: fmv },
       ],
     },
     marketingBullets: [
       `Unlock ${fmtToken(homeownerCashReceived, "currency")} while continuing to own your home.`,
       `Upfront: ${fmtToken(dealTerms.upfront_payment, "currency")}. Monthly: ${fmtToken(dealTerms.monthly_payment, "currency")} for ${dealTerms.number_of_payments} months.`,
-      `Projected home value at settlement: ${fmtToken(projectedFmv, "currency")} (base assumptions).`,
+      `Projected home value at buyout: ${fmtToken(fmv, "currency")} (base assumptions).`,
       `Assumes ${fmtToken(assumptions.annual_appreciation, "percent")} annual appreciation — Save & Continue free to model growth, protections, and timing.`,
     ],
   };
@@ -152,13 +155,13 @@ function resolveHomeowner(
 
 function resolveRealtor(
   dealTerms: DealTerms,
-  _assumptions: ScenarioAssumptions,
+  assumptions: ScenarioAssumptions,
   outputs: DealResults,
 ): PersonaPresentationResult {
   const commissionProjected = outputs.realtor_fee_total_projected;
-  const buyerSettlement = outputs.isa_settlement;
-  const projectedFmv = outputs.projected_fmv;
-  const remainingOpportunityValue = projectedFmv - buyerSettlement;
+  const buyerPayout = outputs.extension_adjusted_buyout_amount;
+  const fmv = projectedFmv(dealTerms, assumptions);
+  const remainingOpportunityValue = fmv - buyerPayout;
   const commissionPctDisplay = dealTerms.realtor_commission_pct * 100;
 
   return {
@@ -189,7 +192,7 @@ function resolveRealtor(
       `Projected commission on this deal: ${fmtToken(commissionProjected, "currency")} (standard timing).`,
       `Commission rate: ${commissionPctDisplay.toFixed(1)}% as ${dealTerms.realtor_representation_mode} representation.`,
       `Capture buyers and sellers earlier — without requiring an immediate full sale or full purchase.`,
-      `Remaining property value at settlement (conditional): ${fmtToken(remainingOpportunityValue > 0 ? remainingOpportunityValue : 0, "currency")}. Save free to model scenarios.`,
+      `Remaining property value at buyout (conditional): ${fmtToken(remainingOpportunityValue > 0 ? remainingOpportunityValue : 0, "currency")}. Save free to model scenarios.`,
     ],
   };
 }

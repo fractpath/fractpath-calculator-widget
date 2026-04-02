@@ -7,7 +7,7 @@ import type { ScenarioInputs, ScenarioOutputs } from "./types.js";
 export declare function normalizeInputs(partial: Partial<ScenarioInputs>): ScenarioInputs;
 /**
  * Main deterministic engine.
- * Now delegates settlement math to ../compute.js (single source of truth).
+ * Delegates settlement math to ../compute.js (single source of truth).
  */
 export declare function computeScenario(partialInputs?: Partial<ScenarioInputs>): ScenarioOutputs;
 //# sourceMappingURL=calc.d.ts.map

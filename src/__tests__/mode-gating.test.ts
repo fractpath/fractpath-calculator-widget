@@ -169,7 +169,5 @@ describe("Mode gating: realtor commission constraints", () => {
       defaults.scenario
     );
     expect(results.realtor_fee_total_projected).toBe(0);
-    expect(results.realtor_fee_upfront_projected).toBe(0);
-    expect(results.realtor_fee_installments_projected).toBe(0);
   });
 });

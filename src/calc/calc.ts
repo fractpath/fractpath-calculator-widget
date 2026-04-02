@@ -38,12 +38,10 @@ export function normalizeInputs(partial: Partial<ScenarioInputs>): ScenarioInput
 
 function projectHomeValue(homeValue0: number, annualGrowthRate: number, month: number): number {
   const years = month / 12;
-  // continuous-ish monthly compounding via fractional exponent
   return homeValue0 * Math.pow(1 + annualGrowthRate, years);
 }
 
 function equityPctAtMonth(upfront: number, monthly: number, month: number): number {
-  // linear vesting; clamp to [0, 1]
   return clamp(upfront + monthly * month, 0, 1);
 }
 
@@ -72,59 +70,57 @@ function settlementMonthForTiming(inputs: ScenarioInputs, timing: SettlementTimi
 
   if (timing === "standard") return termMonths;
 
-  // Placeholder per MVP (replace with frozen spec when available)
-  if (timing === "early") return Math.min(36, termMonths); // 3 years or earlier if shorter term
+  if (timing === "early") return Math.min(36, termMonths);
 
-  // "late": term + 24 months (2 years) — requires extending the series
   if (timing === "late") return termMonths + 24;
 
   return termMonths;
 }
 
 /**
- * Adapter: map current widget inputs (ScenarioInputs) into canonical compute DealTerms.
- *
- * NOTE: The current widget UI does not collect payment schedule inputs yet.
- * For wiring, we treat initialBuyAmount as an upfront_payment and set monthly_payment=0.
- * This makes settlements canonical (compute) without expanding UI surface area in the same step.
+ * Adapter: map current widget inputs (ScenarioInputs) into canonical v11 DealTerms.
  */
 function toDealTerms(inputs: ScenarioInputs): import("../compute.js").DealTerms {
+  const termYears = inputs.termYears;
 
   return {
     property_value: inputs.homeValue,
     upfront_payment: inputs.initialBuyAmount,
     monthly_payment: inputs.vesting.monthlyEquityPct * inputs.homeValue,
     number_of_payments: inputs.vesting.months,
-
-    // Payback window + timing factors:
-    // The legacy widget had TF as a transfer fee rate; canonical compute uses timing factor multipliers.
-    // Until UI collects these, we default to neutral (1) and place window across the term.
-    payback_window_start_year: Math.max(0, Math.floor(inputs.termYears / 3)),
-    payback_window_end_year: Math.max(1, Math.ceil((inputs.termYears * 2) / 3)),
-    timing_factor_early: 1,
-    timing_factor_late: 1,
-
-    floor_multiple: inputs.floorMultiple,
-    ceiling_multiple: inputs.capMultiple,
-
-    downside_mode: "HARD_FLOOR" as const,
-
-    // Not currently modeled in widget UI; keep deterministic defaults.
-    contract_maturity_years: 30,
-    liquidity_trigger_year: 13,
     minimum_hold_years: 2,
-    platform_fee: 0,
-    servicing_fee_monthly: 0,
-    exit_fee_pct: 0,
+    contract_maturity_years: Math.max(termYears + 5, 15),
 
-    // DYF defaults (disabled)
-    duration_yield_floor_enabled: false,
-    duration_yield_floor_start_year: null,
-    duration_yield_floor_min_multiple: null,
+    target_exit_year: termYears,
+    target_exit_window_start_year: Math.max(1, termYears - 1),
+    target_exit_window_end_year: termYears + 1,
+    long_stop_year: termYears + 5,
+
+    first_extension_start_year: termYears + 1,
+    first_extension_end_year: termYears + 4,
+    first_extension_premium_pct: 0.05,
+
+    second_extension_start_year: termYears + 4,
+    second_extension_end_year: termYears + 5,
+    second_extension_premium_pct: 0.08,
+
+    partial_buyout_allowed: false,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
+
+    buyer_purchase_option_enabled: false,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+
+    setup_fee_pct: 0.02,
+    setup_fee_floor: 1_000,
+    setup_fee_cap: 5_000,
+    servicing_fee_monthly: 0,
+    payment_admin_fee: 0,
+    exit_admin_fee_amount: 0,
 
     realtor_representation_mode: "NONE",
     realtor_commission_pct: 0,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
   };
 }
 
@@ -142,43 +138,31 @@ function toSettlementResult(
     exit_year: exitYear,
   });
 
-  const applied: "none" | "floor" | "cap" =
-    results.isa_settlement === results.isa_pre_floor_cap
-      ? "none"
-      : results.isa_settlement === results.floor_amount
-        ? "floor"
-        : results.isa_settlement === results.ceiling_amount
-          ? "cap"
-          : "none";
-
-  // Legacy contract includes "transfer fee" applied to payout.
-  // Canonical compute does not model transfer fees yet, so we set them to 0 for now.
-  const transferFeeRate = 0;
-  const transferFeeAmount = 0;
-  const netPayout = results.isa_settlement;
+  const homeValueAtSettlement = terms.property_value * Math.pow(1 + inputs.annualGrowthRate, exitYear);
+  const basePayout = results.base_buyout_amount;
+  const netPayout = results.extension_adjusted_buyout_amount;
 
   return {
     timing,
     settlementMonth: month,
-    homeValueAtSettlement: results.projected_fmv,
-    equityPctAtSettlement: results.vested_equity_percentage,
-    rawPayout: results.isa_pre_floor_cap,
-    clampedPayout: results.isa_settlement,
-    transferFeeAmount,
+    homeValueAtSettlement,
+    equityPctAtSettlement: results.funding_completion_factor,
+    rawPayout: basePayout,
+    clampedPayout: netPayout,
+    transferFeeAmount: 0,
     netPayout,
-    clamp: { floor: results.floor_amount, cap: results.ceiling_amount, applied },
-    transferFeeRate,
+    clamp: { floor: 0, cap: 0, applied: "none" },
+    transferFeeRate: 0,
   };
 }
 
 /**
  * Main deterministic engine.
- * Now delegates settlement math to ../compute.js (single source of truth).
+ * Delegates settlement math to ../compute.js (single source of truth).
  */
 export function computeScenario(partialInputs: Partial<ScenarioInputs> = {}): ScenarioOutputs {
   const inputs = normalizeInputs(partialInputs);
 
-  // Ensure series covers the furthest settlement month
   const maxMonth = Math.max(
     settlementMonthForTiming(inputs, "standard"),
     settlementMonthForTiming(inputs, "early"),

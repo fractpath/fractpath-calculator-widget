@@ -117,45 +117,51 @@ export async function buildSavePayload(
 }
 
 /**
- * Maps widget-level ScenarioInputs to canonical DealTerms.
+ * Maps widget-level ScenarioInputs to canonical v11 DealTerms.
  * Missing canonical fields use deterministic defaults documented inline.
  */
 export function mapWidgetInputsToDealTerms(inputs: ScenarioInputs): DealTerms {
+  const termYears = inputs.termYears;
   return {
     property_value: inputs.homeValue,
     upfront_payment: inputs.initialBuyAmount,
-    // Default: monthly_payment derived from vesting schedule; 0 if absent
     monthly_payment: inputs.vesting?.monthlyEquityPct
       ? inputs.vesting.monthlyEquityPct * inputs.homeValue
       : 0,
-    number_of_payments: inputs.vesting?.months ?? inputs.termYears * 12,
+    number_of_payments: inputs.vesting?.months ?? termYears * 12,
+    minimum_hold_years: 2,
+    contract_maturity_years: Math.max(termYears + 5, 15),
 
-    // Default payback windows: start at year 3, end at contract maturity
-    payback_window_start_year: 3,
-    payback_window_end_year: inputs.termYears,
+    target_exit_year: termYears,
+    target_exit_window_start_year: Math.max(1, termYears - 1),
+    target_exit_window_end_year: termYears + 1,
+    long_stop_year: termYears + 5,
 
-    // Default timing factors: 0.85 early penalty, 1.10 late bonus
-    timing_factor_early: 0.85,
-    timing_factor_late: 1.10,
+    first_extension_start_year: termYears + 1,
+    first_extension_end_year: termYears + 4,
+    first_extension_premium_pct: 0.05,
 
-    floor_multiple: inputs.floorMultiple,
-    ceiling_multiple: inputs.capMultiple,
-    downside_mode: "HARD_FLOOR",
+    second_extension_start_year: termYears + 4,
+    second_extension_end_year: termYears + 5,
+    second_extension_premium_pct: 0.08,
 
-    contract_maturity_years: inputs.termYears,
-    // Default: liquidity trigger at 70% of term
-    liquidity_trigger_year: Math.floor(inputs.termYears * 0.7),
-    // Default: minimum 1-year hold
-    minimum_hold_years: 1,
+    partial_buyout_allowed: false,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
 
-    platform_fee: FEE_DEFAULTS.platform_fee,
+    buyer_purchase_option_enabled: false,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+
+    setup_fee_pct: FEE_DEFAULTS.setup_fee_pct,
+    setup_fee_floor: FEE_DEFAULTS.setup_fee_floor,
+    setup_fee_cap: FEE_DEFAULTS.setup_fee_cap,
     servicing_fee_monthly: FEE_DEFAULTS.servicing_fee_monthly,
-    exit_fee_pct: FEE_DEFAULTS.exit_fee_pct,
+    payment_admin_fee: FEE_DEFAULTS.payment_admin_fee,
+    exit_admin_fee_amount: FEE_DEFAULTS.exit_admin_fee_amount,
 
-    // Default realtor: NONE with 0 commission, PER_PAYMENT_EVENT locked
     realtor_representation_mode: "NONE",
     realtor_commission_pct: 0,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
   };
 }
 
@@ -167,7 +173,6 @@ export function mapWidgetInputsToAssumptions(
 ): ScenarioAssumptions {
   return {
     annual_appreciation: inputs.annualGrowthRate,
-    // Default: 2% closing costs
     closing_cost_pct: 0.02,
     exit_year: inputs.termYears,
   };

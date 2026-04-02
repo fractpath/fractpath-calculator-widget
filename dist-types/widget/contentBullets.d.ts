@@ -16,9 +16,9 @@ type TabExplainerInputs = {
     contractMaturityYears?: number;
     minimumHoldYears?: number;
     exitYear?: number;
-    platformFee?: number;
+    setupFeePct?: number;
     servicingFeeMonthly?: number;
-    exitFeePct?: number;
+    exitAdminFeeAmount?: number;
 };
 export declare function getTabExplainer(tab: TabKey, persona: CalculatorPersona, inputs: TabExplainerInputs): string[];
 export {};

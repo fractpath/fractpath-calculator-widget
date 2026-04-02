@@ -1,205 +1,116 @@
-import { jsx as a, jsxs as c, Fragment as ue } from "react/jsx-runtime";
-import { useMemo as O, useState as P, useRef as de, useEffect as ae, useCallback as N } from "react";
-import { createPortal as Ke } from "react-dom";
-function D(e) {
+import { jsx as a, jsxs as s, Fragment as ue } from "react/jsx-runtime";
+import { useMemo as N, useState as M, useRef as se, useEffect as ne, useCallback as z } from "react";
+import { createPortal as He } from "react-dom";
+function O(e) {
   return Math.round((e + Number.EPSILON) * 100) / 100;
 }
-function Oe(e) {
-  return Math.round((e + Number.EPSILON) * 1e6) / 1e6;
-}
-function Xe(e) {
-  return Math.round((e + Number.EPSILON) * 1e4) / 1e4;
-}
-const Ie = 1e3, we = 1e-10;
-function ce(e, t) {
-  let n = 0;
-  for (let r = 0; r < t.length; r++)
-    n += t[r] / Math.pow(1 + e, r);
-  return n;
-}
-function Je(e, t) {
-  let n = 0;
-  for (let r = 1; r < t.length; r++)
-    n += -r * t[r] / Math.pow(1 + e, r + 1);
-  return n;
-}
-function Qe(e) {
-  if (e.length < 2)
-    return null;
-  let t = 0.01;
-  for (let n = 0; n < Ie; n++) {
-    const r = ce(t, e), o = Je(t, e);
-    if (Math.abs(o) < 1e-20)
-      return ge(e);
-    const i = t - r / o;
-    if (i <= -1)
-      return ge(e);
-    if (Math.abs(i - t) < we)
-      return Oe(i);
-    t = i;
-  }
-  return ge(e);
-}
-function ge(e) {
-  let t = -0.999, n = 10;
-  const r = ce(t, e), o = ce(n, e);
-  if (r * o > 0)
-    return null;
-  for (let i = 0; i < Ie; i++) {
-    const l = (t + n) / 2, u = ce(l, e);
-    if (Math.abs(u) < we || (n - t) / 2 < we)
-      return Oe(l);
-    u * ce(t, e) < 0 ? n = l : t = l;
-  }
-  return null;
-}
-function Ze(e) {
-  const t = Math.pow(1 + e, 12) - 1;
-  return Xe(t);
-}
-function et(e) {
-  const t = Qe(e);
-  return t === null ? 0 : Ze(t);
-}
-const tt = "10.2.0";
-function he(e, t) {
-  const n = Math.floor(t.exit_year * 12), r = Math.min(e.number_of_payments, n), o = D(e.upfront_payment + nt(e.monthly_payment, r)), i = D(at(e, t)), l = rt(e, t.annual_appreciation, r), u = D(i * l), m = D(u - o), _ = ot(e, t.exit_year), g = D(o + m * _), x = D(o * e.floor_multiple), f = D(o * e.ceiling_multiple), d = D(it(e.downside_mode, g, x, f)), { isa_settlement: w, dyf_floor_amount: E, dyf_applied: Y } = lt(e, t.exit_year, o, d), W = D(w - o), k = D(o > 0 ? w / o : 0), V = st(e, r, n, w), h = et(V), M = ct(e, t.annual_appreciation, r);
+const Ye = "11.0.0";
+function fe(e, t) {
+  const n = Math.floor(t.exit_year * 12), r = Math.min(e.number_of_payments, n), o = O(e.upfront_payment + e.monthly_payment * e.number_of_payments), c = O(e.upfront_payment + e.monthly_payment * r), i = o > 0 ? c / o : 0, _ = e.property_value > 0 ? o / e.property_value : 0, d = _ * i, h = O(t.fmv_override !== void 0 && t.fmv_override !== null && t.fmv_override > 0 ? t.fmv_override : e.property_value * Math.pow(1 + t.annual_appreciation, t.exit_year)), x = c, w = Math.max(0, h - e.property_value), y = O(w * d), u = O(x + y), v = O(Math.min(Math.max(o * e.setup_fee_pct, e.setup_fee_floor), e.setup_fee_cap)), E = n, L = O(v + e.servicing_fee_monthly * E + e.payment_admin_fee * r + e.exit_admin_fee_amount), B = O(u + e.exit_admin_fee_amount), P = Ue(e, t.exit_year), j = O(qe(B, P, e)), f = Ke(e, j), C = e.buyer_purchase_option_enabled ? O(h - u) : null, A = Xe(e, r);
   return {
-    invested_capital_total: o,
-    vested_equity_percentage: l,
-    projected_fmv: i,
-    base_equity_value: u,
-    gain_above_capital: m,
-    timing_factor_applied: _,
-    isa_pre_floor_cap: g,
-    floor_amount: x,
-    ceiling_amount: f,
-    isa_standard_pre_dyf: d,
-    isa_settlement: w,
-    dyf_floor_amount: E,
-    dyf_applied: Y,
-    investor_profit: W,
-    investor_multiple: k,
-    investor_irr_annual: h,
-    realtor_fee_total_projected: M.realtor_fee_total_projected,
-    realtor_fee_upfront_projected: M.realtor_fee_upfront_projected,
-    realtor_fee_installments_projected: M.realtor_fee_installments_projected,
-    buyer_realtor_fee_total_projected: M.buyer_realtor_fee_total_projected,
-    seller_realtor_fee_total_projected: M.seller_realtor_fee_total_projected,
-    investor_irr_annual_net: null,
-    compute_version: tt
+    total_scheduled_buyer_funding: o,
+    actual_buyer_funding_to_date: c,
+    funding_completion_factor: i,
+    scheduled_buyer_appreciation_share: _,
+    effective_buyer_appreciation_share: d,
+    buyer_base_capital_component: x,
+    buyer_appreciation_claim: y,
+    current_contract_value: h,
+    current_participation_value: u,
+    base_buyout_amount: B,
+    extension_adjusted_buyout_amount: j,
+    partial_buyout_amount_25: f[25],
+    partial_buyout_amount_50: f[50],
+    partial_buyout_amount_75: f[75],
+    discount_purchase_price: C,
+    current_window: P,
+    fractpath_setup_fee_amount: v,
+    fractpath_revenue_to_date: L,
+    realtor_fee_total_projected: A,
+    compute_version: Ye
   };
 }
-function nt(e, t) {
-  return e * t;
+function Ue(e, t) {
+  return t < e.target_exit_window_start_year ? "pre_target" : t <= e.target_exit_window_end_year ? "target_exit" : t > e.long_stop_year ? "post_long_stop" : t >= e.first_extension_start_year && t <= e.first_extension_end_year ? "first_extension" : t >= e.second_extension_start_year && t <= e.second_extension_end_year ? "second_extension" : "post_long_stop";
 }
-function at(e, t) {
-  return t.fmv_override !== void 0 && t.fmv_override !== null && t.fmv_override > 0 ? t.fmv_override : e.property_value * Math.pow(1 + t.annual_appreciation, t.exit_year);
-}
-function rt(e, t, n) {
-  const r = e.upfront_payment / e.property_value;
-  let o = 0;
-  for (let i = 1; i <= n; i++) {
-    const l = e.property_value * Math.pow(1 + t, i / 12);
-    o += e.monthly_payment / l;
+function qe(e, t, n) {
+  switch (t) {
+    case "pre_target":
+    case "target_exit":
+      return e;
+    case "first_extension":
+      return e * (1 + n.first_extension_premium_pct);
+    case "second_extension":
+      return e * (1 + n.second_extension_premium_pct);
+    case "post_long_stop":
+      return e * (1 + n.second_extension_premium_pct);
   }
-  return r + o;
 }
-function ot(e, t) {
-  return t < e.payback_window_start_year ? e.timing_factor_early : t > e.payback_window_end_year ? e.timing_factor_late : 1;
+function Ge(e, t, n) {
+  if (e < t || n <= 0)
+    return !1;
+  const r = e / n;
+  return Math.abs(r - Math.round(r)) < 1e-9;
 }
-function it(e, t, n, r) {
-  return Math.min(e === "HARD_FLOOR" ? Math.max(t, n) : t, r);
-}
-function lt(e, t, n, r) {
-  if (!e.duration_yield_floor_enabled || e.duration_yield_floor_start_year == null || e.duration_yield_floor_min_multiple == null)
-    return { isa_settlement: r, dyf_floor_amount: null, dyf_applied: !1 };
-  const o = D(n * e.duration_yield_floor_min_multiple);
-  return t >= e.duration_yield_floor_start_year && r < o ? { isa_settlement: o, dyf_floor_amount: o, dyf_applied: !0 } : { isa_settlement: r, dyf_floor_amount: o, dyf_applied: !1 };
-}
-function st(e, t, n, r) {
-  const o = new Array(n + 1).fill(0);
-  o[0] = -e.upfront_payment;
-  for (let i = 1; i <= t; i++)
-    o[i] = -e.monthly_payment;
-  return o[n] += r, o;
-}
-function ct(e, t, n) {
-  if (e.realtor_commission_payment_mode !== "PER_PAYMENT_EVENT")
-    throw new Error(`realtor_commission_payment_mode must be "PER_PAYMENT_EVENT" in v10.2, got "${e.realtor_commission_payment_mode}"`);
-  const r = e.realtor_representation_mode !== "NONE" ? e.realtor_commission_pct : 0;
-  if (r === 0)
-    return {
-      realtor_fee_total_projected: 0,
-      realtor_fee_upfront_projected: 0,
-      realtor_fee_installments_projected: 0,
-      buyer_realtor_fee_total_projected: 0,
-      seller_realtor_fee_total_projected: 0
-    };
-  const o = D(e.upfront_payment * r), i = D(e.monthly_payment * n * r), l = D(o + i);
-  let u = 0, m = 0, _ = e.upfront_payment / e.property_value;
-  const g = e.upfront_payment * r;
-  u += g * _, m += g * (1 - _);
-  for (let x = 1; x <= n; x++) {
-    const f = e.property_value * Math.pow(1 + t, x / 12);
-    _ += e.monthly_payment / f;
-    const d = e.monthly_payment * r;
-    u += d * _, m += d * (1 - _);
+function Ke(e, t) {
+  if (!e.partial_buyout_allowed)
+    return { 25: null, 50: null, 75: null };
+  const n = [25, 50, 75], r = { 25: null, 50: null, 75: null };
+  for (const o of n) {
+    const c = o / 100;
+    Ge(c, e.partial_buyout_min_fraction, e.partial_buyout_increment_fraction) && (r[o] = O(t * c));
   }
-  return {
-    realtor_fee_total_projected: l,
-    realtor_fee_upfront_projected: o,
-    realtor_fee_installments_projected: i,
-    buyer_realtor_fee_total_projected: D(u),
-    seller_realtor_fee_total_projected: D(m)
-  };
+  return r;
 }
-const dt = 0.03, mt = 0.035, ut = 0.045, pt = 0.025, ft = 1.1, _t = 2, yt = 0.01, ht = 0.03, bt = 0.1, gt = 25e-4, ve = {
+function Xe(e, t) {
+  return e.realtor_representation_mode === "NONE" || e.realtor_commission_pct === 0 ? 0 : O((e.upfront_payment + e.monthly_payment * t) * e.realtor_commission_pct);
+}
+const Je = 0.03, Qe = 0.035, Ze = 0.045, et = 0.025, tt = 1.1, nt = 2, at = 0.01, rt = 0.03, ot = 0.1, it = 25e-4, he = {
   homeValue: 6e5,
   initialBuyAmount: 1e5,
   termYears: 10,
-  annualGrowthRate: dt,
-  transferFeeRate_standard: mt,
-  transferFeeRate_early: ut,
-  transferFeeRate_late: pt,
-  floorMultiple: ft,
-  capMultiple: _t,
+  annualGrowthRate: Je,
+  transferFeeRate_standard: Qe,
+  transferFeeRate_early: Ze,
+  transferFeeRate_late: et,
+  floorMultiple: tt,
+  capMultiple: nt,
   vesting: {
-    upfrontEquityPct: bt,
-    monthlyEquityPct: gt,
+    upfrontEquityPct: ot,
+    monthlyEquityPct: it,
     months: 120
   },
   cpw: {
-    startPct: yt,
-    endPct: ht
+    startPct: at,
+    endPct: rt
   }
-}, vt = (e, t, n) => Math.min(n, Math.max(t, e));
-function xt(e) {
+}, lt = (e, t, n) => Math.min(n, Math.max(t, e));
+function st(e) {
   const t = {
-    ...ve,
+    ...he,
     ...e,
     vesting: {
-      ...ve.vesting,
+      ...he.vesting,
       ...e.vesting ?? {}
     },
     cpw: {
-      ...ve.cpw,
+      ...he.cpw,
       ...e.cpw ?? {}
     }
   }, n = Math.max(0, Math.round(t.termYears * 12));
   return t.vesting.months = n, t;
 }
-function wt(e, t, n) {
+function ct(e, t, n) {
   const r = n / 12;
   return e * Math.pow(1 + t, r);
 }
-function St(e, t, n) {
-  return vt(e + t * n, 0, 1);
+function ut(e, t, n) {
+  return lt(e + t * n, 0, 1);
 }
-function kt(e, t) {
+function dt(e, t) {
   const n = [];
   for (let r = 0; r <= t; r++) {
-    const o = wt(e.homeValue, e.annualGrowthRate, r), i = St(
+    const o = ct(e.homeValue, e.annualGrowthRate, r), c = ut(
       e.vesting.upfrontEquityPct,
       e.vesting.monthlyEquityPct,
       r
@@ -208,78 +119,81 @@ function kt(e, t) {
       month: r,
       year: r / 12,
       homeValue: o,
-      equityPct: i
+      equityPct: c
     });
   }
   return n;
 }
-function ye(e, t) {
+function _e(e, t) {
   const n = e.vesting.months;
   return t === "standard" ? n : t === "early" ? Math.min(36, n) : t === "late" ? n + 24 : n;
 }
-function Rt(e) {
+function mt(e) {
+  const t = e.termYears;
   return {
     property_value: e.homeValue,
     upfront_payment: e.initialBuyAmount,
     monthly_payment: e.vesting.monthlyEquityPct * e.homeValue,
     number_of_payments: e.vesting.months,
-    // Payback window + timing factors:
-    // The legacy widget had TF as a transfer fee rate; canonical compute uses timing factor multipliers.
-    // Until UI collects these, we default to neutral (1) and place window across the term.
-    payback_window_start_year: Math.max(0, Math.floor(e.termYears / 3)),
-    payback_window_end_year: Math.max(1, Math.ceil(e.termYears * 2 / 3)),
-    timing_factor_early: 1,
-    timing_factor_late: 1,
-    floor_multiple: e.floorMultiple,
-    ceiling_multiple: e.capMultiple,
-    downside_mode: "HARD_FLOOR",
-    // Not currently modeled in widget UI; keep deterministic defaults.
-    contract_maturity_years: 30,
-    liquidity_trigger_year: 13,
     minimum_hold_years: 2,
-    platform_fee: 0,
+    contract_maturity_years: Math.max(t + 5, 15),
+    target_exit_year: t,
+    target_exit_window_start_year: Math.max(1, t - 1),
+    target_exit_window_end_year: t + 1,
+    long_stop_year: t + 5,
+    first_extension_start_year: t + 1,
+    first_extension_end_year: t + 4,
+    first_extension_premium_pct: 0.05,
+    second_extension_start_year: t + 4,
+    second_extension_end_year: t + 5,
+    second_extension_premium_pct: 0.08,
+    partial_buyout_allowed: !1,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
+    buyer_purchase_option_enabled: !1,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+    setup_fee_pct: 0.02,
+    setup_fee_floor: 1e3,
+    setup_fee_cap: 5e3,
     servicing_fee_monthly: 0,
-    exit_fee_pct: 0,
-    // DYF defaults (disabled)
-    duration_yield_floor_enabled: !1,
-    duration_yield_floor_start_year: null,
-    duration_yield_floor_min_multiple: null,
+    payment_admin_fee: 0,
+    exit_admin_fee_amount: 0,
     realtor_representation_mode: "NONE",
-    realtor_commission_pct: 0,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT"
+    realtor_commission_pct: 0
   };
 }
-function xe(e, t) {
-  const n = ye(e, t), r = n / 12, o = Rt(e), i = he(o, {
+function be(e, t) {
+  const n = _e(e, t), r = n / 12, o = mt(e), c = fe(o, {
     annual_appreciation: e.annualGrowthRate,
     exit_year: r
-  }), l = i.isa_settlement === i.isa_pre_floor_cap ? "none" : i.isa_settlement === i.floor_amount ? "floor" : i.isa_settlement === i.ceiling_amount ? "cap" : "none", u = 0, m = 0, _ = i.isa_settlement;
+  }), i = o.property_value * Math.pow(1 + e.annualGrowthRate, r), _ = c.base_buyout_amount, d = c.extension_adjusted_buyout_amount;
   return {
     timing: t,
     settlementMonth: n,
-    homeValueAtSettlement: i.projected_fmv,
-    equityPctAtSettlement: i.vested_equity_percentage,
-    rawPayout: i.isa_pre_floor_cap,
-    clampedPayout: i.isa_settlement,
-    transferFeeAmount: m,
-    netPayout: _,
-    clamp: { floor: i.floor_amount, cap: i.ceiling_amount, applied: l },
-    transferFeeRate: u
+    homeValueAtSettlement: i,
+    equityPctAtSettlement: c.funding_completion_factor,
+    rawPayout: _,
+    clampedPayout: d,
+    transferFeeAmount: 0,
+    netPayout: d,
+    clamp: { floor: 0, cap: 0, applied: "none" },
+    transferFeeRate: 0
   };
 }
-function Pt(e = {}) {
-  const t = xt(e), n = Math.max(
-    ye(t, "standard"),
-    ye(t, "early"),
-    ye(t, "late")
-  ), r = kt(t, n), o = xe(t, "standard"), i = xe(t, "early"), l = xe(t, "late");
+function pt(e = {}) {
+  const t = st(e), n = Math.max(
+    _e(t, "standard"),
+    _e(t, "early"),
+    _e(t, "late")
+  ), r = dt(t, n), o = be(t, "standard"), c = be(t, "early"), i = be(t, "late");
   return {
     normalizedInputs: t,
     series: r,
-    settlements: { standard: o, early: i, late: l }
+    settlements: { standard: o, early: c, late: i }
   };
 }
-function Mt(e) {
+function _t(e) {
   const t = e.series.map((r) => ({
     month: r.month,
     year: r.year,
@@ -298,46 +212,46 @@ function Mt(e) {
   });
   return { points: t, markers: n };
 }
-function Ft(e, t, n) {
+function ft(e, t, n) {
   return Math.min(n, Math.max(t, e));
 }
-function Et(e) {
+function yt(e) {
   return `${Math.round(e * 100)}%`;
 }
-function At(e) {
+function ht(e) {
   return `${Math.round(e * 10) / 10}y`;
 }
-function Tt(e) {
+function bt(e) {
   return e.timing === "early" ? "Early" : e.timing === "late" ? "Late" : "Std";
 }
-const Dt = {
+const gt = {
   early: "#ca8a04",
   standard: "#0891b2",
   late: "#c026d3"
 };
-function Ct({ series: e, width: t = 640, height: n = 260 }) {
-  const { points: r, markers: o } = e, i = O(
+function xt({ series: e, width: t = 640, height: n = 260 }) {
+  const { points: r, markers: o } = e, c = N(
     () => `eq-${Math.random().toString(36).slice(2, 8)}`,
     []
   );
   if (!r.length)
     return /* @__PURE__ */ a("div", { style: { fontFamily: "system-ui, sans-serif" }, children: "No data" });
-  const l = { top: 20, right: 24, bottom: 36, left: 50 }, u = Math.max(10, t - l.left - l.right), m = Math.max(10, n - l.top - l.bottom), _ = r[0].month, g = r[r.length - 1].month, x = 0, f = 1, d = (h) => g === _ ? l.left : l.left + (h - _) / (g - _) * u, w = (h) => {
-    const M = Ft(h, x, f);
-    return l.top + (1 - (M - x) / (f - x)) * m;
-  }, E = r.map((h, M) => {
-    const A = d(h.month), ee = w(h.equityPct);
-    return `${M === 0 ? "M" : "L"} ${A.toFixed(2)} ${ee.toFixed(2)}`;
-  }).join(" "), Y = r.length * 20, W = [0, 0.25, 0.5, 0.75, 1].map((h) => ({
-    v: h,
-    y: w(h),
-    label: Et(h)
-  })), k = Math.round((_ + g) / 2), V = [_, k, g].map((h) => ({
-    m: h,
-    x: d(h),
-    label: At(h / 12)
+  const i = { top: 20, right: 24, bottom: 36, left: 50 }, _ = Math.max(10, t - i.left - i.right), d = Math.max(10, n - i.top - i.bottom), h = r[0].month, x = r[r.length - 1].month, w = 0, y = 1, u = (f) => x === h ? i.left : i.left + (f - h) / (x - h) * _, v = (f) => {
+    const C = ft(f, w, y);
+    return i.top + (1 - (C - w) / (y - w)) * d;
+  }, E = r.map((f, C) => {
+    const A = u(f.month), Z = v(f.equityPct);
+    return `${C === 0 ? "M" : "L"} ${A.toFixed(2)} ${Z.toFixed(2)}`;
+  }).join(" "), L = r.length * 20, B = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
+    v: f,
+    y: v(f),
+    label: yt(f)
+  })), P = Math.round((h + x) / 2), j = [h, P, x].map((f) => ({
+    m: f,
+    x: u(f),
+    label: ht(f / 12)
   }));
-  return /* @__PURE__ */ c(
+  return /* @__PURE__ */ s(
     "svg",
     {
       width: "100%",
@@ -349,20 +263,20 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
       style: { display: "block" },
       children: [
         /* @__PURE__ */ a("style", { children: `
-        @keyframes ${i}-draw {
-          from { stroke-dashoffset: ${Y}; }
+        @keyframes ${c}-draw {
+          from { stroke-dashoffset: ${L}; }
           to { stroke-dashoffset: 0; }
         }
       ` }),
         /* @__PURE__ */ a("rect", { x: 0, y: 0, width: t, height: n, fill: "white", rx: 8 }),
-        W.map((h) => /* @__PURE__ */ c("g", { children: [
+        B.map((f) => /* @__PURE__ */ s("g", { children: [
           /* @__PURE__ */ a(
             "line",
             {
-              x1: l.left,
-              x2: t - l.right,
-              y1: h.y,
-              y2: h.y,
+              x1: i.left,
+              x2: t - i.right,
+              y1: f.y,
+              y2: f.y,
               stroke: "#f3f4f6",
               strokeWidth: 1
             }
@@ -370,35 +284,35 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
           /* @__PURE__ */ a(
             "text",
             {
-              x: l.left - 10,
-              y: h.y + 4,
+              x: i.left - 10,
+              y: f.y + 4,
               fontSize: 11,
               textAnchor: "end",
               fill: "#9ca3af",
               fontFamily: "system-ui, sans-serif",
-              children: h.label
+              children: f.label
             }
           )
-        ] }, h.v)),
+        ] }, f.v)),
         /* @__PURE__ */ a(
           "line",
           {
-            x1: l.left,
-            x2: t - l.right,
-            y1: l.top + m,
-            y2: l.top + m,
+            x1: i.left,
+            x2: t - i.right,
+            y1: i.top + d,
+            y2: i.top + d,
             stroke: "#e5e7eb",
             strokeWidth: 1
           }
         ),
-        V.map((h) => /* @__PURE__ */ c("g", { children: [
+        j.map((f) => /* @__PURE__ */ s("g", { children: [
           /* @__PURE__ */ a(
             "line",
             {
-              x1: h.x,
-              x2: h.x,
-              y1: l.top + m,
-              y2: l.top + m + 6,
+              x1: f.x,
+              x2: f.x,
+              y1: i.top + d,
+              y2: i.top + d + 6,
               stroke: "#d1d5db",
               strokeWidth: 1
             }
@@ -406,26 +320,26 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
           /* @__PURE__ */ a(
             "text",
             {
-              x: h.x,
-              y: l.top + m + 24,
+              x: f.x,
+              y: i.top + d + 24,
               fontSize: 11,
               textAnchor: "middle",
               fill: "#9ca3af",
               fontFamily: "system-ui, sans-serif",
-              children: h.label
+              children: f.label
             }
           )
-        ] }, h.m)),
-        o.map((h) => {
-          const M = d(h.month), A = Dt[h.timing] || "#d1d5db";
-          return /* @__PURE__ */ c("g", { children: [
+        ] }, f.m)),
+        o.map((f) => {
+          const C = u(f.month), A = gt[f.timing] || "#d1d5db";
+          return /* @__PURE__ */ s("g", { children: [
             /* @__PURE__ */ a(
               "line",
               {
-                x1: M,
-                x2: M,
-                y1: l.top,
-                y2: l.top + m,
+                x1: C,
+                x2: C,
+                y1: i.top,
+                y2: i.top + d,
                 stroke: A,
                 strokeWidth: 1,
                 strokeDasharray: "4 4"
@@ -434,8 +348,8 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
             /* @__PURE__ */ a(
               "rect",
               {
-                x: M - 18,
-                y: l.top - 4,
+                x: C - 18,
+                y: i.top - 4,
                 width: 36,
                 height: 18,
                 rx: 9,
@@ -447,17 +361,17 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
             /* @__PURE__ */ a(
               "text",
               {
-                x: M,
-                y: l.top + 10,
+                x: C,
+                y: i.top + 10,
                 fontSize: 10,
                 textAnchor: "middle",
                 fill: A,
                 fontFamily: "system-ui, sans-serif",
                 fontWeight: 600,
-                children: Tt(h)
+                children: bt(f)
               }
             )
-          ] }, h.timing);
+          ] }, f.timing);
         }),
         /* @__PURE__ */ a(
           "path",
@@ -468,17 +382,17 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
             strokeWidth: 2.5,
             strokeLinecap: "round",
             strokeLinejoin: "round",
-            strokeDasharray: Y,
+            strokeDasharray: L,
             strokeDashoffset: 0,
             style: {
-              animation: `${i}-draw 1s ease-out forwards`
+              animation: `${c}-draw 1s ease-out forwards`
             }
           }
         ),
         /* @__PURE__ */ a(
           "text",
           {
-            x: l.left,
+            x: i.left,
             y: 14,
             fontSize: 12,
             fill: "#6b7280",
@@ -491,21 +405,21 @@ function Ct({ series: e, width: t = 640, height: n = 260 }) {
     }
   );
 }
-function y(e) {
+function p(e) {
   return e.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0
   });
 }
-function H(e) {
+function Y(e) {
   return `${(e * 100).toFixed(1)}%`;
 }
-function Fe(e) {
+function Pe(e) {
   const t = Math.floor(e / 12), n = e % 12;
   return t === 0 ? `${n}mo` : n === 0 ? `${t}yr` : `${t}yr ${n}mo`;
 }
-const Ee = {
+const Re = {
   homeowner: {
     heroLabel: "Your Net Payout",
     heroValue: (e) => e.settlements.standard.netPayout,
@@ -532,10 +446,10 @@ const Ee = {
     helperText: "Standard net payout at projected settlement."
   }
 };
-function In(e) {
-  return Ee[e] ?? Ee.homeowner;
+function Sn(e) {
+  return Re[e] ?? Re.homeowner;
 }
-const Nt = {
+const vt = {
   homeowner: {
     "deal_terms.property_value": "Your Home Value",
     "deal_terms.upfront_payment": "Initial Payment",
@@ -563,37 +477,40 @@ const Nt = {
     "deal_terms.upfront_payment": "Upfront Payment"
   }
 };
-function Z(e, t, n) {
-  return Nt[t]?.[e] ?? n;
+function Q(e, t, n) {
+  return vt[t]?.[e] ?? n;
 }
-const Ae = {
+const Me = {
   homeowner: ["hero", "net_payout", "settlement_timing", "total_invested", "fees"],
   buyer: ["hero", "net_payout", "total_invested", "settlement_timing", "fees"],
   investor: ["hero", "net_payout", "total_invested", "fees", "settlement_timing"],
   realtor: ["hero", "fees", "net_payout", "settlement_timing", "total_invested"],
   ops: ["hero", "net_payout", "fees", "total_invested", "settlement_timing"]
 };
-function zn(e) {
-  return Ae[e] ?? Ae.homeowner;
+function kn(e) {
+  return Me[e] ?? Me.homeowner;
 }
-const z = {
-  platform_fee: 2500,
+const k = {
+  setup_fee_pct: 0.02,
+  setup_fee_floor: 1e3,
+  setup_fee_cap: 5e3,
   servicing_fee_monthly: 49,
-  exit_fee_pct: 0.01
-}, re = "10.2.0", oe = "1";
-function ze(e) {
+  payment_admin_fee: 5,
+  exit_admin_fee_amount: 500
+}, ae = "11.0.0", re = "1";
+function Te(e) {
   const t = {};
   for (const n of Object.keys(e).sort()) {
     const r = e[n];
-    r !== null && typeof r == "object" && !Array.isArray(r) ? t[n] = ze(r) : t[n] = r;
+    r !== null && typeof r == "object" && !Array.isArray(r) ? t[n] = Te(r) : t[n] = r;
   }
   return JSON.stringify(t);
 }
-async function ie(e) {
-  const t = ze(e), n = new TextEncoder().encode(t), r = await crypto.subtle.digest("SHA-256", n);
-  return Array.from(new Uint8Array(r)).map((i) => i.toString(16).padStart(2, "0")).join("");
+async function oe(e) {
+  const t = Te(e), n = new TextEncoder().encode(t), r = await crypto.subtle.digest("SHA-256", n);
+  return Array.from(new Uint8Array(r)).map((c) => c.toString(16).padStart(2, "0")).join("");
 }
-function $e(e) {
+function De(e) {
   return {
     homeValue: e.homeValue,
     initialBuyAmount: e.initialBuyAmount,
@@ -601,7 +518,7 @@ function $e(e) {
     annualGrowthRate: e.annualGrowthRate
   };
 }
-function Ot(e) {
+function wt(e) {
   return {
     standard_net_payout: e.settlements.standard.netPayout,
     early_net_payout: e.settlements.early.netPayout,
@@ -611,52 +528,52 @@ function Ot(e) {
     late_settlement_month: e.settlements.late.settlementMonth
   };
 }
-function It(e) {
+function St(e) {
   return {
     standard_net_payout: e.settlements.standard.netPayout,
     early_net_payout: e.settlements.early.netPayout,
     late_net_payout: e.settlements.late.netPayout
   };
 }
-async function $n(e, t, n) {
-  const r = $e(t), o = Ot(n), [i, l] = await Promise.all([
-    ie(r),
-    ie(o)
+async function Pn(e, t, n) {
+  const r = De(t), o = wt(n), [c, i] = await Promise.all([
+    oe(r),
+    oe(o)
   ]);
   return {
-    contract_version: re,
-    schema_version: oe,
+    contract_version: ae,
+    schema_version: re,
     persona: e,
     mode: "marketing",
     inputs: r,
     basic_results: o,
-    input_hash: i,
-    output_hash: l,
+    input_hash: c,
+    output_hash: i,
     created_at: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
-function Yn(e, t, n) {
+function Rn(e, t, n) {
   return {
-    contract_version: re,
-    schema_version: oe,
+    contract_version: ae,
+    schema_version: re,
     persona: e,
-    inputs: $e(t),
-    basic_results: It(n),
+    inputs: De(t),
+    basic_results: St(n),
     created_at: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
-async function Ln(e, t, n) {
+async function Mn(e, t, n) {
   const [r, o] = await Promise.all([
-    ie(t),
-    ie({
+    oe(t),
+    oe({
       standard: n.settlements.standard,
       early: n.settlements.early,
       late: n.settlements.late
     })
   ]);
   return {
-    contract_version: re,
-    schema_version: oe,
+    contract_version: ae,
+    schema_version: re,
     persona: e,
     mode: "app",
     inputs: t,
@@ -666,49 +583,53 @@ async function Ln(e, t, n) {
     created_at: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
-function zt(e) {
+function kt(e) {
+  const t = e.termYears;
   return {
     property_value: e.homeValue,
     upfront_payment: e.initialBuyAmount,
-    // Default: monthly_payment derived from vesting schedule; 0 if absent
     monthly_payment: e.vesting?.monthlyEquityPct ? e.vesting.monthlyEquityPct * e.homeValue : 0,
-    number_of_payments: e.vesting?.months ?? e.termYears * 12,
-    // Default payback windows: start at year 3, end at contract maturity
-    payback_window_start_year: 3,
-    payback_window_end_year: e.termYears,
-    // Default timing factors: 0.85 early penalty, 1.10 late bonus
-    timing_factor_early: 0.85,
-    timing_factor_late: 1.1,
-    floor_multiple: e.floorMultiple,
-    ceiling_multiple: e.capMultiple,
-    downside_mode: "HARD_FLOOR",
-    contract_maturity_years: e.termYears,
-    // Default: liquidity trigger at 70% of term
-    liquidity_trigger_year: Math.floor(e.termYears * 0.7),
-    // Default: minimum 1-year hold
-    minimum_hold_years: 1,
-    platform_fee: z.platform_fee,
-    servicing_fee_monthly: z.servicing_fee_monthly,
-    exit_fee_pct: z.exit_fee_pct,
-    // Default realtor: NONE with 0 commission, PER_PAYMENT_EVENT locked
+    number_of_payments: e.vesting?.months ?? t * 12,
+    minimum_hold_years: 2,
+    contract_maturity_years: Math.max(t + 5, 15),
+    target_exit_year: t,
+    target_exit_window_start_year: Math.max(1, t - 1),
+    target_exit_window_end_year: t + 1,
+    long_stop_year: t + 5,
+    first_extension_start_year: t + 1,
+    first_extension_end_year: t + 4,
+    first_extension_premium_pct: 0.05,
+    second_extension_start_year: t + 4,
+    second_extension_end_year: t + 5,
+    second_extension_premium_pct: 0.08,
+    partial_buyout_allowed: !1,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
+    buyer_purchase_option_enabled: !1,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+    setup_fee_pct: k.setup_fee_pct,
+    setup_fee_floor: k.setup_fee_floor,
+    setup_fee_cap: k.setup_fee_cap,
+    servicing_fee_monthly: k.servicing_fee_monthly,
+    payment_admin_fee: k.payment_admin_fee,
+    exit_admin_fee_amount: k.exit_admin_fee_amount,
     realtor_representation_mode: "NONE",
-    realtor_commission_pct: 0,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT"
+    realtor_commission_pct: 0
   };
 }
-function $t(e) {
+function Pt(e) {
   return {
     annual_appreciation: e.annualGrowthRate,
-    // Default: 2% closing costs
     closing_cost_pct: 0.02,
     exit_year: e.termYears
   };
 }
-function Yt(e) {
-  const t = zt(e), n = $t(e), r = he(t, n), o = (/* @__PURE__ */ new Date()).toISOString();
+function Rt(e) {
+  const t = kt(e), n = Pt(e), r = fe(t, n), o = (/* @__PURE__ */ new Date()).toISOString();
   return {
-    contract_version: re,
-    schema_version: oe,
+    contract_version: ae,
+    schema_version: re,
     deal_terms: t,
     assumptions: n,
     outputs: r,
@@ -716,12 +637,12 @@ function Yt(e) {
     created_at: o
   };
 }
-function I(e, t) {
+function W(e, t) {
   switch (t) {
     case "currency":
-      return y(e);
+      return p(e);
     case "percent":
-      return H(e);
+      return Y(e);
     case "multiple":
       return `${e.toFixed(2)}×`;
     case "months":
@@ -730,50 +651,53 @@ function I(e, t) {
       return String(e);
   }
 }
-function Lt(e, t, n, r) {
+function xe(e, t) {
+  return e.property_value * Math.pow(1 + t.annual_appreciation, t.exit_year);
+}
+function Mt(e, t, n, r) {
   switch (e) {
     case "homeowner":
-      return Wt(t, n, r);
+      return At(t, n, r);
     case "realtor":
-      return qt(t, n, r);
+      return Et(t, n, r);
     default:
-      return jt(t, n, r);
+      return Ft(t, n, r);
   }
 }
-function jt(e, t, n) {
-  const r = n.investor_profit, o = n.isa_settlement, i = n.invested_capital_total, l = n.projected_fmv, u = n.investor_multiple, m = l > 0 ? o / l : 0;
+function Ft(e, t, n) {
+  const r = n.extension_adjusted_buyout_amount, o = n.actual_buyer_funding_to_date, c = r - o, i = xe(e, t), _ = o > 0 ? r / o : 1, d = i > 0 ? n.effective_buyer_appreciation_share : 0;
   return {
     hero: {
       label: "Projected Net Return",
-      value: r,
+      value: c,
       valueFormat: "currency",
-      subtitle: `Profit at standard settlement (Year ${t.exit_year}).`
+      subtitle: `Profit at standard buyout (Year ${t.exit_year}).`
     },
     strip: [
-      { label: "Net payout at settlement", value: o, valueFormat: "currency" },
-      { label: "Total cash paid", value: i, valueFormat: "currency" },
-      { label: "Projected home value", value: l, valueFormat: "currency" },
-      { label: "Implied equity share", value: m, valueFormat: "percent" },
-      { label: "Return multiple", value: u, valueFormat: "multiple" }
+      { label: "Net payout at buyout", value: r, valueFormat: "currency" },
+      { label: "Total cash paid", value: o, valueFormat: "currency" },
+      { label: "Projected home value", value: i, valueFormat: "currency" },
+      { label: "Effective appreciation share", value: d, valueFormat: "percent" },
+      { label: "Return multiple", value: _, valueFormat: "multiple" }
     ],
     chartSpec: {
       type: "bar",
       bars: [
-        { label: "Total cash paid", value: i },
-        { label: "Settlement payout", value: o },
-        { label: "Projected home value", value: l }
+        { label: "Total cash paid", value: o },
+        { label: "Buyout payout", value: r },
+        { label: "Projected home value", value: i }
       ]
     },
     marketingBullets: [
-      `~${I(m, "percent")} equity built over ${t.exit_year} years — with no financing or interest.`,
-      `You contribute ${I(i, "currency")} total. At settlement, payout is ${I(o, "currency")}.`,
-      `Projected home value at settlement: ${I(l, "currency")} (base assumptions).`,
-      `Assumes ${I(t.annual_appreciation, "percent")} annual appreciation — Save & Continue free to model different growth and timing.`
+      `~${W(d, "percent")} effective appreciation share over ${t.exit_year} years — with no financing or interest.`,
+      `You contribute ${W(o, "currency")} total. At buyout, payout is ${W(r, "currency")}.`,
+      `Projected home value at buyout: ${W(i, "currency")} (base assumptions).`,
+      `Assumes ${W(t.annual_appreciation, "percent")} annual appreciation — Save & Continue free to model different growth and timing.`
     ]
   };
 }
-function Wt(e, t, n) {
-  const r = n.invested_capital_total, o = n.projected_fmv;
+function At(e, t, n) {
+  const r = n.actual_buyer_funding_to_date, o = xe(e, t);
   return {
     hero: {
       label: "Lifetime Cash Unlocked",
@@ -796,29 +720,29 @@ function Wt(e, t, n) {
       ]
     },
     marketingBullets: [
-      `Unlock ${I(r, "currency")} while continuing to own your home.`,
-      `Upfront: ${I(e.upfront_payment, "currency")}. Monthly: ${I(e.monthly_payment, "currency")} for ${e.number_of_payments} months.`,
-      `Projected home value at settlement: ${I(o, "currency")} (base assumptions).`,
-      `Assumes ${I(t.annual_appreciation, "percent")} annual appreciation — Save & Continue free to model growth, protections, and timing.`
+      `Unlock ${W(r, "currency")} while continuing to own your home.`,
+      `Upfront: ${W(e.upfront_payment, "currency")}. Monthly: ${W(e.monthly_payment, "currency")} for ${e.number_of_payments} months.`,
+      `Projected home value at buyout: ${W(o, "currency")} (base assumptions).`,
+      `Assumes ${W(t.annual_appreciation, "percent")} annual appreciation — Save & Continue free to model growth, protections, and timing.`
     ]
   };
 }
-function qt(e, t, n) {
-  const r = n.realtor_fee_total_projected, o = n.isa_settlement, l = n.projected_fmv - o, u = e.realtor_commission_pct * 100;
+function Et(e, t, n) {
+  const r = n.realtor_fee_total_projected, o = n.extension_adjusted_buyout_amount, i = xe(e, t) - o, _ = e.realtor_commission_pct * 100;
   return {
     hero: {
       label: "Projected Commission (Standard)",
       value: r,
       valueFormat: "currency",
-      subtitle: `Based on ${u.toFixed(1)}% as ${e.realtor_representation_mode} representation.`
+      subtitle: `Based on ${_.toFixed(1)}% as ${e.realtor_representation_mode} representation.`
     },
     strip: [
-      { label: "Commission rate", value: `${u.toFixed(1)}%`, valueFormat: "text" },
+      { label: "Commission rate", value: `${_.toFixed(1)}%`, valueFormat: "text" },
       { label: "Representation", value: e.realtor_representation_mode, valueFormat: "text" },
       { label: "Commission from this deal", value: r, valueFormat: "currency" },
       {
         label: "Remaining opportunity",
-        value: l > 0 ? l : 0,
+        value: i > 0 ? i : 0,
         valueFormat: "currency"
       }
     ],
@@ -826,21 +750,21 @@ function qt(e, t, n) {
       type: "bar",
       bars: [
         { label: "Commission on this deal", value: r },
-        { label: "Remaining opportunity", value: l > 0 ? l : 0 }
+        { label: "Remaining opportunity", value: i > 0 ? i : 0 }
       ]
     },
     marketingBullets: [
-      `Projected commission on this deal: ${I(r, "currency")} (standard timing).`,
-      `Commission rate: ${u.toFixed(1)}% as ${e.realtor_representation_mode} representation.`,
+      `Projected commission on this deal: ${W(r, "currency")} (standard timing).`,
+      `Commission rate: ${_.toFixed(1)}% as ${e.realtor_representation_mode} representation.`,
       "Capture buyers and sellers earlier — without requiring an immediate full sale or full purchase.",
-      `Remaining property value at settlement (conditional): ${I(l > 0 ? l : 0, "currency")}. Save free to model scenarios.`
+      `Remaining property value at buyout (conditional): ${W(i > 0 ? i : 0, "currency")}. Save free to model scenarios.`
     ]
   };
 }
-const Te = ["#0891b2", "#c026d3", "#ca8a04", "#6b7280", "#374151"];
-function Ht({ bars: e, width: t = 400, height: n = 220 }) {
-  const r = Math.max(...e.map((g) => g.value), 1), o = Math.min(80, (t - 60) / e.length - 20), i = 36, l = n - 44, u = l - i, m = (t - 40) / e.length, _ = `bar-anim-${Math.random().toString(36).slice(2, 8)}`;
-  return /* @__PURE__ */ c(
+const Fe = ["#0891b2", "#c026d3", "#ca8a04", "#6b7280", "#374151"];
+function Ct({ bars: e, width: t = 400, height: n = 220 }) {
+  const r = Math.max(...e.map((x) => x.value), 1), o = Math.min(80, (t - 60) / e.length - 20), c = 36, i = n - 44, _ = i - c, d = (t - 40) / e.length, h = `bar-anim-${Math.random().toString(36).slice(2, 8)}`;
+  return /* @__PURE__ */ s(
     "svg",
     {
       width: "100%",
@@ -853,7 +777,7 @@ function Ht({ bars: e, width: t = 400, height: n = 220 }) {
       "data-testid": "simple-bar-chart",
       children: [
         /* @__PURE__ */ a("style", { children: `
-        @keyframes ${_} {
+        @keyframes ${h} {
           from { transform: scaleY(0); }
           to { transform: scaleY(1); }
         }
@@ -863,71 +787,71 @@ function Ht({ bars: e, width: t = 400, height: n = 220 }) {
           {
             x1: 20,
             x2: t - 20,
-            y1: l,
-            y2: l,
+            y1: i,
+            y2: i,
             stroke: "#e5e7eb",
             strokeWidth: 1
           }
         ),
-        e.map((g, x) => {
-          const f = r > 0 ? g.value / r * u : 0, d = 20 + x * m + (m - o) / 2, w = l - f, E = Te[x % Te.length];
-          return /* @__PURE__ */ c("g", { children: [
+        e.map((x, w) => {
+          const y = r > 0 ? x.value / r * _ : 0, u = 20 + w * d + (d - o) / 2, v = i - y, E = Fe[w % Fe.length];
+          return /* @__PURE__ */ s("g", { children: [
             /* @__PURE__ */ a(
               "rect",
               {
-                x: d,
-                y: w,
+                x: u,
+                y: v,
                 width: o,
-                height: Math.max(f, 2),
+                height: Math.max(y, 2),
                 rx: 6,
                 ry: 6,
                 fill: E,
                 style: {
-                  transformOrigin: `${d + o / 2}px ${l}px`,
-                  animation: `${_} 0.5s ease-out ${x * 0.1}s both`
+                  transformOrigin: `${u + o / 2}px ${i}px`,
+                  animation: `${h} 0.5s ease-out ${w * 0.1}s both`
                 }
               }
             ),
             /* @__PURE__ */ a(
               "text",
               {
-                x: d + o / 2,
-                y: w - 10,
+                x: u + o / 2,
+                y: v - 10,
                 textAnchor: "middle",
                 fontSize: 11,
                 fontWeight: 600,
                 fill: "#111827",
                 fontFamily: "system-ui, sans-serif",
-                children: y(g.value)
+                children: p(x.value)
               }
             ),
             /* @__PURE__ */ a(
               "text",
               {
-                x: d + o / 2,
-                y: l + 18,
+                x: u + o / 2,
+                y: i + 18,
                 textAnchor: "middle",
                 fontSize: 10,
                 fill: "#6b7280",
                 fontFamily: "system-ui, sans-serif",
-                children: g.label.length > 20 ? g.label.slice(0, 18) + "…" : g.label
+                children: x.label.length > 20 ? x.label.slice(0, 18) + "…" : x.label
               }
             )
-          ] }, x);
+          ] }, w);
         })
       ]
     }
   );
 }
-const Vt = [
+const Tt = [
   {
     key: "deal_terms.property_value",
     label: "Property value (FMV)",
     unit: "currency",
     control: "slider",
     simpleDefinition: "How much the home is worth right now.",
-    impact: "It affects how much equity your payments buy and how the deal grows over time.",
-    formula: "equity_upfront = upfront_payment / property_value; property_value_m starts from property_value",
+    impact: "It affects how much funding is provided and how future appreciation is shared.",
+    formula: "total_scheduled_buyer_funding = upfront_payment + monthly_payment * number_of_payments",
     slider: { min: 1e5, max: 3e6, step: 1e4 },
     recommendedRange: { min: 2e5, max: 15e5 },
     hardRange: { min: 1e5, max: 3e6 },
@@ -939,8 +863,8 @@ const Vt = [
     unit: "currency",
     control: "kiosk",
     simpleDefinition: "Money paid at the start of the deal.",
-    impact: "It buys equity right away. For MVP, upfront payment is capped so total equity transfer can't exceed a safe share of the home value.",
-    formula: "invested_capital_total = upfront_payment + monthly_payment * payments_made_by_exit; equity_upfront = upfront_payment / property_value",
+    impact: "It funds the homeowner at closing and contributes to the total scheduled funding.",
+    formula: "total_scheduled_buyer_funding = upfront_payment + monthly_payment * number_of_payments",
     dynamicPercentAnchors: {
       sourceKey: "deal_terms.property_value",
       percents: [0.05, 0.1, 0.15, 0.2],
@@ -959,8 +883,8 @@ const Vt = [
     unit: "currency",
     control: "kiosk",
     simpleDefinition: "Money paid each month during the deal.",
-    impact: "Monthly payments buy equity over time, based on the home value each month.",
-    formula: "equity_m = monthly_payment / property_value_m",
+    impact: "Monthly payments add to total scheduled funding and affect the funding completion factor.",
+    formula: "total_scheduled_buyer_funding = upfront_payment + monthly_payment * number_of_payments",
     dynamicPercentAnchors: {
       sourceKey: "deal_terms.property_value",
       percents: [0, 1e-3, 2e-3, 3e-3],
@@ -978,8 +902,8 @@ const Vt = [
     unit: "months",
     control: "slider",
     simpleDefinition: "How many monthly payments you plan to make.",
-    impact: "More months means more total payments and more equity purchased over time.",
-    formula: "payments_made_by_exit = min(number_of_payments, exit_month)",
+    impact: "More months means more total funding and a higher funding completion factor.",
+    formula: "actual_buyer_funding_to_date = upfront_payment + monthly_payment * payments_made_by_exit",
     slider: { min: 0, max: 120, step: 1 },
     recommendedRange: { min: 0, max: 120 },
     hardRange: { min: 0, max: 120 },
@@ -991,8 +915,8 @@ const Vt = [
     unit: "percent",
     control: "kiosk",
     simpleDefinition: "How fast the home value grows (or drops) each year.",
-    impact: "It changes the future home value, which changes how much equity each monthly payment buys.",
-    formula: "property_value_m = property_value * (1 + annual_appreciation)^(m/12)",
+    impact: "It changes the projected home value and the appreciation share at buyout.",
+    formula: "projected_fmv = property_value * (1 + annual_appreciation)^exit_year",
     anchors: [
       { label: "0%", value: 0 },
       { label: "2%", value: 0.02 },
@@ -1008,9 +932,9 @@ const Vt = [
     label: "Exit year",
     unit: "years",
     control: "kiosk",
-    simpleDefinition: "When the deal ends (like 5 years).",
-    impact: "It sets how long the equity has to grow and how many payments count before exit.",
-    formula: "exit_month = floor(exit_year * 12); projected_fmv = property_value * (1 + annual_appreciation)^exit_year",
+    simpleDefinition: "When the scenario models buyout (like 5 years).",
+    impact: "It determines which contract window applies and whether extension premiums are included.",
+    formula: "current_window = classify(exit_year vs target_exit_window, extensions, long_stop_year)",
     anchors: [
       { label: "3", value: 3 },
       { label: "5", value: 5 },
@@ -1027,7 +951,7 @@ const Vt = [
     unit: "percent",
     control: "kiosk",
     simpleDefinition: "Extra costs paid when the deal closes (as a percent).",
-    impact: "Closing costs reduce the net proceeds at exit and can change the settlement amount.",
+    impact: "Closing costs reduce the net proceeds at exit and can reduce the effective buyout amount.",
     formula: "net_at_exit = gross_at_exit - (closing_cost_pct * projected_fmv) (conceptual)",
     anchors: [
       { label: "0%", value: 0 },
@@ -1040,134 +964,12 @@ const Vt = [
     sectionHint: "Assumptions"
   },
   {
-    key: "deal_terms.floor_multiple",
-    label: "Floor multiple",
-    unit: "number",
-    control: "kiosk",
-    simpleDefinition: "The minimum return multiple allowed at settlement.",
-    impact: "It protects one side from getting too little back if the home performs poorly.",
-    formula: "settlement_multiple = max(floor_multiple, raw_multiple) (then capped by ceiling)",
-    anchors: [
-      { label: "1.00×", value: 1 },
-      { label: "1.05×", value: 1.05 },
-      { label: "1.10×", value: 1.1 },
-      { label: "1.20×", value: 1.2 }
-    ],
-    recommendedRange: { min: 1, max: 1.2 },
-    hardRange: { min: 0.5, max: 2 },
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.ceiling_multiple",
-    label: "Ceiling multiple",
-    unit: "number",
-    control: "kiosk",
-    simpleDefinition: "The maximum return multiple allowed at settlement.",
-    impact: "It caps outcomes so the settlement can't grow beyond the agreed maximum.",
-    formula: "settlement_multiple = min(ceiling_multiple, settlement_multiple_after_floor)",
-    anchors: [
-      { label: "1.30×", value: 1.3 },
-      { label: "1.50×", value: 1.5 },
-      { label: "1.75×", value: 1.75 },
-      { label: "2.00×", value: 2 }
-    ],
-    recommendedRange: { min: 1.3, max: 2 },
-    hardRange: { min: 1, max: 3 },
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.downside_mode",
-    label: "Downside protection",
-    unit: "enum",
-    control: "enum",
-    simpleDefinition: "A rule for what happens if the home value goes down.",
-    impact: "It changes how the floor is enforced and how downside risk is shared.",
-    formula: "downside_mode adjusts settlement floor rules in negative scenarios (conceptual)",
-    options: [
-      { label: "Hard floor", value: "HARD_FLOOR" },
-      { label: "No floor", value: "NO_FLOOR" }
-    ],
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.payback_window_start_year",
-    label: "Payback window start",
-    unit: "years",
-    control: "kiosk",
-    simpleDefinition: "When the 'timing window' starts.",
-    impact: "Timing rules can change equity earned depending on when payments happen in this window.",
-    formula: "window_start_month = floor(payback_window_start_year * 12)",
-    anchors: [
-      { label: "0", value: 0 },
-      { label: "1", value: 1 },
-      { label: "2", value: 2 },
-      { label: "3", value: 3 }
-    ],
-    recommendedRange: { min: 0, max: 3 },
-    hardRange: { min: 0, max: 30 },
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.payback_window_end_year",
-    label: "Payback window end",
-    unit: "years",
-    control: "kiosk",
-    simpleDefinition: "When the 'timing window' ends.",
-    impact: "It defines how long timing adjustments can apply to equity earned.",
-    formula: "window_end_month = floor(payback_window_end_year * 12)",
-    anchors: [
-      { label: "3", value: 3 },
-      { label: "5", value: 5 },
-      { label: "7", value: 7 },
-      { label: "10", value: 10 }
-    ],
-    recommendedRange: { min: 3, max: 10 },
-    hardRange: { min: 0, max: 30 },
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.timing_factor_early",
-    label: "Timing factor (early)",
-    unit: "number",
-    control: "kiosk",
-    simpleDefinition: "A multiplier that can reward earlier payments (inside the timing window).",
-    impact: "It can increase or decrease equity earned for payments made earlier in the window.",
-    formula: "equity_adjusted_m = equity_m * timing_factor_early (when 'early' in window)",
-    anchors: [
-      { label: "0.90×", value: 0.9 },
-      { label: "1.00×", value: 1 },
-      { label: "1.10×", value: 1.1 },
-      { label: "1.20×", value: 1.2 }
-    ],
-    recommendedRange: { min: 0.9, max: 1.2 },
-    hardRange: { min: 0.5, max: 2 },
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.timing_factor_late",
-    label: "Timing factor (late)",
-    unit: "number",
-    control: "kiosk",
-    simpleDefinition: "A multiplier that can reward or penalize later payments (inside the timing window).",
-    impact: "It can increase or decrease equity earned for payments made later in the window.",
-    formula: "equity_adjusted_m = equity_m * timing_factor_late (when 'late' in window)",
-    anchors: [
-      { label: "0.80×", value: 0.8 },
-      { label: "0.90×", value: 0.9 },
-      { label: "1.00×", value: 1 },
-      { label: "1.10×", value: 1.1 }
-    ],
-    recommendedRange: { min: 0.8, max: 1.1 },
-    hardRange: { min: 0.5, max: 2 },
-    sectionHint: "Protections"
-  },
-  {
     key: "deal_terms.minimum_hold_years",
     label: "Minimum hold (years)",
     unit: "years",
     control: "kiosk",
     simpleDefinition: "The shortest time the deal must stay active before it can end.",
-    impact: "It prevents very early exits and can change settlement timing and outcomes.",
+    impact: "It prevents very early exits and sets the floor on the contract timeline.",
     formula: "minimum_hold_month = floor(minimum_hold_years * 12) (conceptual constraint)",
     anchors: [
       { label: "1", value: 1 },
@@ -1189,43 +991,93 @@ const Vt = [
     formula: "maturity_month = floor(contract_maturity_years * 12) (conceptual limit)",
     anchors: [
       { label: "5", value: 5 },
+      { label: "10", value: 10 },
+      { label: "15", value: 15 },
+      { label: "30", value: 30 }
+    ],
+    recommendedRange: { min: 5, max: 30 },
+    hardRange: { min: 1, max: 50 },
+    sectionHint: "Ownership"
+  },
+  {
+    key: "deal_terms.target_exit_year",
+    label: "Target exit year",
+    unit: "years",
+    control: "kiosk",
+    simpleDefinition: "The year FractPath and the homeowner are targeting for a standard buyout.",
+    impact: "It defines the target window and determines whether extension premiums apply at buyout.",
+    formula: "current_window depends on exit_year vs target_exit_window_start/end and extensions",
+    anchors: [
+      { label: "5", value: 5 },
       { label: "7", value: 7 },
       { label: "10", value: 10 },
       { label: "15", value: 15 }
     ],
-    recommendedRange: { min: 5, max: 15 },
+    recommendedRange: { min: 3, max: 15 },
     hardRange: { min: 1, max: 30 },
     sectionHint: "Ownership"
   },
   {
-    key: "deal_terms.liquidity_trigger_year",
-    label: "Liquidity trigger year",
-    unit: "years",
+    key: "deal_terms.first_extension_premium_pct",
+    label: "First extension premium (%)",
+    unit: "percent",
     control: "kiosk",
-    simpleDefinition: "The year when a liquidity event can be triggered.",
-    impact: "It sets when the deal may allow early buyout or conversion options.",
-    formula: "liquidity_trigger_month = floor(liquidity_trigger_year * 12) (conceptual threshold)",
+    simpleDefinition: "Extra percentage added to the buyout if the deal runs into the first extension window.",
+    impact: "A higher premium increases the buyout amount for late exits, compensating FractPath for the extended hold.",
+    formula: "extension_adjusted_buyout = base_buyout * (1 + premium_pct) if in first extension window",
     anchors: [
-      { label: "5", value: 5 },
-      { label: "10", value: 10 },
-      { label: "15", value: 15 },
-      { label: "20", value: 20 }
+      { label: "0%", value: 0 },
+      { label: "3%", value: 0.03 },
+      { label: "5%", value: 0.05 },
+      { label: "8%", value: 0.08 }
     ],
-    recommendedRange: { min: 5, max: 20 },
-    hardRange: { min: 1, max: 30 },
-    sectionHint: "Ownership"
+    recommendedRange: { min: 0, max: 0.1 },
+    hardRange: { min: 0, max: 0.5 },
+    sectionHint: "Exit Terms"
   },
   {
-    key: "deal_terms.platform_fee",
-    label: "Platform fee (system)",
-    unit: "currency",
+    key: "deal_terms.second_extension_premium_pct",
+    label: "Second extension premium (%)",
+    unit: "percent",
+    control: "kiosk",
+    simpleDefinition: "Extra percentage added to the buyout if the deal runs into the second extension window.",
+    impact: "A higher premium further increases the buyout for very late exits.",
+    formula: "extension_adjusted_buyout = base_buyout * (1 + premium_pct) if in second extension window",
+    anchors: [
+      { label: "0%", value: 0 },
+      { label: "5%", value: 0.05 },
+      { label: "8%", value: 0.08 },
+      { label: "12%", value: 0.12 }
+    ],
+    recommendedRange: { min: 0, max: 0.15 },
+    hardRange: { min: 0, max: 0.5 },
+    sectionHint: "Exit Terms"
+  },
+  {
+    key: "deal_terms.partial_buyout_allowed",
+    label: "Partial buyout allowed",
+    unit: "enum",
+    control: "enum",
+    simpleDefinition: "Whether the homeowner can buy out FractPath's stake in portions rather than all at once.",
+    impact: "When enabled, partial buyouts at 25%, 50%, or 75% of the total stake become available.",
+    formula: "partial_buyout_amount_N = base_buyout * N (fractional, if allowed)",
+    options: [
+      { label: "Not allowed", value: "false" },
+      { label: "Allowed", value: "true" }
+    ],
+    sectionHint: "Exit Terms"
+  },
+  {
+    key: "deal_terms.setup_fee_pct",
+    label: "Setup fee (%)",
+    unit: "percent",
     control: "readonly",
     readOnly: !0,
-    simpleDefinition: "A fee paid to FractPath for running the deal.",
-    impact: "This is set by the system and reduces the net proceeds at settlement.",
-    formula: "net_settlement = gross_settlement - platform_fee (conceptual)",
-    recommendedRange: { min: 0, max: 5e3 },
-    hardRange: { min: 0, max: 5e4 },
+    simpleDefinition: "A one-time fee at closing, calculated as a percent of the upfront payment.",
+    impact: "This is set by the system and is deducted from the setup fee calculation.",
+    formula: "setup_fee = clamp(upfront_payment * setup_fee_pct, setup_fee_floor, setup_fee_cap)",
+    recommendedRange: { min: 0, max: 0.05 },
+    hardRange: { min: 0, max: 0.1 },
     sectionHint: "Fees"
   },
   {
@@ -1235,23 +1087,36 @@ const Vt = [
     control: "readonly",
     readOnly: !0,
     simpleDefinition: "A monthly fee for servicing the deal.",
-    impact: "It accumulates over the life of the deal and reduces net investor returns.",
-    formula: "servicing_total = servicing_fee_monthly * payments_made_by_exit",
+    impact: "It accumulates over the life of the deal and adds to FractPath's revenue.",
+    formula: "fractpath_revenue_to_date = setup_fee + servicing_fee_monthly * months_elapsed + ...",
     recommendedRange: { min: 0, max: 100 },
     hardRange: { min: 0, max: 500 },
     sectionHint: "Fees"
   },
   {
-    key: "deal_terms.exit_fee_pct",
-    label: "Exit fee (%) (system)",
-    unit: "percent",
+    key: "deal_terms.payment_admin_fee",
+    label: "Payment admin fee ($)",
+    unit: "currency",
     control: "readonly",
     readOnly: !0,
-    simpleDefinition: "A fee charged when the deal ends (as a percent).",
-    impact: "This is set by the system and reduces the net settlement at exit.",
-    formula: "exit_fee = exit_fee_pct * gross_settlement; net_settlement = gross_settlement - exit_fee",
-    recommendedRange: { min: 0, max: 0.02 },
-    hardRange: { min: 0, max: 0.1 },
+    simpleDefinition: "A flat fee charged per monthly payment event.",
+    impact: "This is set by the system and adds to FractPath's total revenue over the deal term.",
+    formula: "payment_admin_total = payment_admin_fee * payments_made_by_exit",
+    recommendedRange: { min: 0, max: 25 },
+    hardRange: { min: 0, max: 100 },
+    sectionHint: "Fees"
+  },
+  {
+    key: "deal_terms.exit_admin_fee_amount",
+    label: "Exit admin fee ($)",
+    unit: "currency",
+    control: "readonly",
+    readOnly: !0,
+    simpleDefinition: "A flat administrative fee charged when the deal exits.",
+    impact: "This is set by the system and reduces net proceeds at settlement.",
+    formula: "fractpath_revenue_to_date includes exit_admin_fee_amount at settlement",
+    recommendedRange: { min: 0, max: 1e3 },
+    hardRange: { min: 0, max: 5e3 },
     sectionHint: "Fees"
   },
   {
@@ -1277,7 +1142,7 @@ const Vt = [
     control: "kiosk",
     simpleDefinition: "The percentage paid to the realtor for their services.",
     impact: "It reduces net proceeds. Capped at 6%. Must be 0 when representation is NONE.",
-    formula: "commission_amount = realtor_commission_pct * settlement_value (conceptual, per payment event)",
+    formula: "commission_amount = realtor_commission_pct * buyout_value (conceptual, at exit)",
     anchors: [
       { label: "0%", value: 0 },
       { label: "2%", value: 0.02 },
@@ -1289,90 +1154,26 @@ const Vt = [
     sectionHint: "Fees"
   },
   {
-    key: "deal_terms.realtor_commission_payment_mode",
-    label: "Commission payment mode",
-    unit: "enum",
-    control: "readonly",
-    readOnly: !0,
-    simpleDefinition: "How and when the realtor commission is paid.",
-    impact: "Locked to per-payment-event: commission is deducted at each payment event.",
-    formula: "realtor_commission_payment_mode = PER_PAYMENT_EVENT (locked in v10.2)",
-    options: [
-      { label: "Per payment event", value: "PER_PAYMENT_EVENT" }
-    ],
-    sectionHint: "Fees"
-  },
-  {
-    key: "deal_terms.duration_yield_floor_enabled",
-    label: "Duration Yield Floor (enabled)",
-    unit: "enum",
-    control: "enum",
-    simpleDefinition: "Whether the Duration Yield Floor protection is active.",
-    impact: "When enabled, it can raise settlement above the ceiling for long-duration deals.",
-    formula: "if enabled AND exit_year >= start_year, DYF may override standard ceiling",
-    options: [
-      { label: "Disabled", value: "false" },
-      { label: "Enabled", value: "true" }
-    ],
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.duration_yield_floor_start_year",
-    label: "DYF start year",
-    unit: "years",
-    control: "kiosk",
-    simpleDefinition: "The year when Duration Yield Floor protection kicks in.",
-    impact: "After this year, the DYF minimum return guarantee becomes active.",
-    formula: "DYF activates if exit_year >= duration_yield_floor_start_year",
-    anchors: [
-      { label: "5", value: 5 },
-      { label: "7", value: 7 },
-      { label: "10", value: 10 },
-      { label: "15", value: 15 }
-    ],
-    recommendedRange: { min: 5, max: 15 },
-    hardRange: { min: 1, max: 30 },
-    sectionHint: "Protections"
-  },
-  {
-    key: "deal_terms.duration_yield_floor_min_multiple",
-    label: "DYF minimum multiple",
-    unit: "number",
-    control: "kiosk",
-    simpleDefinition: "The minimum return multiple guaranteed by the Duration Yield Floor.",
-    impact: "If DYF activates, settlement cannot be below invested_capital * this multiple.",
-    formula: "dyf_floor_amount = invested_capital_total * duration_yield_floor_min_multiple",
-    anchors: [
-      { label: "1.50×", value: 1.5 },
-      { label: "1.75×", value: 1.75 },
-      { label: "2.00×", value: 2 },
-      { label: "2.50×", value: 2.5 }
-    ],
-    recommendedRange: { min: 1.2, max: 3 },
-    hardRange: { min: 1, max: 5 },
-    sectionHint: "Protections"
-  },
-  {
     key: "__disclosure__",
     label: "Disclosures & assumptions",
     unit: "info",
     control: "info",
     simpleDefinition: "These numbers are estimates based on the inputs you choose.",
-    impact: "Projections depend on home prices, timing, fees, and rules like floors/ceilings—real outcomes can be different.",
-    formula: "Model uses: FMV + appreciation assumption + monthly equity purchase + settlement rules (floors/ceilings/fees). Not financial advice; projections aren't guarantees.",
+    impact: "Projections depend on home prices, timing, fees, and contract window classification—real outcomes can be different.",
+    formula: "Model uses: FMV + appreciation assumption + buyer funding schedule + window classification + extension premiums. Not financial advice; projections aren’t guarantees.",
     sectionHint: "Assumptions"
   }
 ];
-function Bt(e, t) {
+function Dt(e, t) {
   const n = e.dynamicPercentAnchors;
   return n ? n.percents.map((r) => {
     let o = r * t;
     n.maxPercentOfSource != null && (o = Math.min(o, n.maxPercentOfSource * t));
-    const i = Math.round(o / 100) * 100, l = n.min != null ? Math.max(n.min, i) : i;
-    return { label: y(l), value: l };
+    const c = Math.round(o / 100) * 100, i = n.min != null ? Math.max(n.min, c) : c;
+    return { label: p(i), value: i };
   }) : e.anchors ?? [];
 }
-const De = [
+const Ae = [
   {
     key: "payments",
     label: "Payments",
@@ -1397,7 +1198,7 @@ const De = [
         fieldKeys: [
           "deal_terms.minimum_hold_years",
           "deal_terms.contract_maturity_years",
-          "deal_terms.liquidity_trigger_year"
+          "deal_terms.target_exit_year"
         ]
       }
     ]
@@ -1422,31 +1223,19 @@ const De = [
   },
   {
     key: "protections",
-    label: "Protections",
+    label: "Exit Terms",
     sections: [
       {
-        label: "Floor & ceiling",
+        label: "Extension premiums",
         fieldKeys: [
-          "deal_terms.floor_multiple",
-          "deal_terms.ceiling_multiple",
-          "deal_terms.downside_mode"
+          "deal_terms.first_extension_premium_pct",
+          "deal_terms.second_extension_premium_pct"
         ]
       },
       {
-        label: "Timing window",
+        label: "Partial buyout",
         fieldKeys: [
-          "deal_terms.payback_window_start_year",
-          "deal_terms.payback_window_end_year",
-          "deal_terms.timing_factor_early",
-          "deal_terms.timing_factor_late"
-        ]
-      },
-      {
-        label: "Duration Yield Floor",
-        fieldKeys: [
-          "deal_terms.duration_yield_floor_enabled",
-          "deal_terms.duration_yield_floor_start_year",
-          "deal_terms.duration_yield_floor_min_multiple"
+          "deal_terms.partial_buyout_allowed"
         ]
       }
     ]
@@ -1458,30 +1247,30 @@ const De = [
       {
         label: "System fees",
         fieldKeys: [
-          "deal_terms.platform_fee",
+          "deal_terms.setup_fee_pct",
           "deal_terms.servicing_fee_monthly",
-          "deal_terms.exit_fee_pct"
+          "deal_terms.payment_admin_fee",
+          "deal_terms.exit_admin_fee_amount"
         ]
       },
       {
         label: "Realtor commission",
         fieldKeys: [
           "deal_terms.realtor_representation_mode",
-          "deal_terms.realtor_commission_pct",
-          "deal_terms.realtor_commission_payment_mode"
+          "deal_terms.realtor_commission_pct"
         ]
       }
     ]
   }
 ];
-function Ut(e) {
+function zt(e) {
   const t = {}, { deal_terms: n, scenario: r } = e;
   return n.property_value <= 0 && (t["deal_terms.property_value"] = "Property value must be greater than 0"), n.upfront_payment < 0 && (t["deal_terms.upfront_payment"] = "Upfront payment cannot be negative"), n.monthly_payment < 0 && (t["deal_terms.monthly_payment"] = "Monthly payment cannot be negative"), n.number_of_payments < 0 && (t["deal_terms.number_of_payments"] = "Number of payments cannot be negative"), r.exit_year <= 0 && (t["scenario.exit_year"] = "Exit year must be greater than 0"), (r.annual_appreciation < -0.5 || r.annual_appreciation > 0.5) && (t["scenario.annual_appreciation"] = "Annual appreciation must be between -50% and 50%"), n.realtor_commission_pct !== void 0 && (n.realtor_commission_pct < 0 || n.realtor_commission_pct > 0.06) && (t["deal_terms.realtor_commission_pct"] = "Realtor commission must be between 0% and 6%"), n.realtor_representation_mode === "NONE" && n.realtor_commission_pct !== void 0 && n.realtor_commission_pct !== 0 && (t["deal_terms.realtor_commission_pct"] = "Commission must be 0% when representation mode is NONE"), t;
 }
-function Ye(e) {
+function ze(e) {
   return Object.keys(e).length > 0;
 }
-const Le = {
+const Ne = {
   padding: "5px 10px",
   borderRadius: 6,
   border: "1px solid #d1d5db",
@@ -1492,42 +1281,42 @@ const Le = {
   cursor: "pointer",
   fontFamily: "system-ui, sans-serif",
   transition: "all 0.15s"
-}, Gt = {
-  ...Le,
+}, Nt = {
+  ...Ne,
   border: "2px solid #111827",
   background: "#111827",
   color: "#fff"
 };
-function Kt({
+function $t({
   value: e,
   anchors: t,
   unit: n,
   onSelectAnchor: r,
   customValue: o,
-  onChangeCustom: i,
-  onBlurCustom: l,
-  disabled: u,
-  error: m
+  onChangeCustom: c,
+  onBlurCustom: i,
+  disabled: _,
+  error: d
 }) {
-  const _ = t.some((d) => d.value === e), g = n === "currency" || n === "number" || n === "months" || n === "years" ? "numeric" : "decimal", x = n === "currency" ? "$" : "", f = n === "percent" ? "%" : n === "years" ? " yr" : n === "months" ? " mo" : "";
-  return /* @__PURE__ */ c("div", { children: [
-    /* @__PURE__ */ a("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }, children: t.map((d) => /* @__PURE__ */ a(
+  const h = t.some((u) => u.value === e), x = n === "currency" || n === "number" || n === "months" || n === "years" ? "numeric" : "decimal", w = n === "currency" ? "$" : "", y = n === "percent" ? "%" : n === "years" ? " yr" : n === "months" ? " mo" : "";
+  return /* @__PURE__ */ s("div", { children: [
+    /* @__PURE__ */ a("div", { style: { display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }, children: t.map((u) => /* @__PURE__ */ a(
       "button",
       {
         type: "button",
-        disabled: u,
-        onClick: () => r(d.value),
+        disabled: _,
+        onClick: () => r(u.value),
         style: {
-          ...d.value === e ? Gt : Le,
-          opacity: u ? 0.5 : 1,
-          cursor: u ? "not-allowed" : "pointer"
+          ...u.value === e ? Nt : Ne,
+          opacity: _ ? 0.5 : 1,
+          cursor: _ ? "not-allowed" : "pointer"
         },
-        children: d.label
+        children: u.label
       },
-      d.label
+      u.label
     )) }),
-    /* @__PURE__ */ c("div", { style: { position: "relative" }, children: [
-      x && /* @__PURE__ */ a(
+    /* @__PURE__ */ s("div", { style: { position: "relative" }, children: [
+      w && /* @__PURE__ */ a(
         "span",
         {
           style: {
@@ -1539,33 +1328,33 @@ function Kt({
             color: "#9ca3af",
             pointerEvents: "none"
           },
-          children: x
+          children: w
         }
       ),
       /* @__PURE__ */ a(
         "input",
         {
           type: "text",
-          inputMode: g,
-          disabled: u,
-          value: _ ? "" : o,
-          placeholder: _ ? "Custom" : "",
-          onChange: (d) => i(d.target.value),
-          onBlur: l,
+          inputMode: x,
+          disabled: _,
+          value: h ? "" : o,
+          placeholder: h ? "Custom" : "",
+          onChange: (u) => c(u.target.value),
+          onBlur: i,
           style: {
             width: "100%",
-            padding: x ? "7px 10px 7px 22px" : "7px 10px",
-            border: m ? "1px solid #ef4444" : "1px solid #d1d5db",
+            padding: w ? "7px 10px 7px 22px" : "7px 10px",
+            border: d ? "1px solid #ef4444" : "1px solid #d1d5db",
             borderRadius: 6,
             fontSize: 13,
             fontFamily: "system-ui, sans-serif",
             boxSizing: "border-box",
-            background: u ? "#f3f4f6" : "#fff",
-            color: u ? "#9ca3af" : "#111827"
+            background: _ ? "#f3f4f6" : "#fff",
+            color: _ ? "#9ca3af" : "#111827"
           }
         }
       ),
-      f && /* @__PURE__ */ a(
+      y && /* @__PURE__ */ a(
         "span",
         {
           style: {
@@ -1577,19 +1366,19 @@ function Kt({
             color: "#9ca3af",
             pointerEvents: "none"
           },
-          children: f
+          children: y
         }
       )
     ] }),
-    m && /* @__PURE__ */ a("div", { style: { color: "#ef4444", fontSize: 11, marginTop: 3 }, children: m })
+    d && /* @__PURE__ */ a("div", { style: { color: "#ef4444", fontSize: 11, marginTop: 3 }, children: d })
   ] });
 }
-const Xt = `
+const Ot = `
 @keyframes fpShimmer {
   0% { background-position: -200px 0; }
   100% { background-position: 200px 0; }
 }
-`, Jt = {
+`, Wt = {
   display: "inline-block",
   width: 60,
   height: 12,
@@ -1598,8 +1387,8 @@ const Xt = `
   backgroundSize: "200px 100%",
   animation: "fpShimmer 1.5s infinite"
 };
-function Qt({ tier1: e, status: t, error: n }) {
-  return /* @__PURE__ */ c(
+function It({ tier1: e, status: t, error: n }) {
+  return /* @__PURE__ */ s(
     "div",
     {
       style: {
@@ -1609,8 +1398,8 @@ function Qt({ tier1: e, status: t, error: n }) {
         padding: 14
       },
       children: [
-        /* @__PURE__ */ a("style", { children: Xt }),
-        /* @__PURE__ */ c(
+        /* @__PURE__ */ a("style", { children: Ot }),
+        /* @__PURE__ */ s(
           "div",
           {
             style: {
@@ -1621,26 +1410,26 @@ function Qt({ tier1: e, status: t, error: n }) {
             },
             children: [
               /* @__PURE__ */ a("span", { style: { fontWeight: 600, fontSize: 13, color: "#374151" }, children: "Preview" }),
-              t === "computing" && /* @__PURE__ */ a("span", { style: Jt })
+              t === "computing" && /* @__PURE__ */ a("span", { style: Wt })
             ]
           }
         ),
-        /* @__PURE__ */ c("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }, children: [
-          /* @__PURE__ */ c("div", { children: [
+        /* @__PURE__ */ s("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }, children: [
+          /* @__PURE__ */ s("div", { children: [
             /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Upfront cash" }),
-            /* @__PURE__ */ a("div", { style: { fontSize: 15, fontWeight: 600, color: "#111827" }, children: y(e.upfrontCash) })
+            /* @__PURE__ */ a("div", { style: { fontSize: 15, fontWeight: 600, color: "#111827" }, children: p(e.upfrontCash) })
           ] }),
-          /* @__PURE__ */ c("div", { children: [
+          /* @__PURE__ */ s("div", { children: [
             /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Installments" }),
             /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#374151" }, children: e.installmentsLabel })
           ] }),
-          /* @__PURE__ */ c("div", { children: [
+          /* @__PURE__ */ s("div", { children: [
             /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Total installments" }),
-            /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#374151" }, children: y(e.totalInstallments) })
+            /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#374151" }, children: p(e.totalInstallments) })
           ] }),
-          /* @__PURE__ */ c("div", { children: [
+          /* @__PURE__ */ s("div", { children: [
             /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Total cash paid" }),
-            /* @__PURE__ */ a("div", { style: { fontSize: 15, fontWeight: 600, color: "#111827" }, children: y(e.totalCashPaid) })
+            /* @__PURE__ */ a("div", { style: { fontSize: 15, fontWeight: 600, color: "#111827" }, children: p(e.totalCashPaid) })
           ] })
         ] }),
         t === "error" && n && /* @__PURE__ */ a(
@@ -1661,30 +1450,30 @@ function Qt({ tier1: e, status: t, error: n }) {
     }
   );
 }
-function pe({ simpleDefinition: e, impact: t }) {
-  const [n, r] = P(!1), o = de(null), i = de(null);
-  ae(() => {
+function de({ simpleDefinition: e, impact: t }) {
+  const [n, r] = M(!1), o = se(null), c = se(null);
+  ne(() => {
     if (!n) return;
-    function m(_) {
-      o.current && !o.current.contains(_.target) && i.current && !i.current.contains(_.target) && r(!1);
+    function d(h) {
+      o.current && !o.current.contains(h.target) && c.current && !c.current.contains(h.target) && r(!1);
     }
-    return document.addEventListener("mousedown", m), () => document.removeEventListener("mousedown", m);
+    return document.addEventListener("mousedown", d), () => document.removeEventListener("mousedown", d);
   }, [n]);
-  const [l, u] = P({ top: 0, left: 0 });
-  return ae(() => {
+  const [i, _] = M({ top: 0, left: 0 });
+  return ne(() => {
     if (!n || !o.current) return;
-    const m = o.current.getBoundingClientRect();
-    u({
-      top: m.top + window.scrollY - 8,
-      left: m.left + m.width / 2 + window.scrollX
+    const d = o.current.getBoundingClientRect();
+    _({
+      top: d.top + window.scrollY - 8,
+      left: d.left + d.width / 2 + window.scrollX
     });
-  }, [n]), /* @__PURE__ */ c("span", { style: { display: "inline-block", marginLeft: 4 }, children: [
+  }, [n]), /* @__PURE__ */ s("span", { style: { display: "inline-block", marginLeft: 4 }, children: [
     /* @__PURE__ */ a(
       "button",
       {
         ref: o,
         type: "button",
-        onClick: () => r((m) => !m),
+        onClick: () => r((d) => !d),
         "aria-label": "Help",
         style: {
           width: 16,
@@ -1704,15 +1493,15 @@ function pe({ simpleDefinition: e, impact: t }) {
         children: "?"
       }
     ),
-    n && Ke(
-      /* @__PURE__ */ c(
+    n && He(
+      /* @__PURE__ */ s(
         "div",
         {
-          ref: i,
+          ref: c,
           style: {
             position: "absolute",
-            top: l.top,
-            left: l.left,
+            top: i.top,
+            left: i.left,
             transform: "translate(-50%, -100%)",
             background: "#1f2937",
             color: "#f9fafb",
@@ -1735,24 +1524,24 @@ function pe({ simpleDefinition: e, impact: t }) {
     )
   ] });
 }
-function Zt(e, t, n) {
-  const r = t === "homeowner" ? "receive" : "pay", o = t === "homeowner" ? "payout" : "return";
+function Lt(e, t, n) {
+  const r = t === "homeowner" ? "receive" : "pay";
   switch (e) {
     case "payments": {
-      const i = [];
-      return n.upfrontPayment != null && i.push(`You ${r} ${y(n.upfrontPayment)} upfront at closing.`), n.monthlyPayment != null && n.numberOfPayments != null && n.numberOfPayments > 0 && i.push(
-        `Then ${y(n.monthlyPayment)}/mo for ${n.numberOfPayments} months.`
-      ), i.length === 0 && i.push("The upfront amount is set at closing. Monthly installments, if any, follow."), i.push("These amounts go directly toward the equity position."), i;
+      const o = [];
+      return n.upfrontPayment != null && o.push(`You ${r} ${p(n.upfrontPayment)} upfront at closing.`), n.monthlyPayment != null && n.numberOfPayments != null && n.numberOfPayments > 0 && o.push(
+        `Then ${p(n.monthlyPayment)}/mo for ${n.numberOfPayments} months.`
+      ), o.length === 0 && o.push("The upfront amount is set at closing. Monthly installments, if any, follow."), o.push("These amounts make up the total scheduled buyer funding."), o;
     }
     case "ownership": {
-      const i = [];
-      return n.contractMaturityYears != null && i.push(`The contract lasts up to ${n.contractMaturityYears} years.`), n.minimumHoldYears != null && i.push(`Earliest allowed settlement is at year ${n.minimumHoldYears}.`), n.exitYear != null && i.push(`Expected settlement is at year ${n.exitYear}.`), i.length === 0 && i.push("This tab controls how long the deal lasts and when settlement can happen."), i;
+      const o = [];
+      return n.contractMaturityYears != null && o.push(`The contract lasts up to ${n.contractMaturityYears} years.`), n.minimumHoldYears != null && o.push(`Earliest allowed buyout is at year ${n.minimumHoldYears}.`), n.exitYear != null && o.push(`Expected buyout is at year ${n.exitYear}.`), o.length === 0 && o.push("This tab controls how long the deal lasts and when buyout can happen."), o;
     }
     case "protections":
       return [
-        `A floor sets the minimum ${o} — the ${o} won't go below this level.`,
-        `A ceiling caps the maximum ${o}. Both are adjustable in this tab.`,
-        "Duration yield floor, if enabled, adds extra protection for longer hold periods."
+        "Extension premiums apply if the deal extends beyond the target exit window.",
+        "A higher premium compensates FractPath for a longer hold period.",
+        "Partial buyouts let the homeowner buy out FractPath’s stake in stages."
       ];
     case "assumptions":
       return [
@@ -1760,22 +1549,22 @@ function Zt(e, t, n) {
         "Changing these values updates the projected results in real time."
       ];
     case "fees": {
-      const i = [];
-      return n.platformFee != null && i.push(`Platform fee: ${y(n.platformFee)} (one-time at closing).`), n.servicingFeeMonthly != null && i.push(`Monthly servicing: ${y(n.servicingFeeMonthly)}/mo for account management.`), n.exitFeePct != null && i.push(`Exit fee: ${H(n.exitFeePct)} of the settlement amount at exit.`), i.length === 0 && i.push("Fees include a platform fee, monthly servicing, and an exit fee at settlement."), t === "realtor" && i.push("Realtor commission is tracked separately below."), i;
+      const o = [];
+      return n.setupFeePct != null && o.push(`Setup fee: ${Y(n.setupFeePct)} of upfront payment at closing.`), n.servicingFeeMonthly != null && o.push(`Monthly servicing: ${p(n.servicingFeeMonthly)}/mo for account management.`), n.exitAdminFeeAmount != null && o.push(`Exit admin fee: ${p(n.exitAdminFeeAmount)} flat at settlement.`), o.length === 0 && o.push("Fees include a setup fee at closing, monthly servicing, and an exit admin fee at settlement."), t === "realtor" && o.push("Realtor commission is tracked separately below."), o;
     }
     default:
       return [];
   }
 }
-function en(e, t) {
+function Bt(e, t) {
   if (t === "__disclosure__") return null;
   const [n, r] = t.split(".");
   return e[n][r];
 }
-function tn(e, t) {
-  return e.dynamicPercentAnchors ? Bt(e, t.deal_terms.property_value) : e.anchors ?? [];
+function Vt(e, t) {
+  return e.dynamicPercentAnchors ? Dt(e, t.deal_terms.property_value) : e.anchors ?? [];
 }
-const nn = {
+const jt = {
   position: "fixed",
   inset: 0,
   background: "rgba(0,0,0,0.5)",
@@ -1785,7 +1574,7 @@ const nn = {
   paddingTop: "5vh",
   zIndex: 9999,
   fontFamily: "system-ui, sans-serif"
-}, an = {
+}, Ht = {
   background: "#fff",
   borderRadius: 12,
   width: "min(680px, 95vw)",
@@ -1793,71 +1582,71 @@ const nn = {
   display: "flex",
   flexDirection: "column",
   boxShadow: "0 8px 32px rgba(0,0,0,0.18)"
-}, rn = {
+}, Yt = {
   display: "flex",
   gap: 0,
   borderBottom: "1px solid #e5e7eb",
   padding: "0 16px",
   overflowX: "auto"
 };
-function on({
+function Ut({
   draft: e,
   errors: t,
   preview: n,
   persona: r,
   permissions: o,
-  setField: i,
-  onBlurCompute: l,
-  onSave: u,
-  onClose: m
+  setField: c,
+  onBlurCompute: i,
+  onSave: _,
+  onClose: d
 }) {
-  const [_, g] = P("payments"), [x, f] = P({}), d = O(() => {
-    const s = /* @__PURE__ */ new Map();
-    for (const b of Vt) s.set(b.key, b);
-    return s;
-  }, []), w = !Ye(t) && r !== "realtor" && o?.canEdit !== !1, E = N(
-    (s, b) => {
-      if (i(s, b), f((v) => ({ ...v, [s]: "" })), s !== "deal_terms.realtor_representation_mode") {
-        if (s === "deal_terms.realtor_commission_pct") {
-          l();
+  const [h, x] = M("payments"), [w, y] = M({}), u = N(() => {
+    const l = /* @__PURE__ */ new Map();
+    for (const b of Tt) l.set(b.key, b);
+    return l;
+  }, []), v = !ze(t) && r !== "realtor" && o?.canEdit !== !1, E = z(
+    (l, b) => {
+      if (c(l, b), y((g) => ({ ...g, [l]: "" })), l !== "deal_terms.realtor_representation_mode") {
+        if (l === "deal_terms.realtor_commission_pct") {
+          i();
           return;
         }
-        l();
+        i();
       }
     },
-    [i, l]
-  ), Y = N(
-    (s, b) => {
-      if (s === "deal_terms.duration_yield_floor_enabled") {
-        i(s, b === "true"), l();
+    [c, i]
+  ), L = z(
+    (l, b) => {
+      if (l === "deal_terms.partial_buyout_allowed") {
+        c(l, b === "true"), i();
         return;
       }
-      if (i(s, b), s === "deal_terms.realtor_representation_mode") {
-        b === "NONE" && i("deal_terms.realtor_commission_pct", 0), l();
+      if (c(l, b), l === "deal_terms.realtor_representation_mode") {
+        b === "NONE" && c("deal_terms.realtor_commission_pct", 0), i();
         return;
       }
-      l();
+      i();
     },
-    [i, l]
-  ), W = N(
-    (s, b) => {
-      f((v) => ({ ...v, [s]: b }));
+    [c, i]
+  ), B = z(
+    (l, b) => {
+      y((g) => ({ ...g, [l]: b }));
     },
     []
-  ), k = N(
-    (s, b) => {
-      const v = x[s];
-      if (v === void 0 || v === "") return;
-      let C;
-      b.unit === "percent" ? C = parseFloat(v) / 100 : C = parseFloat(v.replace(/,/g, "")), Number.isFinite(C) && (b.hardRange && (C = Math.max(b.hardRange.min, Math.min(b.hardRange.max, C))), i(s, C), l());
+  ), P = z(
+    (l, b) => {
+      const g = w[l];
+      if (g === void 0 || g === "") return;
+      let D;
+      b.unit === "percent" ? D = parseFloat(g) / 100 : D = parseFloat(g.replace(/,/g, "")), Number.isFinite(D) && (b.hardRange && (D = Math.max(b.hardRange.min, Math.min(b.hardRange.max, D))), c(l, D), i());
     },
-    [x, i, l]
-  ), V = N(() => {
-    w && (u(e), m());
-  }, [w, e, u, m]), h = (s) => s === "deal_terms.realtor_commission_pct" ? e.deal_terms.realtor_representation_mode === "NONE" : s === "deal_terms.realtor_commission_payment_mode", M = (s, b) => s == null ? "—" : b.unit === "percent" ? `${(s * 100).toFixed(2)}%` : b.unit === "currency" ? y(s) : b.unit === "years" ? `${s} yr` : b.unit === "months" ? `${s} mo` : typeof s == "boolean" ? s ? "Yes" : "No" : String(s), A = (s) => {
-    const b = s.key, v = en(e, b), C = t[b], F = s.readOnly || h(b), X = Z(b, r, s.label);
-    if (s.control === "info")
-      return /* @__PURE__ */ c(
+    [w, c, i]
+  ), j = z(() => {
+    v && (_(e), d());
+  }, [v, e, _, d]), f = (l) => l === "deal_terms.realtor_commission_pct" ? e.deal_terms.realtor_representation_mode === "NONE" : !1, C = (l, b) => l == null ? "—" : b.unit === "percent" ? `${(l * 100).toFixed(2)}%` : b.unit === "currency" ? p(l) : b.unit === "years" ? `${l} yr` : b.unit === "months" ? `${l} mo` : typeof l == "boolean" ? l ? "Yes" : "No" : String(l), A = (l) => {
+    const b = l.key, g = Bt(e, b), D = t[b], F = l.readOnly || f(b), K = Q(b, r, l.label);
+    if (l.control === "info")
+      return /* @__PURE__ */ s(
         "div",
         {
           style: {
@@ -1870,111 +1659,111 @@ function on({
             color: "#92400e"
           },
           children: [
-            /* @__PURE__ */ a("div", { style: { fontWeight: 600, marginBottom: 4 }, children: s.simpleDefinition }),
-            /* @__PURE__ */ a("div", { children: s.impact })
+            /* @__PURE__ */ a("div", { style: { fontWeight: 600, marginBottom: 4 }, children: l.simpleDefinition }),
+            /* @__PURE__ */ a("div", { children: l.impact })
           ]
         },
         b
       );
-    if (s.control === "enum") {
-      const R = s.options ?? [], J = b === "deal_terms.duration_yield_floor_enabled" ? String(v) : v;
-      return /* @__PURE__ */ c("div", { style: { marginBottom: 14 }, children: [
-        /* @__PURE__ */ c("label", { style: fe, children: [
-          X,
-          /* @__PURE__ */ a(pe, { simpleDefinition: s.simpleDefinition, impact: s.impact })
+    if (l.control === "enum") {
+      const R = l.options ?? [], X = b === "deal_terms.partial_buyout_allowed" ? String(g) : g;
+      return /* @__PURE__ */ s("div", { style: { marginBottom: 14 }, children: [
+        /* @__PURE__ */ s("label", { style: me, children: [
+          K,
+          /* @__PURE__ */ a(de, { simpleDefinition: l.simpleDefinition, impact: l.impact })
         ] }),
         /* @__PURE__ */ a(
           "select",
           {
-            value: J,
+            value: X,
             disabled: F,
-            onChange: (T) => Y(b, T.target.value),
+            onChange: (T) => L(b, T.target.value),
             style: {
-              ...ln,
+              ...qt,
               background: F ? "#f3f4f6" : "#fff",
               color: F ? "#9ca3af" : "#111827"
             },
             children: R.map((T) => /* @__PURE__ */ a("option", { value: T.value, children: T.label }, T.value))
           }
         ),
-        C && /* @__PURE__ */ a("div", { style: Ce, children: C })
+        D && /* @__PURE__ */ a("div", { style: Ee, children: D })
       ] }, b);
     }
-    if (s.control === "readonly")
-      return /* @__PURE__ */ c("div", { style: { marginBottom: 14 }, children: [
-        /* @__PURE__ */ c("label", { style: fe, children: [
-          X,
-          /* @__PURE__ */ a(pe, { simpleDefinition: s.simpleDefinition, impact: s.impact })
+    if (l.control === "readonly")
+      return /* @__PURE__ */ s("div", { style: { marginBottom: 14 }, children: [
+        /* @__PURE__ */ s("label", { style: me, children: [
+          K,
+          /* @__PURE__ */ a(de, { simpleDefinition: l.simpleDefinition, impact: l.impact })
         ] }),
-        /* @__PURE__ */ a("div", { style: sn, children: M(v, s) })
+        /* @__PURE__ */ a("div", { style: Gt, children: C(g, l) })
       ] }, b);
-    if (s.control === "slider" && s.slider)
-      return /* @__PURE__ */ c("div", { style: { marginBottom: 14 }, children: [
-        /* @__PURE__ */ c("label", { style: fe, children: [
-          X,
-          /* @__PURE__ */ a(pe, { simpleDefinition: s.simpleDefinition, impact: s.impact })
+    if (l.control === "slider" && l.slider)
+      return /* @__PURE__ */ s("div", { style: { marginBottom: 14 }, children: [
+        /* @__PURE__ */ s("label", { style: me, children: [
+          K,
+          /* @__PURE__ */ a(de, { simpleDefinition: l.simpleDefinition, impact: l.impact })
         ] }),
-        /* @__PURE__ */ c("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+        /* @__PURE__ */ s("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
           /* @__PURE__ */ a(
             "input",
             {
               type: "range",
-              min: s.slider.min,
-              max: s.slider.max,
-              step: s.slider.step,
-              value: v,
+              min: l.slider.min,
+              max: l.slider.max,
+              step: l.slider.step,
+              value: g,
               disabled: F,
-              onChange: (R) => i(b, parseFloat(R.target.value)),
-              onMouseUp: l,
-              onTouchEnd: l,
+              onChange: (R) => c(b, parseFloat(R.target.value)),
+              onMouseUp: i,
+              onTouchEnd: i,
               style: { flex: 1 }
             }
           ),
-          /* @__PURE__ */ a("span", { style: { fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: "right" }, children: M(v, s) })
+          /* @__PURE__ */ a("span", { style: { fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: "right" }, children: C(g, l) })
         ] }),
-        C && /* @__PURE__ */ a("div", { style: Ce, children: C })
+        D && /* @__PURE__ */ a("div", { style: Ee, children: D })
       ] }, b);
-    if (s.control === "kiosk") {
-      const R = tn(s, e), J = R.length >= 4 ? [R[0], R[1], R[2], R[3]] : [
+    if (l.control === "kiosk") {
+      const R = Vt(l, e), X = R.length >= 4 ? [R[0], R[1], R[2], R[3]] : [
         R[0] ?? { label: "—", value: 0 },
         R[1] ?? { label: "—", value: 0 },
         R[2] ?? { label: "—", value: 0 },
         R[3] ?? { label: "—", value: 0 }
       ];
-      let T = x[b] ?? "";
-      return !T && !J.some((q) => q.value === v) && (s.unit === "percent" ? T = (v * 100).toString() : T = String(v)), /* @__PURE__ */ c("div", { style: { marginBottom: 14 }, children: [
-        /* @__PURE__ */ c("label", { style: fe, children: [
-          X,
-          /* @__PURE__ */ a(pe, { simpleDefinition: s.simpleDefinition, impact: s.impact })
+      let T = w[b] ?? "";
+      return !T && !X.some((H) => H.value === g) && (l.unit === "percent" ? T = (g * 100).toString() : T = String(g)), /* @__PURE__ */ s("div", { style: { marginBottom: 14 }, children: [
+        /* @__PURE__ */ s("label", { style: me, children: [
+          K,
+          /* @__PURE__ */ a(de, { simpleDefinition: l.simpleDefinition, impact: l.impact })
         ] }),
         /* @__PURE__ */ a(
-          Kt,
+          $t,
           {
-            value: v,
-            anchors: J,
-            unit: s.unit,
-            onSelectAnchor: (q) => E(b, q),
+            value: g,
+            anchors: X,
+            unit: l.unit,
+            onSelectAnchor: (H) => E(b, H),
             customValue: T,
-            onChangeCustom: (q) => W(b, q),
-            onBlurCustom: () => k(b, s),
+            onChangeCustom: (H) => B(b, H),
+            onBlurCustom: () => P(b, l),
             disabled: F,
-            error: C
+            error: D
           }
         )
       ] }, b);
     }
     return null;
-  }, ee = De.find((s) => s.key === _);
-  return /* @__PURE__ */ a("div", { style: nn, onClick: (s) => {
-    s.target === s.currentTarget && m();
-  }, children: /* @__PURE__ */ c("div", { style: an, role: "dialog", "aria-modal": "true", "data-testid": "deal-edit-modal", children: [
-    /* @__PURE__ */ a("div", { style: { padding: "16px 20px 0", borderBottom: "none" }, children: /* @__PURE__ */ c("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+  }, Z = Ae.find((l) => l.key === h);
+  return /* @__PURE__ */ a("div", { style: jt, onClick: (l) => {
+    l.target === l.currentTarget && d();
+  }, children: /* @__PURE__ */ s("div", { style: Ht, role: "dialog", "aria-modal": "true", "data-testid": "deal-edit-modal", children: [
+    /* @__PURE__ */ a("div", { style: { padding: "16px 20px 0", borderBottom: "none" }, children: /* @__PURE__ */ s("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
       /* @__PURE__ */ a("h2", { style: { margin: 0, fontSize: 18, color: "#111827" }, children: "Edit Deal Terms" }),
       /* @__PURE__ */ a(
         "button",
         {
           type: "button",
-          onClick: m,
+          onClick: d,
           "aria-label": "Close",
           style: {
             background: "none",
@@ -1988,29 +1777,29 @@ function on({
         }
       )
     ] }) }),
-    /* @__PURE__ */ a("div", { style: rn, children: De.map((s) => /* @__PURE__ */ a(
+    /* @__PURE__ */ a("div", { style: Yt, children: Ae.map((l) => /* @__PURE__ */ a(
       "button",
       {
         type: "button",
-        onClick: () => g(s.key),
+        onClick: () => x(l.key),
         style: {
           padding: "10px 16px",
           border: "none",
-          borderBottom: _ === s.key ? "2px solid #111827" : "2px solid transparent",
+          borderBottom: h === l.key ? "2px solid #111827" : "2px solid transparent",
           background: "none",
           fontSize: 13,
-          fontWeight: _ === s.key ? 600 : 400,
-          color: _ === s.key ? "#111827" : "#6b7280",
+          fontWeight: h === l.key ? 600 : 400,
+          color: h === l.key ? "#111827" : "#6b7280",
           cursor: "pointer",
           fontFamily: "system-ui, sans-serif",
           whiteSpace: "nowrap"
         },
-        children: s.label
+        children: l.label
       },
-      s.key
+      l.key
     )) }),
-    /* @__PURE__ */ a("div", { style: { flex: 1, overflow: "auto", padding: "16px 20px" }, children: /* @__PURE__ */ c("div", { style: { display: "grid", gridTemplateColumns: "1fr 220px", gap: 20 }, children: [
-      /* @__PURE__ */ a("div", { children: ee.sections.map((s) => /* @__PURE__ */ c("div", { style: { marginBottom: 20 }, children: [
+    /* @__PURE__ */ a("div", { style: { flex: 1, overflow: "auto", padding: "16px 20px" }, children: /* @__PURE__ */ s("div", { style: { display: "grid", gridTemplateColumns: "1fr 220px", gap: 20 }, children: [
+      /* @__PURE__ */ a("div", { children: Z.sections.map((l) => /* @__PURE__ */ s("div", { style: { marginBottom: 20 }, children: [
         /* @__PURE__ */ a(
           "h4",
           {
@@ -2021,24 +1810,24 @@ function on({
               textTransform: "uppercase",
               letterSpacing: 0.5
             },
-            children: s.label
+            children: l.label
           }
         ),
-        s.fieldKeys.map((b) => {
-          const v = d.get(b);
-          return v ? A(v) : null;
+        l.fieldKeys.map((b) => {
+          const g = u.get(b);
+          return g ? A(g) : null;
         })
-      ] }, s.label)) }),
-      /* @__PURE__ */ c("div", { children: [
+      ] }, l.label)) }),
+      /* @__PURE__ */ s("div", { children: [
         /* @__PURE__ */ a(
-          Qt,
+          It,
           {
             tier1: n.tier1,
             status: n.status,
             error: n.error
           }
         ),
-        /* @__PURE__ */ c(
+        /* @__PURE__ */ s(
           "div",
           {
             style: {
@@ -2051,23 +1840,23 @@ function on({
             "data-testid": "tab-explainer",
             children: [
               /* @__PURE__ */ a("div", { style: { fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 6 }, children: "What this means" }),
-              /* @__PURE__ */ a("ul", { style: { margin: 0, padding: "0 0 0 14px", fontSize: 11, lineHeight: 1.6, color: "#374151" }, children: Zt(_, r, {
+              /* @__PURE__ */ a("ul", { style: { margin: 0, padding: "0 0 0 14px", fontSize: 11, lineHeight: 1.6, color: "#374151" }, children: Lt(h, r, {
                 upfrontPayment: e.deal_terms.upfront_payment,
                 monthlyPayment: e.deal_terms.monthly_payment,
                 numberOfPayments: e.deal_terms.number_of_payments,
                 contractMaturityYears: e.deal_terms.contract_maturity_years,
                 minimumHoldYears: e.deal_terms.minimum_hold_years,
                 exitYear: e.scenario.exit_year,
-                platformFee: e.deal_terms.platform_fee,
+                setupFeePct: e.deal_terms.setup_fee_pct,
                 servicingFeeMonthly: e.deal_terms.servicing_fee_monthly,
-                exitFeePct: e.deal_terms.exit_fee_pct
-              }).map((s, b) => /* @__PURE__ */ a("li", { style: { marginBottom: 2 }, children: s }, b)) })
+                exitAdminFeeAmount: e.deal_terms.exit_admin_fee_amount
+              }).map((l, b) => /* @__PURE__ */ a("li", { style: { marginBottom: 2 }, children: l }, b)) })
             ]
           }
         )
       ] })
     ] }) }),
-    /* @__PURE__ */ c(
+    /* @__PURE__ */ s(
       "div",
       {
         style: {
@@ -2082,7 +1871,7 @@ function on({
             "button",
             {
               type: "button",
-              onClick: m,
+              onClick: d,
               style: {
                 padding: "8px 20px",
                 borderRadius: 8,
@@ -2100,17 +1889,17 @@ function on({
             "button",
             {
               type: "button",
-              onClick: V,
-              disabled: !w,
+              onClick: j,
+              disabled: !v,
               style: {
                 padding: "8px 24px",
                 borderRadius: 8,
                 border: "none",
-                background: w ? "#111827" : "#d1d5db",
-                color: w ? "#fff" : "#9ca3af",
+                background: v ? "#111827" : "#d1d5db",
+                color: v ? "#fff" : "#9ca3af",
                 fontSize: 13,
                 fontWeight: 600,
-                cursor: w ? "pointer" : "not-allowed",
+                cursor: v ? "pointer" : "not-allowed",
                 fontFamily: "system-ui, sans-serif"
               },
               children: "Save"
@@ -2121,13 +1910,13 @@ function on({
     )
   ] }) });
 }
-const fe = {
+const me = {
   display: "block",
   fontSize: 12,
   color: "#374151",
   marginBottom: 5,
   fontWeight: 500
-}, ln = {
+}, qt = {
   width: "100%",
   padding: "7px 10px",
   border: "1px solid #d1d5db",
@@ -2135,41 +1924,51 @@ const fe = {
   fontSize: 13,
   fontFamily: "system-ui, sans-serif",
   boxSizing: "border-box"
-}, sn = {
+}, Gt = {
   padding: "7px 10px",
   background: "#f3f4f6",
   border: "1px solid #e5e7eb",
   borderRadius: 6,
   fontSize: 13,
   color: "#6b7280"
-}, Ce = {
+}, Ee = {
   color: "#ef4444",
   fontSize: 11,
   marginTop: 3
 };
-function Se() {
+function ge() {
   return {
     deal_terms: {
       property_value: 6e5,
       upfront_payment: 5e4,
       monthly_payment: 0,
       number_of_payments: 0,
-      payback_window_start_year: 5,
-      payback_window_end_year: 10,
-      timing_factor_early: 0.8,
-      timing_factor_late: 1,
-      floor_multiple: 1,
-      ceiling_multiple: 3.25,
-      downside_mode: "HARD_FLOOR",
-      contract_maturity_years: 30,
-      liquidity_trigger_year: 15,
       minimum_hold_years: 3,
-      platform_fee: z.platform_fee,
-      servicing_fee_monthly: z.servicing_fee_monthly,
-      exit_fee_pct: z.exit_fee_pct,
+      contract_maturity_years: 30,
+      target_exit_year: 7,
+      target_exit_window_start_year: 6,
+      target_exit_window_end_year: 8,
+      long_stop_year: 15,
+      first_extension_start_year: 8,
+      first_extension_end_year: 11,
+      first_extension_premium_pct: 0.05,
+      second_extension_start_year: 11,
+      second_extension_end_year: 15,
+      second_extension_premium_pct: 0.08,
+      partial_buyout_allowed: !1,
+      partial_buyout_min_fraction: 0.25,
+      partial_buyout_increment_fraction: 0.25,
+      buyer_purchase_option_enabled: !1,
+      buyer_purchase_notice_days: 90,
+      buyer_purchase_closing_days: 60,
+      setup_fee_pct: k.setup_fee_pct,
+      setup_fee_floor: k.setup_fee_floor,
+      setup_fee_cap: k.setup_fee_cap,
+      servicing_fee_monthly: k.servicing_fee_monthly,
+      payment_admin_fee: k.payment_admin_fee,
+      exit_admin_fee_amount: k.exit_admin_fee_amount,
       realtor_representation_mode: "NONE",
-      realtor_commission_pct: 0,
-      realtor_commission_payment_mode: "PER_PAYMENT_EVENT"
+      realtor_commission_pct: 0
     },
     scenario: {
       annual_appreciation: 0.03,
@@ -2178,163 +1977,171 @@ function Se() {
     }
   };
 }
-function _e(e) {
-  const { upfront_payment: t, monthly_payment: n, number_of_payments: r } = e.deal_terms, { exit_year: o } = e.scenario, i = Math.floor(o * 12), l = Math.min(r, i), u = n * l, m = t + u, _ = l === 0 ? "No installments" : `${l} payments of ${y(n)}`;
+function pe(e) {
+  const { upfront_payment: t, monthly_payment: n, number_of_payments: r } = e.deal_terms, { exit_year: o } = e.scenario, c = Math.floor(o * 12), i = Math.min(r, c), _ = n * i, d = t + _, h = i === 0 ? "No installments" : `${i} payments of ${p(n)}`;
   return {
     upfrontCash: t,
-    installmentsLabel: _,
-    totalInstallments: u,
-    totalCashPaid: m
+    installmentsLabel: h,
+    totalInstallments: _,
+    totalCashPaid: d
   };
 }
-function cn(e) {
-  return he(e.deal_terms, e.scenario);
+function Kt(e) {
+  return fe(e.deal_terms, e.scenario);
 }
-function dn(e, t, n) {
-  const r = structuredClone(e), [o, i] = t.split(".");
-  return r[o][i] = n, r;
+function Xt(e, t, n) {
+  const r = structuredClone(e), [o, c] = t.split(".");
+  return r[o][c] = n, r;
 }
-function mn(e) {
-  const [t, n] = P(
-    () => e ?? Se()
-  ), [r, o] = P({}), [i, l] = P(() => ({
-    tier1: _e(e ?? Se()),
+function Jt(e) {
+  const [t, n] = M(
+    () => e ?? ge()
+  ), [r, o] = M({}), [c, i] = M(() => ({
+    tier1: pe(e ?? ge()),
     status: "idle"
-  })), u = N((g, x) => {
-    n((f) => {
-      const d = dn(f, g, x);
-      return l((w) => ({ ...w, tier1: _e(d) })), d;
+  })), _ = z((x, w) => {
+    n((y) => {
+      const u = Xt(y, x, w);
+      return i((v) => ({ ...v, tier1: pe(u) })), u;
     });
-  }, []), m = N(() => {
-    n((g) => {
-      const x = Ut(g);
-      if (o(x), Ye(x))
-        return l((f) => ({
-          ...f,
+  }, []), d = z(() => {
+    n((x) => {
+      const w = zt(x);
+      if (o(w), ze(w))
+        return i((y) => ({
+          ...y,
           status: "error",
           error: "Validation failed"
-        })), g;
-      l((f) => ({ ...f, status: "computing" }));
+        })), x;
+      i((y) => ({ ...y, status: "computing" }));
       try {
-        const f = cn(g);
-        l({
-          tier1: _e(g),
+        const y = Kt(x);
+        i({
+          tier1: pe(x),
           status: "ok",
           lastComputedAtIso: (/* @__PURE__ */ new Date()).toISOString(),
-          results: f
+          results: y
         });
-      } catch (f) {
-        l((d) => ({
-          ...d,
+      } catch (y) {
+        i((u) => ({
+          ...u,
           status: "error",
-          error: f instanceof Error ? f.message : "Compute failed"
+          error: y instanceof Error ? y.message : "Compute failed"
         }));
       }
-      return g;
+      return x;
     });
-  }, []), _ = O(() => _e(t), [t]);
+  }, []), h = N(() => pe(t), [t]);
   return {
     draft: t,
     errors: r,
-    preview: { ...i, tier1: _ },
-    setField: u,
-    onBlurCompute: m
+    preview: { ...c, tier1: h },
+    setField: _,
+    onBlurCompute: d
   };
 }
-function un(e) {
+function Qt(e) {
+  const t = e.exitYear;
   return {
     property_value: e.propertyValue,
     upfront_payment: e.upfrontPayment,
     monthly_payment: e.monthlyPayment,
     number_of_payments: e.numberOfPayments,
-    payback_window_start_year: Math.max(0, Math.floor(e.exitYear / 3)),
-    payback_window_end_year: Math.max(1, Math.ceil(e.exitYear * 2 / 3)),
-    timing_factor_early: 1,
-    timing_factor_late: 1,
-    floor_multiple: 1.1,
-    ceiling_multiple: 2,
-    downside_mode: "HARD_FLOOR",
-    contract_maturity_years: 30,
-    liquidity_trigger_year: 13,
     minimum_hold_years: 2,
-    platform_fee: z.platform_fee,
-    servicing_fee_monthly: z.servicing_fee_monthly,
-    exit_fee_pct: z.exit_fee_pct,
-    duration_yield_floor_enabled: !1,
-    duration_yield_floor_start_year: null,
-    duration_yield_floor_min_multiple: null,
+    contract_maturity_years: Math.max(t + 5, 15),
+    target_exit_year: t,
+    target_exit_window_start_year: Math.max(1, t - 1),
+    target_exit_window_end_year: t + 1,
+    long_stop_year: t + 5,
+    first_extension_start_year: t + 1,
+    first_extension_end_year: t + 4,
+    first_extension_premium_pct: 0.05,
+    second_extension_start_year: t + 4,
+    second_extension_end_year: t + 5,
+    second_extension_premium_pct: 0.08,
+    partial_buyout_allowed: !1,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
+    buyer_purchase_option_enabled: !1,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+    setup_fee_pct: k.setup_fee_pct,
+    setup_fee_floor: k.setup_fee_floor,
+    setup_fee_cap: k.setup_fee_cap,
+    servicing_fee_monthly: k.servicing_fee_monthly,
+    payment_admin_fee: k.payment_admin_fee,
+    exit_admin_fee_amount: k.exit_admin_fee_amount,
     realtor_representation_mode: e.realtorMode,
-    realtor_commission_pct: e.realtorPct / 100,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT"
+    realtor_commission_pct: e.realtorPct / 100
   };
 }
-function pn(e) {
+function Zt(e) {
   return {
     annual_appreciation: e.growthRatePct / 100,
     closing_cost_pct: 0,
     exit_year: e.exitYear
   };
 }
-const jn = [
+const Fn = [
   "buyer",
   "homeowner",
   "realtor"
 ];
-function fn(e) {
-  const t = O(() => {
-    const u = Se();
+function en(e) {
+  const t = N(() => {
+    const _ = ge();
     return {
-      ...u,
+      ..._,
       ...e.initial,
       deal_terms: {
-        ...u.deal_terms,
+        ..._.deal_terms,
         ...e.initial?.deal_terms ?? {}
       },
       scenario: {
-        ...u.scenario,
+        ..._.scenario,
         ...e.initial?.scenario ?? {}
       }
     };
-  }, [e.initial]), { draft: n, errors: r, preview: o, setField: i, onBlurCompute: l } = mn(t);
+  }, [e.initial]), { draft: n, errors: r, preview: o, setField: c, onBlurCompute: i } = Jt(t);
   return /* @__PURE__ */ a(
-    on,
+    Ut,
     {
       draft: n,
       errors: r,
       preview: o,
       persona: e.persona,
-      setField: i,
-      onBlurCompute: l,
-      onSave: (u) => e.onSaved(u),
+      setField: c,
+      onBlurCompute: i,
+      onSave: (_) => e.onSaved(_),
       onClose: e.onClose
     }
   );
 }
-function _n(e = 640) {
-  const [t, n] = P(!1);
-  return ae(() => {
+function tn(e = 640) {
+  const [t, n] = M(!1);
+  return ne(() => {
     if (typeof window > "u") return;
     const r = window.matchMedia(`(max-width: ${e}px)`);
     n(r.matches);
-    const o = (i) => n(i.matches);
+    const o = (c) => n(c.matches);
     return r.addEventListener("change", o), () => r.removeEventListener("change", o);
   }, [e]), t;
 }
-function yn({ value: e, format: t }) {
-  const n = de(null), r = de(e), o = de(0);
-  ae(() => {
-    const l = r.current, u = e;
-    if (r.current = u, l === u || !n.current) return;
-    const m = 300, _ = performance.now(), g = (x) => {
-      const f = x - _, d = Math.min(f / m, 1), w = 1 - Math.pow(1 - d, 3), E = l + (u - l) * w;
-      n.current && (t === "currency" ? n.current.textContent = y(E) : t === "percent" ? n.current.textContent = H(E) : n.current.textContent = E.toLocaleString(void 0, { maximumFractionDigits: 1 })), d < 1 && (o.current = requestAnimationFrame(g));
+function nn({ value: e, format: t }) {
+  const n = se(null), r = se(e), o = se(0);
+  ne(() => {
+    const i = r.current, _ = e;
+    if (r.current = _, i === _ || !n.current) return;
+    const d = 300, h = performance.now(), x = (w) => {
+      const y = w - h, u = Math.min(y / d, 1), v = 1 - Math.pow(1 - u, 3), E = i + (_ - i) * v;
+      n.current && (t === "currency" ? n.current.textContent = p(E) : t === "percent" ? n.current.textContent = Y(E) : n.current.textContent = E.toLocaleString(void 0, { maximumFractionDigits: 1 })), u < 1 && (o.current = requestAnimationFrame(x));
     };
-    return o.current = requestAnimationFrame(g), () => cancelAnimationFrame(o.current);
+    return o.current = requestAnimationFrame(x), () => cancelAnimationFrame(o.current);
   }, [e, t]);
-  let i;
-  return t === "currency" ? i = y(e) : t === "percent" ? i = H(e) : i = e.toLocaleString(void 0, { maximumFractionDigits: 1 }), /* @__PURE__ */ a("span", { ref: n, children: i });
+  let c;
+  return t === "currency" ? c = p(e) : t === "percent" ? c = Y(e) : c = e.toLocaleString(void 0, { maximumFractionDigits: 1 }), /* @__PURE__ */ a("span", { ref: n, children: c });
 }
-function hn() {
+function an() {
   if (typeof window > "u") return !1;
   try {
     return new URLSearchParams(window.location.search).get("DEV_HARNESS") === "true" || !1;
@@ -2342,8 +2149,8 @@ function hn() {
     return !1;
   }
 }
-function bn() {
-  if (!hn() || typeof window > "u") return null;
+function rn() {
+  if (!an() || typeof window > "u") return null;
   try {
     const e = new URLSearchParams(window.location.search).get("devAuth");
     if (e === "editor" || e === "viewer" || e === "loggedOut")
@@ -2353,13 +2160,13 @@ function bn() {
   }
   return null;
 }
-function Ne(e, t) {
+function Ce(e, t) {
   if (typeof e == "string") return e;
   switch (t) {
     case "currency":
-      return y(e);
+      return p(e);
     case "percent":
-      return H(e);
+      return Y(e);
     case "multiple":
       return `${e.toFixed(2)}×`;
     case "months":
@@ -2368,10 +2175,10 @@ function Ne(e, t) {
       return String(e);
   }
 }
-function gn(e) {
+function on(e) {
   return e === 1 ? "1 Year" : `${e} Years`;
 }
-const vn = `
+const ln = `
   @keyframes fp-fadeIn {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
@@ -2428,231 +2235,231 @@ const vn = `
     height: auto;
   }
 `;
-function xn(e) {
+function sn(e) {
   const {
     persona: t,
     mode: n = "marketing",
     canEdit: r,
     onEvent: o,
-    onDraftSnapshot: i,
-    onShareSummary: l,
-    onSave: u
-  } = e, m = n === "app", _ = n === "marketing", [g, x] = P(t);
-  ae(() => {
-    x(t);
+    onDraftSnapshot: c,
+    onShareSummary: i,
+    onSave: _
+  } = e, d = n === "app", h = n === "marketing", [x, w] = M(t);
+  ne(() => {
+    w(t);
   }, [t]);
-  const f = _ ? g : t, d = _n(), w = bn(), E = w === "editor" ? !0 : w === "viewer" || w === "loggedOut" ? !1 : r ?? !1, [Y, W] = P(!1), [k, V] = P(6e5), [h, M] = P(1e5), [A, ee] = P(0), [s, b] = P(0), [v, C] = P(10), [F, X] = P(3), [R, J] = P("NONE"), [T, q] = P(0);
-  ae(() => {
-    o?.({ type: "calculator_used", persona: f });
-  }, [f, o]);
-  const me = O(
+  const y = h ? x : t, u = tn(), v = rn(), E = v === "editor" ? !0 : v === "viewer" || v === "loggedOut" ? !1 : r ?? !1, [L, B] = M(!1), [P, j] = M(6e5), [f, C] = M(1e5), [A, Z] = M(0), [l, b] = M(0), [g, D] = M(10), [F, K] = M(3), [R, X] = M("NONE"), [T, H] = M(0);
+  ne(() => {
+    o?.({ type: "calculator_used", persona: y });
+  }, [y, o]);
+  const ce = N(
     () => ({
-      propertyValue: k,
-      upfrontPayment: h,
+      propertyValue: P,
+      upfrontPayment: f,
       monthlyPayment: A,
-      numberOfPayments: s,
-      exitYear: v,
+      numberOfPayments: l,
+      exitYear: g,
       growthRatePct: F,
       realtorMode: R,
       realtorPct: T
     }),
     [
-      k,
-      h,
+      P,
+      f,
       A,
-      s,
-      v,
+      l,
+      g,
       F,
       R,
       T
     ]
-  ), te = O(
-    () => un(me),
-    [me]
-  ), ne = O(
-    () => pn(me),
-    [me]
-  ), je = O(
-    () => ({ deal_terms: te, scenario: ne }),
-    [te, ne]
-  ), $ = O(
-    () => he(te, ne),
-    [te, ne]
-  ), Q = O(
-    () => Lt(
-      f,
+  ), ee = N(
+    () => Qt(ce),
+    [ce]
+  ), te = N(
+    () => Zt(ce),
+    [ce]
+  ), $e = N(
+    () => ({ deal_terms: ee, scenario: te }),
+    [ee, te]
+  ), I = N(
+    () => fe(ee, te),
+    [ee, te]
+  ), J = N(
+    () => Mt(
+      y,
+      ee,
       te,
-      ne,
-      $
+      I
     ),
-    [f, te, ne, $]
-  ), le = v * 12, L = O(
-    () => m ? Pt({
-      homeValue: k,
-      initialBuyAmount: h,
-      termYears: v,
+    [y, ee, te, I]
+  ), ie = g * 12, V = N(
+    () => d ? pt({
+      homeValue: P,
+      initialBuyAmount: f,
+      termYears: g,
       annualGrowthRate: F / 100
     }) : null,
-    [m, k, h, v, F]
-  ), ke = O(
-    () => L ? Mt(L) : null,
-    [L]
-  ), be = (p, S) => {
-    const se = Number(p.replace(/,/g, ""));
-    return Number.isFinite(se) && se >= 0 ? se : S;
-  }, We = N(() => {
-    if (o?.({ type: "save_clicked", persona: f }), u && L) {
-      const p = Yt(L.normalizedInputs);
-      u(p);
+    [d, P, f, g, F]
+  ), ve = N(
+    () => V ? _t(V) : null,
+    [V]
+  ), ye = (m, S) => {
+    const le = Number(m.replace(/,/g, ""));
+    return Number.isFinite(le) && le >= 0 ? le : S;
+  }, Oe = z(() => {
+    if (o?.({ type: "save_clicked", persona: y }), _ && V) {
+      const m = Rt(V.normalizedInputs);
+      _(m);
     }
-  }, [L, u, o, f]), qe = N(async () => {
-    if (o?.({ type: "save_continue_clicked", persona: f }), i) {
-      const p = {
-        homeValue: k,
-        initialBuyAmount: h,
-        termYears: v,
+  }, [V, _, o, y]), We = z(async () => {
+    if (o?.({ type: "save_continue_clicked", persona: y }), c) {
+      const m = {
+        homeValue: P,
+        initialBuyAmount: f,
+        termYears: g,
         annualGrowthRate: F / 100
       }, S = {
-        standard_net_payout: $.isa_settlement,
-        early_net_payout: $.isa_settlement,
-        late_net_payout: $.isa_settlement,
-        standard_settlement_month: le,
-        early_settlement_month: le,
-        late_settlement_month: le
-      }, [se, Ge] = await Promise.all([
-        ie(p),
-        ie(S)
+        standard_net_payout: I.extension_adjusted_buyout_amount,
+        early_net_payout: I.extension_adjusted_buyout_amount,
+        late_net_payout: I.extension_adjusted_buyout_amount,
+        standard_settlement_month: ie,
+        early_settlement_month: ie,
+        late_settlement_month: ie
+      }, [le, je] = await Promise.all([
+        oe(m),
+        oe(S)
       ]);
-      i({
-        contract_version: re,
-        schema_version: oe,
-        persona: f,
+      c({
+        contract_version: ae,
+        schema_version: re,
+        persona: y,
         mode: "marketing",
-        inputs: p,
+        inputs: m,
         basic_results: S,
-        input_hash: se,
-        output_hash: Ge,
+        input_hash: le,
+        output_hash: je,
         created_at: (/* @__PURE__ */ new Date()).toISOString()
       });
     }
   }, [
+    y,
+    P,
     f,
-    k,
-    h,
-    v,
+    g,
     F,
-    $,
-    le,
-    i,
+    I,
+    ie,
+    c,
     o
-  ]), He = N(() => {
-    o?.({ type: "share_clicked", persona: f }), l && l({
-      contract_version: re,
-      schema_version: oe,
-      persona: f,
+  ]), Ie = z(() => {
+    o?.({ type: "share_clicked", persona: y }), i && i({
+      contract_version: ae,
+      schema_version: re,
+      persona: y,
       inputs: {
-        homeValue: k,
-        initialBuyAmount: h,
-        termYears: v,
+        homeValue: P,
+        initialBuyAmount: f,
+        termYears: g,
         annualGrowthRate: F / 100
       },
       basic_results: {
-        standard_net_payout: $.isa_settlement,
-        early_net_payout: $.isa_settlement,
-        late_net_payout: $.isa_settlement
+        standard_net_payout: I.extension_adjusted_buyout_amount,
+        early_net_payout: I.extension_adjusted_buyout_amount,
+        late_net_payout: I.extension_adjusted_buyout_amount
       },
       created_at: (/* @__PURE__ */ new Date()).toISOString()
     });
   }, [
+    y,
+    P,
     f,
-    k,
-    h,
-    v,
+    g,
     F,
-    $,
-    l,
+    I,
+    i,
     o
-  ]), Ve = O(() => {
-    const p = [
-      { label: "Property", value: y(k) },
-      { label: "Upfront", value: y(h) },
-      { label: "Monthly", value: y(A) },
-      { label: "# Months", value: String(s) },
-      { label: "Exit Year", value: String(v) },
-      { label: "Growth", value: H(F / 100) }
+  ]), Le = N(() => {
+    const m = [
+      { label: "Property", value: p(P) },
+      { label: "Upfront", value: p(f) },
+      { label: "Monthly", value: p(A) },
+      { label: "# Months", value: String(l) },
+      { label: "Exit Year", value: String(g) },
+      { label: "Growth", value: Y(F / 100) }
     ];
-    return R !== "NONE" && p.push({ label: "Realtor", value: `${R} ${T}%` }), p;
+    return R !== "NONE" && m.push({ label: "Realtor", value: `${R} ${T}%` }), m;
   }, [
-    k,
-    h,
+    P,
+    f,
     A,
-    s,
-    v,
+    l,
+    g,
     F,
     R,
     T
-  ]), Be = k * Math.pow(1 + F / 100, v), B = {
+  ]), Be = P * Math.pow(1 + F / 100, g), U = {
     display: "block",
-    fontSize: d ? 14 : 13,
+    fontSize: u ? 14 : 13,
     color: "#374151",
     marginBottom: 6,
     fontWeight: 500,
     letterSpacing: "-0.01em"
-  }, U = {
+  }, q = {
     width: "100%",
-    padding: d ? "12px 14px" : "10px 12px",
+    padding: u ? "12px 14px" : "10px 12px",
     border: "1px solid #e5e7eb",
     borderRadius: 10,
-    fontSize: d ? 16 : 14,
+    fontSize: u ? 16 : 14,
     fontFamily: "system-ui, sans-serif",
     boxSizing: "border-box",
     color: "#111827",
     background: "#fafafa",
     transition: "border-color 0.15s, box-shadow 0.15s"
   }, G = {
-    marginBottom: d ? 20 : 16
-  }, Re = {
+    marginBottom: u ? 20 : 16
+  }, we = {
     display: "inline-flex",
     alignItems: "center",
     gap: 4,
     padding: "5px 12px",
     background: "#f9fafb",
     borderRadius: 20,
-    fontSize: d ? 11 : 12,
+    fontSize: u ? 11 : 12,
     color: "#374151",
     border: "1px solid #e5e7eb",
     whiteSpace: "normal",
     wordBreak: "break-word",
     maxWidth: "100%"
-  }, Pe = {
+  }, Se = {
     color: "#9ca3af",
     fontWeight: 400
-  }, Me = {
+  }, ke = {
     fontWeight: 600,
     color: "#111827"
-  }, Ue = [
+  }, Ve = [
     {
       label: "Home Value Today",
-      value: k,
+      value: P,
       format: "currency"
     },
     {
       label: "Cash Unlocked Today",
-      value: h,
+      value: f,
       format: "currency"
     },
     {
-      label: s > 0 ? `Monthly Contribution / ${s} Month${s === 1 ? "" : "s"}` : "Monthly Contribution",
+      label: l > 0 ? `Monthly Contribution / ${l} Month${l === 1 ? "" : "s"}` : "Monthly Contribution",
       value: A,
       format: "currency"
     },
     {
-      label: `Projected Value in ${gn(v)}`,
+      label: `Projected Value in ${on(g)}`,
       value: Be,
       format: "currency"
     }
   ];
-  return /* @__PURE__ */ c(
+  return /* @__PURE__ */ s(
     "div",
     {
       style: {
@@ -2662,11 +2469,11 @@ function xn(e) {
         overflow: "hidden"
       },
       "data-fractpath-widget": !0,
-      "data-persona": f,
+      "data-persona": y,
       "data-mode": n,
       children: [
-        /* @__PURE__ */ a("style", { children: vn }),
-        m && /* @__PURE__ */ c("div", { style: { marginBottom: 20 }, children: [
+        /* @__PURE__ */ a("style", { children: ln }),
+        d && /* @__PURE__ */ s("div", { style: { marginBottom: 20 }, children: [
           /* @__PURE__ */ a(
             "div",
             {
@@ -2677,12 +2484,12 @@ function xn(e) {
                 alignItems: "center"
               },
               "data-testid": "deal-term-chips",
-              children: Ve.map((p, S) => /* @__PURE__ */ c("span", { style: Re, children: [
-                /* @__PURE__ */ c("span", { style: Pe, children: [
-                  p.label,
+              children: Le.map((m, S) => /* @__PURE__ */ s("span", { style: we, children: [
+                /* @__PURE__ */ s("span", { style: Se, children: [
+                  m.label,
                   ":"
                 ] }),
-                /* @__PURE__ */ a("span", { style: Me, children: p.value })
+                /* @__PURE__ */ a("span", { style: ke, children: m.value })
               ] }, S))
             }
           ),
@@ -2690,7 +2497,7 @@ function xn(e) {
             "button",
             {
               type: "button",
-              onClick: () => W(!0),
+              onClick: () => B(!0),
               style: {
                 marginTop: 10,
                 padding: "8px 18px",
@@ -2709,16 +2516,16 @@ function xn(e) {
             }
           )
         ] }),
-        /* @__PURE__ */ c(
+        /* @__PURE__ */ s(
           "div",
           {
             style: {
               display: "grid",
-              gridTemplateColumns: m || d ? "1fr" : "minmax(0, 1fr) minmax(0, 2fr)",
-              gap: d ? 16 : 24
+              gridTemplateColumns: d || u ? "1fr" : "minmax(0, 1fr) minmax(0, 2fr)",
+              gap: u ? 16 : 24
             },
             children: [
-              _ && /* @__PURE__ */ c("div", { style: { minWidth: 0, overflow: "hidden" }, children: [
+              h && /* @__PURE__ */ s("div", { style: { minWidth: 0, overflow: "hidden" }, children: [
                 /* @__PURE__ */ a(
                   "h3",
                   {
@@ -2733,10 +2540,10 @@ function xn(e) {
                     children: "Scenario Inputs"
                   }
                 ),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: Z(
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: Q(
                     "deal_terms.property_value",
-                    f,
+                    y,
                     "Home Value ($)"
                   ) }),
                   /* @__PURE__ */ a(
@@ -2744,18 +2551,18 @@ function xn(e) {
                     {
                       type: "text",
                       inputMode: "numeric",
-                      style: U,
-                      value: k.toLocaleString(),
-                      onChange: (p) => {
-                        V(be(p.target.value, k));
+                      style: q,
+                      value: P.toLocaleString(),
+                      onChange: (m) => {
+                        j(ye(m.target.value, P));
                       }
                     }
                   )
                 ] }),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: Z(
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: Q(
                     "deal_terms.upfront_payment",
-                    f,
+                    y,
                     "Upfront Payment ($)"
                   ) }),
                   /* @__PURE__ */ a(
@@ -2763,20 +2570,20 @@ function xn(e) {
                     {
                       type: "text",
                       inputMode: "numeric",
-                      style: U,
-                      value: h.toLocaleString(),
-                      onChange: (p) => {
-                        M(
-                          be(p.target.value, h)
+                      style: q,
+                      value: f.toLocaleString(),
+                      onChange: (m) => {
+                        C(
+                          ye(m.target.value, f)
                         );
                       }
                     }
                   )
                 ] }),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: Z(
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: Q(
                     "deal_terms.monthly_payment",
-                    f,
+                    y,
                     "Monthly Installment ($)"
                   ) }),
                   /* @__PURE__ */ a(
@@ -2784,18 +2591,18 @@ function xn(e) {
                     {
                       type: "text",
                       inputMode: "numeric",
-                      style: U,
+                      style: q,
                       value: A.toLocaleString(),
-                      onChange: (p) => {
-                        ee(
-                          be(p.target.value, A)
+                      onChange: (m) => {
+                        Z(
+                          ye(m.target.value, A)
                         );
                       }
                     }
                   )
                 ] }),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: "Number of Monthly Payments" }),
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: "Number of Monthly Payments" }),
                   /* @__PURE__ */ a(
                     "input",
                     {
@@ -2803,17 +2610,17 @@ function xn(e) {
                       min: 0,
                       max: 360,
                       step: 1,
-                      style: U,
-                      value: s,
-                      onChange: (p) => {
-                        const S = parseInt(p.target.value, 10);
+                      style: q,
+                      value: l,
+                      onChange: (m) => {
+                        const S = parseInt(m.target.value, 10);
                         Number.isFinite(S) && S >= 0 && S <= 360 && b(S);
                       }
                     }
                   )
                 ] }),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: Z("scenario.exit_year", f, "Target Exit Year") }),
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: Q("scenario.exit_year", y, "Target Exit Year") }),
                   /* @__PURE__ */ a(
                     "input",
                     {
@@ -2821,17 +2628,17 @@ function xn(e) {
                       min: 1,
                       max: 30,
                       step: 1,
-                      style: U,
-                      value: v,
-                      onChange: (p) => {
-                        const S = parseInt(p.target.value, 10);
-                        Number.isFinite(S) && S >= 1 && S <= 30 && C(S);
+                      style: q,
+                      value: g,
+                      onChange: (m) => {
+                        const S = parseInt(m.target.value, 10);
+                        Number.isFinite(S) && S >= 1 && S <= 30 && D(S);
                       }
                     }
                   )
                 ] }),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: "Annual Growth Rate (assumption)" }),
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: "Annual Growth Rate (assumption)" }),
                   /* @__PURE__ */ a(
                     "input",
                     {
@@ -2839,30 +2646,30 @@ function xn(e) {
                       min: 0,
                       max: 20,
                       step: 0.1,
-                      style: U,
+                      style: q,
                       value: F,
-                      onChange: (p) => {
-                        const S = parseFloat(p.target.value);
-                        Number.isFinite(S) && S >= 0 && S <= 20 && X(S);
+                      onChange: (m) => {
+                        const S = parseFloat(m.target.value);
+                        Number.isFinite(S) && S >= 0 && S <= 20 && K(S);
                       }
                     }
                   )
                 ] }),
-                /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: Z(
+                /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: Q(
                     "deal_terms.realtor_representation_mode",
-                    f,
+                    y,
                     "Realtor Representation"
                   ) }),
-                  /* @__PURE__ */ c(
+                  /* @__PURE__ */ s(
                     "select",
                     {
                       value: R,
-                      onChange: (p) => {
-                        J(p.target.value), p.target.value === "NONE" && q(0);
+                      onChange: (m) => {
+                        X(m.target.value), m.target.value === "NONE" && H(0);
                       },
                       style: {
-                        ...U,
+                        ...q,
                         cursor: "pointer"
                       },
                       children: [
@@ -2874,10 +2681,10 @@ function xn(e) {
                     }
                   )
                 ] }),
-                R !== "NONE" && /* @__PURE__ */ c("div", { style: G, children: [
-                  /* @__PURE__ */ a("label", { style: B, children: Z(
+                R !== "NONE" && /* @__PURE__ */ s("div", { style: G, children: [
+                  /* @__PURE__ */ a("label", { style: U, children: Q(
                     "deal_terms.realtor_commission_pct",
-                    f,
+                    y,
                     "Commission (%)"
                   ) }),
                   /* @__PURE__ */ a(
@@ -2887,16 +2694,16 @@ function xn(e) {
                       min: 0,
                       max: 6,
                       step: 0.5,
-                      style: U,
+                      style: q,
                       value: T,
-                      onChange: (p) => {
-                        const S = parseFloat(p.target.value);
-                        Number.isFinite(S) && S >= 0 && S <= 6 && q(S);
+                      onChange: (m) => {
+                        const S = parseFloat(m.target.value);
+                        Number.isFinite(S) && S >= 0 && S <= 6 && H(S);
                       }
                     }
                   )
                 ] }),
-                _ && /* @__PURE__ */ c("details", { style: { marginTop: 8 }, children: [
+                h && /* @__PURE__ */ s("details", { style: { marginTop: 8 }, children: [
                   /* @__PURE__ */ a(
                     "summary",
                     {
@@ -2910,12 +2717,12 @@ function xn(e) {
                       children: "Fee details"
                     }
                   ),
-                  /* @__PURE__ */ c(
+                  /* @__PURE__ */ s(
                     "div",
                     {
                       style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 8 },
                       children: [
-                        /* @__PURE__ */ c(
+                        /* @__PURE__ */ s(
                           "div",
                           {
                             style: {
@@ -2927,12 +2734,17 @@ function xn(e) {
                               border: "1px solid #f3f4f6"
                             },
                             children: [
-                              "Platform fee: ",
-                              y(z.platform_fee)
+                              "Setup fee: ",
+                              Y(k.setup_fee_pct),
+                              " (min ",
+                              p(k.setup_fee_floor),
+                              ", max ",
+                              p(k.setup_fee_cap),
+                              ")"
                             ]
                           }
                         ),
-                        /* @__PURE__ */ c(
+                        /* @__PURE__ */ s(
                           "div",
                           {
                             style: {
@@ -2946,11 +2758,11 @@ function xn(e) {
                             children: [
                               "Monthly servicing:",
                               " ",
-                              y(z.servicing_fee_monthly)
+                              p(k.servicing_fee_monthly)
                             ]
                           }
                         ),
-                        /* @__PURE__ */ c(
+                        /* @__PURE__ */ s(
                           "div",
                           {
                             style: {
@@ -2962,8 +2774,8 @@ function xn(e) {
                               border: "1px solid #f3f4f6"
                             },
                             children: [
-                              "Exit fee: ",
-                              H(z.exit_fee_pct)
+                              "Exit admin fee: ",
+                              p(k.exit_admin_fee_amount)
                             ]
                           }
                         )
@@ -2972,22 +2784,22 @@ function xn(e) {
                   )
                 ] })
               ] }),
-              /* @__PURE__ */ c("div", { style: { minWidth: 0 }, children: [
-                _ && /* @__PURE__ */ a(
+              /* @__PURE__ */ s("div", { style: { minWidth: 0 }, children: [
+                h && /* @__PURE__ */ a(
                   "div",
                   {
                     style: {
                       display: "grid",
                       gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: d ? 8 : 10,
+                      gap: u ? 8 : 10,
                       marginBottom: 20
                     },
                     "data-testid": "summary-cards",
-                    children: Ue.map((p) => /* @__PURE__ */ c(
+                    children: Ve.map((m) => /* @__PURE__ */ s(
                       "div",
                       {
                         style: {
-                          padding: d ? "14px 8px" : "16px 12px",
+                          padding: u ? "14px 8px" : "16px 12px",
                           background: "#f9fafb",
                           borderRadius: 12,
                           border: "1px solid #f3f4f6",
@@ -2998,15 +2810,15 @@ function xn(e) {
                         },
                         children: [
                           /* @__PURE__ */ a("div", { style: {
-                            fontSize: d ? 16 : 18,
+                            fontSize: u ? 16 : 18,
                             fontWeight: 700,
                             color: "#111827",
                             letterSpacing: "-0.02em",
                             lineHeight: 1.2,
                             marginBottom: 4
-                          }, children: /* @__PURE__ */ a(yn, { value: p.value, format: p.format }) }),
+                          }, children: /* @__PURE__ */ a(nn, { value: m.value, format: m.format }) }),
                           /* @__PURE__ */ a("div", { style: {
-                            fontSize: d ? 9 : 10,
+                            fontSize: u ? 9 : 10,
                             color: "#9ca3af",
                             fontWeight: 500,
                             textTransform: "uppercase",
@@ -3014,18 +2826,18 @@ function xn(e) {
                             lineHeight: 1.3,
                             wordBreak: "break-word",
                             hyphens: "auto"
-                          }, children: p.label })
+                          }, children: m.label })
                         ]
                       },
-                      p.label
+                      m.label
                     ))
                   }
                 ),
-                /* @__PURE__ */ c(
+                /* @__PURE__ */ s(
                   "div",
                   {
                     style: {
-                      padding: d ? "14px" : "16px 20px",
+                      padding: u ? "14px" : "16px 20px",
                       background: "#f9fafb",
                       borderRadius: 12,
                       border: "1px solid #f3f4f6",
@@ -3034,25 +2846,25 @@ function xn(e) {
                     },
                     "data-testid": "hero-metric",
                     children: [
-                      /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#6b7280", marginBottom: 4, fontWeight: 500 }, children: Q.hero.label }),
+                      /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#6b7280", marginBottom: 4, fontWeight: 500 }, children: J.hero.label }),
                       /* @__PURE__ */ a("div", { style: {
-                        fontSize: d ? 22 : 26,
+                        fontSize: u ? 22 : 26,
                         fontWeight: 700,
                         color: "#111827",
                         letterSpacing: "-0.02em"
-                      }, children: Ne(
-                        Q.hero.value,
-                        Q.hero.valueFormat
+                      }, children: Ce(
+                        J.hero.value,
+                        J.hero.valueFormat
                       ) }),
-                      Q.hero.subtitle && /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#9ca3af", marginTop: 6, lineHeight: 1.4 }, children: Q.hero.subtitle })
+                      J.hero.subtitle && /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#9ca3af", marginTop: 6, lineHeight: 1.4 }, children: J.hero.subtitle })
                     ]
                   }
                 ),
-                _ && /* @__PURE__ */ a("div", { style: { marginBottom: 20, padding: d ? "4px 0" : "8px 0", width: "100%", overflow: "hidden" }, children: /* @__PURE__ */ a(
-                  Ht,
+                h && /* @__PURE__ */ a("div", { style: { marginBottom: 20, padding: u ? "4px 0" : "8px 0", width: "100%", overflow: "hidden" }, children: /* @__PURE__ */ a(
+                  Ct,
                   {
-                    bars: Q.chartSpec.bars,
-                    height: d ? 180 : 220
+                    bars: J.chartSpec.bars,
+                    height: u ? 180 : 220
                   }
                 ) }),
                 /* @__PURE__ */ a(
@@ -3067,16 +2879,16 @@ function xn(e) {
                       overflow: "hidden"
                     },
                     "data-testid": "summary-strip",
-                    children: Q.strip.map((p, S) => /* @__PURE__ */ c("span", { style: Re, children: [
-                      /* @__PURE__ */ c("span", { style: Pe, children: [
-                        p.label,
+                    children: J.strip.map((m, S) => /* @__PURE__ */ s("span", { style: we, children: [
+                      /* @__PURE__ */ s("span", { style: Se, children: [
+                        m.label,
                         ":"
                       ] }),
-                      /* @__PURE__ */ a("span", { style: Me, children: Ne(p.value, p.valueFormat) })
+                      /* @__PURE__ */ a("span", { style: ke, children: Ce(m.value, m.valueFormat) })
                     ] }, S))
                   }
                 ),
-                _ && /* @__PURE__ */ a(
+                h && /* @__PURE__ */ a(
                   "div",
                   {
                     style: {
@@ -3086,16 +2898,16 @@ function xn(e) {
                       border: "1px solid #f3f4f6",
                       marginBottom: 16
                     },
-                    children: /* @__PURE__ */ c("div", { style: { fontSize: 12, color: "#9ca3af" }, children: [
+                    children: /* @__PURE__ */ s("div", { style: { fontSize: 12, color: "#9ca3af" }, children: [
                       /* @__PURE__ */ a("strong", { style: { color: "#374151" }, children: "Standard" }),
                       " · ",
-                      Fe(le),
-                      " · Net Payout: ",
-                      y($.isa_settlement)
+                      Pe(ie),
+                      " · Illustrative Buyout: ",
+                      p(I.extension_adjusted_buyout_amount)
                     ] })
                   }
                 ),
-                !_ && L && /* @__PURE__ */ c(ue, { children: [
+                !h && V && /* @__PURE__ */ s(ue, { children: [
                   /* @__PURE__ */ a(
                     "h3",
                     {
@@ -3113,13 +2925,13 @@ function xn(e) {
                         marginBottom: 20
                       },
                       children: [
-                        { label: "Early", data: L.settlements.early },
+                        { label: "Early", data: V.settlements.early },
                         {
                           label: "Standard",
-                          data: L.settlements.standard
+                          data: V.settlements.standard
                         },
-                        { label: "Late", data: L.settlements.late }
-                      ].map((p) => /* @__PURE__ */ c(
+                        { label: "Late", data: V.settlements.late }
+                      ].map((m) => /* @__PURE__ */ s(
                         "div",
                         {
                           style: {
@@ -3128,77 +2940,77 @@ function xn(e) {
                             borderRadius: 10,
                             border: "1px solid #f3f4f6",
                             display: "grid",
-                            gridTemplateColumns: d ? "repeat(3, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))",
+                            gridTemplateColumns: u ? "repeat(3, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))",
                             gap: 8,
                             alignItems: "center"
                           },
                           children: [
-                            /* @__PURE__ */ c("div", { children: [
+                            /* @__PURE__ */ s("div", { children: [
                               /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Timing" }),
-                              /* @__PURE__ */ a("div", { style: { fontWeight: 600, fontSize: 13, color: "#111827" }, children: p.label })
+                              /* @__PURE__ */ a("div", { style: { fontWeight: 600, fontSize: 13, color: "#111827" }, children: m.label })
                             ] }),
-                            /* @__PURE__ */ c("div", { children: [
+                            /* @__PURE__ */ s("div", { children: [
                               /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "When" }),
-                              /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#111827" }, children: Fe(p.data.settlementMonth) })
+                              /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#111827" }, children: Pe(m.data.settlementMonth) })
                             ] }),
-                            /* @__PURE__ */ c("div", { children: [
+                            /* @__PURE__ */ s("div", { children: [
                               /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Net Payout" }),
-                              /* @__PURE__ */ a("div", { style: { fontWeight: 600, fontSize: 13, color: "#111827" }, children: y(p.data.netPayout) })
+                              /* @__PURE__ */ a("div", { style: { fontWeight: 600, fontSize: 13, color: "#111827" }, children: p(m.data.netPayout) })
                             ] }),
-                            !d && /* @__PURE__ */ c(ue, { children: [
-                              /* @__PURE__ */ c("div", { children: [
+                            !u && /* @__PURE__ */ s(ue, { children: [
+                              /* @__PURE__ */ s("div", { children: [
                                 /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Raw Payout" }),
-                                /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#111827" }, children: y(p.data.rawPayout) })
+                                /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#111827" }, children: p(m.data.rawPayout) })
                               ] }),
-                              /* @__PURE__ */ c("div", { children: [
+                              /* @__PURE__ */ s("div", { children: [
                                 /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Transfer Fee" }),
-                                /* @__PURE__ */ c("div", { style: { fontSize: 13, color: "#111827" }, children: [
-                                  y(p.data.transferFeeAmount),
+                                /* @__PURE__ */ s("div", { style: { fontSize: 13, color: "#111827" }, children: [
+                                  p(m.data.transferFeeAmount),
                                   " (",
-                                  H(p.data.transferFeeRate),
+                                  Y(m.data.transferFeeRate),
                                   ")"
                                 ] })
                               ] }),
-                              /* @__PURE__ */ c("div", { children: [
+                              /* @__PURE__ */ s("div", { children: [
                                 /* @__PURE__ */ a("div", { style: { fontSize: 11, color: "#9ca3af" }, children: "Clamp" }),
-                                /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#111827" }, children: p.data.clamp.applied === "none" ? "—" : p.data.clamp.applied === "floor" ? "Floor" : "Cap" })
+                                /* @__PURE__ */ a("div", { style: { fontSize: 13, color: "#111827" }, children: m.data.clamp.applied === "none" ? "—" : m.data.clamp.applied === "floor" ? "Floor" : "Cap" })
                               ] })
                             ] })
                           ]
                         },
-                        p.label
+                        m.label
                       ))
                     }
                   )
                 ] }),
-                !_ && ke && /* @__PURE__ */ a("div", { style: { marginBottom: 20, width: "100%", overflow: "hidden" }, children: /* @__PURE__ */ a(Ct, { series: ke, width: 520, height: d ? 200 : 260 }) }),
-                /* @__PURE__ */ c(
+                !h && ve && /* @__PURE__ */ a("div", { style: { marginBottom: 20, width: "100%", overflow: "hidden" }, children: /* @__PURE__ */ a(xt, { series: ve, width: 520, height: u ? 200 : 260 }) }),
+                /* @__PURE__ */ s(
                   "div",
                   {
                     style: {
                       display: "flex",
-                      flexDirection: d ? "column" : "row",
+                      flexDirection: u ? "column" : "row",
                       gap: 10,
                       marginTop: 20
                     },
                     children: [
-                      _ && /* @__PURE__ */ c(ue, { children: [
+                      h && /* @__PURE__ */ s(ue, { children: [
                         /* @__PURE__ */ a(
                           "button",
                           {
                             type: "button",
-                            onClick: qe,
+                            onClick: We,
                             style: {
-                              padding: d ? "14px 20px" : "12px 24px",
+                              padding: u ? "14px 20px" : "12px 24px",
                               borderRadius: 10,
                               border: "none",
-                              fontSize: d ? 16 : 15,
+                              fontSize: u ? 16 : 15,
                               fontWeight: 600,
                               cursor: "pointer",
                               fontFamily: "system-ui, sans-serif",
                               background: "#111827",
                               color: "#fff",
-                              width: d ? "100%" : "auto",
+                              width: u ? "100%" : "auto",
                               transition: "opacity 0.15s"
                             },
                             "data-cta": "save-continue",
@@ -3209,18 +3021,18 @@ function xn(e) {
                           "button",
                           {
                             type: "button",
-                            onClick: He,
+                            onClick: Ie,
                             style: {
-                              padding: d ? "14px 20px" : "12px 24px",
+                              padding: u ? "14px 20px" : "12px 24px",
                               borderRadius: 10,
                               border: "1px solid #e5e7eb",
-                              fontSize: d ? 16 : 15,
+                              fontSize: u ? 16 : 15,
                               fontWeight: 600,
                               cursor: "pointer",
                               fontFamily: "system-ui, sans-serif",
                               background: "#fff",
                               color: "#111827",
-                              width: d ? "100%" : "auto",
+                              width: u ? "100%" : "auto",
                               transition: "opacity 0.15s"
                             },
                             "data-cta": "share",
@@ -3228,22 +3040,22 @@ function xn(e) {
                           }
                         )
                       ] }),
-                      !_ && /* @__PURE__ */ a(
+                      !h && /* @__PURE__ */ a(
                         "button",
                         {
                           type: "button",
-                          onClick: We,
+                          onClick: Oe,
                           style: {
-                            padding: d ? "14px 20px" : "12px 24px",
+                            padding: u ? "14px 20px" : "12px 24px",
                             borderRadius: 10,
                             border: "none",
-                            fontSize: d ? 16 : 15,
+                            fontSize: u ? 16 : 15,
                             fontWeight: 600,
                             cursor: "pointer",
                             fontFamily: "system-ui, sans-serif",
                             background: "#111827",
                             color: "#fff",
-                            width: d ? "100%" : "auto"
+                            width: u ? "100%" : "auto"
                           },
                           "data-cta": "save",
                           children: "Save"
@@ -3252,29 +3064,29 @@ function xn(e) {
                     ]
                   }
                 ),
-                _ && /* @__PURE__ */ a("p", { style: {
+                h && /* @__PURE__ */ a("p", { style: {
                   margin: "12px 0 0 0",
                   fontSize: 13,
                   color: "#9ca3af",
                   lineHeight: 1.4,
-                  textAlign: d ? "center" : "left"
+                  textAlign: u ? "center" : "left"
                 }, children: "Create a free account to save your scenario and continue in FractPath." })
               ] })
             ]
           }
         ),
-        Y && E && /* @__PURE__ */ a(
-          fn,
+        L && E && /* @__PURE__ */ a(
+          en,
           {
-            initial: je,
-            persona: f,
-            onClose: () => W(!1),
-            onSaved: (p) => {
-              V(p.deal_terms.property_value), M(p.deal_terms.upfront_payment), ee(p.deal_terms.monthly_payment), b(p.deal_terms.number_of_payments), C(p.scenario.exit_year), X(p.scenario.annual_appreciation * 100), J(p.deal_terms.realtor_representation_mode), q(p.deal_terms.realtor_commission_pct * 100), W(!1);
+            initial: $e,
+            persona: y,
+            onClose: () => B(!1),
+            onSaved: (m) => {
+              j(m.deal_terms.property_value), C(m.deal_terms.upfront_payment), Z(m.deal_terms.monthly_payment), b(m.deal_terms.number_of_payments), D(m.scenario.exit_year), K(m.scenario.annual_appreciation * 100), X(m.deal_terms.realtor_representation_mode), H(m.deal_terms.realtor_commission_pct * 100), B(!1);
             }
           }
         ),
-        /* @__PURE__ */ c(
+        /* @__PURE__ */ s(
           "div",
           {
             style: {
@@ -3285,37 +3097,37 @@ function xn(e) {
             },
             children: [
               "Viewing as ",
-              /* @__PURE__ */ a("strong", { children: f }),
+              /* @__PURE__ */ a("strong", { children: y }),
               " · ",
               "Mode: ",
               /* @__PURE__ */ a("strong", { children: n }),
-              w && /* @__PURE__ */ c(ue, { children: [
+              v && /* @__PURE__ */ s(ue, { children: [
                 " ",
                 "·",
                 " DEV_AUTH: ",
-                /* @__PURE__ */ a("strong", { children: w })
+                /* @__PURE__ */ a("strong", { children: v })
               ] }),
               " · ",
-              y(k),
+              p(P),
               " home ",
               "·",
               " ",
-              y(h),
+              p(f),
               " ",
               "upfront ",
               "·",
               " ",
-              y(A),
+              p(A),
               "\\u00d7",
-              s,
+              l,
               "mo ",
               "·",
               " ",
-              v,
+              g,
               "yr ",
               "·",
               " ",
-              H(F / 100),
+              Y(F / 100),
               " growth"
             ]
           }
@@ -3324,10 +3136,10 @@ function xn(e) {
     }
   );
 }
-function Wn(e) {
-  return /* @__PURE__ */ a(xn, { ...e });
+function An(e) {
+  return /* @__PURE__ */ a(sn, { ...e });
 }
-function wn({ items: e }) {
+function cn({ items: e }) {
   return /* @__PURE__ */ a(
     "div",
     {
@@ -3338,7 +3150,7 @@ function wn({ items: e }) {
         borderRadius: 8,
         overflow: "hidden"
       },
-      children: e.map((t, n) => /* @__PURE__ */ c(
+      children: e.map((t, n) => /* @__PURE__ */ s(
         "div",
         {
           style: {
@@ -3359,8 +3171,8 @@ function wn({ items: e }) {
     }
   );
 }
-function Sn({ results: e }) {
-  return /* @__PURE__ */ c(
+function un({ results: e }) {
+  return /* @__PURE__ */ s(
     "div",
     {
       style: {
@@ -3377,14 +3189,14 @@ function Sn({ results: e }) {
         gap: 8
       },
       children: [
-        /* @__PURE__ */ c("svg", { width: "48", height: "48", viewBox: "0 0 48 48", fill: "none", children: [
+        /* @__PURE__ */ s("svg", { width: "48", height: "48", viewBox: "0 0 48 48", fill: "none", children: [
           /* @__PURE__ */ a("rect", { x: "4", y: "28", width: "8", height: "16", rx: "2", fill: "#d1d5db" }),
           /* @__PURE__ */ a("rect", { x: "16", y: "18", width: "8", height: "26", rx: "2", fill: "#9ca3af" }),
           /* @__PURE__ */ a("rect", { x: "28", y: "10", width: "8", height: "34", rx: "2", fill: "#6b7280" }),
           /* @__PURE__ */ a("rect", { x: "40", y: "4", width: "4", height: "40", rx: "2", fill: "#374151" })
         ] }),
         /* @__PURE__ */ a("div", { style: { fontSize: 13, fontWeight: 600, color: "#374151" }, children: "Equity Transfer Chart" }),
-        /* @__PURE__ */ c("div", { style: { fontSize: 11, color: "#9ca3af", maxWidth: 320, lineHeight: 1.5 }, children: [
+        /* @__PURE__ */ s("div", { style: { fontSize: 11, color: "#9ca3af", maxWidth: 320, lineHeight: 1.5 }, children: [
           "Will render when schedule series is exposed in canonical compute outputs. Currently, compute v",
           e.compute_version,
           " returns summary results only."
@@ -3393,21 +3205,18 @@ function Sn({ results: e }) {
     }
   );
 }
-const kn = [
+const dn = [
   { key: "cash_flow", label: "Cash Flow" },
   { key: "ownership", label: "Ownership" },
-  { key: "protections", label: "Protections" },
+  { key: "protections", label: "Exit Terms" },
   { key: "fees", label: "Fees" },
   { key: "assumptions", label: "Assumptions" }
 ];
-function j(e) {
+function $(e) {
   return (e * 100).toFixed(2) + "%";
 }
-function K(e) {
-  return e.toFixed(2) + "×";
-}
-function Rn({ rows: e }) {
-  return /* @__PURE__ */ a("dl", { style: { margin: 0 }, children: e.map((t, n) => /* @__PURE__ */ c(
+function mn({ rows: e }) {
+  return /* @__PURE__ */ a("dl", { style: { margin: 0 }, children: e.map((t, n) => /* @__PURE__ */ s(
     "div",
     {
       style: {
@@ -3435,70 +3244,90 @@ function Rn({ rows: e }) {
     n
   )) });
 }
-function Pn(e, t) {
+function pn(e, t) {
   const n = [
     {
-      label: "Settlement",
-      value: y(e.isa_settlement),
-      sublabel: e.dyf_applied ? "DYF applied" : void 0
+      label: "Buyout Amount",
+      value: p(e.extension_adjusted_buyout_amount),
+      sublabel: `Window: ${e.current_window}`
     },
     {
-      label: "Investor Profit",
-      value: y(e.investor_profit)
+      label: "Participation Value",
+      value: p(e.current_participation_value)
     },
     {
-      label: "Return Multiple",
-      value: K(e.investor_multiple)
+      label: "Funding Completion",
+      value: $(e.funding_completion_factor)
     },
     {
-      label: "Annual IRR",
-      value: j(e.investor_irr_annual)
+      label: "Appreciation Share",
+      value: $(e.effective_buyer_appreciation_share)
     },
     {
-      label: "Projected FMV",
-      value: y(e.projected_fmv),
-      sublabel: `${j(t.scenario.annual_appreciation)} / yr`
+      label: "Total Funding",
+      value: p(e.actual_buyer_funding_to_date),
+      sublabel: `${$(t.scenario.annual_appreciation)} / yr`
     }
   ], r = t.deal_terms.realtor_representation_mode, o = t.deal_terms.realtor_commission_pct;
   return r !== "NONE" ? n.push({
     label: "Realtor Fee (est.)",
-    value: y(e.realtor_fee_total_projected),
-    sublabel: `${j(o)} · ${r}`
+    value: p(e.realtor_fee_total_projected),
+    sublabel: `${$(o)} · ${r}`
   }) : n.push({
     label: "Realtor Fee",
-    value: y(0),
+    value: p(0),
     sublabel: "No realtor"
   }), n;
 }
-function Mn(e) {
+function _n(e) {
   return [
     {
-      label: "Invested capital (total)",
-      value: y(e.invested_capital_total)
-    },
-    { label: "ISA settlement", value: y(e.isa_settlement) },
-    {
-      label: "Investor profit",
-      value: y(e.investor_profit)
-    },
-    { label: "Return multiple", value: K(e.investor_multiple) },
-    { label: "Annual IRR", value: j(e.investor_irr_annual) },
-    {
-      label: "Annual IRR (net)",
-      value: e.investor_irr_annual_net != null ? j(e.investor_irr_annual_net) : "Not computed"
+      label: "Total scheduled funding",
+      value: p(e.total_scheduled_buyer_funding)
     },
     {
-      label: "Timing factor applied",
-      value: K(e.timing_factor_applied)
+      label: "Actual funding to date",
+      value: p(e.actual_buyer_funding_to_date)
+    },
+    {
+      label: "Funding completion factor",
+      value: $(e.funding_completion_factor)
+    },
+    {
+      label: "Base buyout amount",
+      value: p(e.base_buyout_amount)
+    },
+    {
+      label: "Extension-adjusted buyout",
+      value: p(e.extension_adjusted_buyout_amount)
+    },
+    {
+      label: "Buyer appreciation claim",
+      value: p(e.buyer_appreciation_claim)
+    },
+    {
+      label: "Current window",
+      value: e.current_window
     }
   ];
 }
-function Fn(e, t) {
+function fn(e, t) {
   return [
-    { label: "Vested equity", value: j(t.vested_equity_percentage) },
     {
-      label: "Base equity value",
-      value: y(t.base_equity_value)
+      label: "Scheduled appreciation share",
+      value: $(t.scheduled_buyer_appreciation_share)
+    },
+    {
+      label: "Effective appreciation share",
+      value: $(t.effective_buyer_appreciation_share)
+    },
+    {
+      label: "Current participation value",
+      value: p(t.current_participation_value)
+    },
+    {
+      label: "Current contract value",
+      value: p(t.current_contract_value)
     },
     {
       label: "Minimum hold",
@@ -3509,152 +3338,142 @@ function Fn(e, t) {
       value: `${e.deal_terms.contract_maturity_years} yr`
     },
     {
-      label: "Liquidity trigger",
-      value: `${e.deal_terms.liquidity_trigger_year} yr`
+      label: "Target exit year",
+      value: `${e.deal_terms.target_exit_year} yr`
     }
   ];
 }
-function En(e, t) {
+function yn(e, t) {
   const n = [
     {
-      label: "Floor multiple",
-      value: K(e.deal_terms.floor_multiple)
-    },
-    { label: "Floor amount", value: y(t.floor_amount) },
-    {
-      label: "Ceiling multiple",
-      value: K(e.deal_terms.ceiling_multiple)
-    },
-    { label: "Ceiling amount", value: y(t.ceiling_amount) },
-    {
-      label: "Downside mode",
-      value: e.deal_terms.downside_mode === "HARD_FLOOR" ? "Hard floor" : "No floor"
+      label: "First extension premium",
+      value: $(e.deal_terms.first_extension_premium_pct)
     },
     {
-      label: "Pre-floor/cap value",
-      value: y(t.isa_pre_floor_cap)
+      label: "Second extension premium",
+      value: $(e.deal_terms.second_extension_premium_pct)
     },
     {
-      label: "Gain above capital",
-      value: y(t.gain_above_capital)
+      label: "Partial buyout allowed",
+      value: e.deal_terms.partial_buyout_allowed ? "Yes" : "No"
     }
   ];
-  return e.deal_terms.duration_yield_floor_enabled ? n.push(
-    { label: "DYF enabled", value: "Yes" },
+  return e.deal_terms.partial_buyout_allowed && n.push(
     {
-      label: "DYF start year",
-      value: `${e.deal_terms.duration_yield_floor_start_year ?? "—"} yr`
+      label: "Partial buyout 25%",
+      value: t.partial_buyout_amount_25 != null ? p(t.partial_buyout_amount_25) : "—"
     },
     {
-      label: "DYF min multiple",
-      value: e.deal_terms.duration_yield_floor_min_multiple != null ? K(e.deal_terms.duration_yield_floor_min_multiple) : "—"
+      label: "Partial buyout 50%",
+      value: t.partial_buyout_amount_50 != null ? p(t.partial_buyout_amount_50) : "—"
     },
     {
-      label: "DYF floor amount",
-      value: t.dyf_floor_amount != null ? y(t.dyf_floor_amount) : "—"
-    },
-    { label: "DYF applied", value: t.dyf_applied ? "Yes" : "No" }
-  ) : n.push({ label: "DYF enabled", value: "No" }), n;
+      label: "Partial buyout 75%",
+      value: t.partial_buyout_amount_75 != null ? p(t.partial_buyout_amount_75) : "—"
+    }
+  ), t.discount_purchase_price != null && n.push({
+    label: "Discount purchase price",
+    value: p(t.discount_purchase_price)
+  }), n;
 }
-function An(e, t) {
+function hn(e, t) {
   const n = [
     {
-      label: "Platform fee",
-      value: y(e.deal_terms.platform_fee)
+      label: "Setup fee (%)",
+      value: $(e.deal_terms.setup_fee_pct)
+    },
+    {
+      label: "Setup fee (amount)",
+      value: p(t.fractpath_setup_fee_amount)
     },
     {
       label: "Servicing fee (monthly)",
-      value: y(e.deal_terms.servicing_fee_monthly)
+      value: p(e.deal_terms.servicing_fee_monthly)
     },
-    { label: "Exit fee", value: j(e.deal_terms.exit_fee_pct) }
+    {
+      label: "Payment admin fee",
+      value: p(e.deal_terms.payment_admin_fee)
+    },
+    {
+      label: "Exit admin fee",
+      value: p(e.deal_terms.exit_admin_fee_amount)
+    },
+    {
+      label: "FractPath revenue to date",
+      value: p(t.fractpath_revenue_to_date)
+    }
   ], r = e.deal_terms.realtor_representation_mode;
   return n.push({
     label: "Realtor representation",
     value: r === "NONE" ? "None" : r
   }), n.push({
     label: "Realtor commission",
-    value: j(e.deal_terms.realtor_commission_pct)
+    value: $(e.deal_terms.realtor_commission_pct)
   }), n.push({
-    label: "Commission payment mode",
-    value: e.deal_terms.realtor_commission_payment_mode
-  }), n.push({
-    label: "Realtor fee (upfront)",
-    value: y(t.realtor_fee_upfront_projected)
-  }), n.push({
-    label: "Realtor fee (installments)",
-    value: y(t.realtor_fee_installments_projected)
-  }), n.push({
-    label: "Buyer attribution",
-    value: y(t.buyer_realtor_fee_total_projected)
-  }), n.push({
-    label: "Seller attribution",
-    value: y(t.seller_realtor_fee_total_projected)
+    label: "Realtor fee (total projected)",
+    value: p(t.realtor_fee_total_projected)
   }), n;
 }
-function Tn(e) {
+function bn(e) {
   const t = [
     {
       label: "Annual appreciation",
-      value: j(e.scenario.annual_appreciation)
+      value: $(e.scenario.annual_appreciation)
     },
     { label: "Exit year", value: `${e.scenario.exit_year} yr` },
-    { label: "Closing costs", value: j(e.scenario.closing_cost_pct) },
+    { label: "Closing costs", value: $(e.scenario.closing_cost_pct) },
     {
       label: "Property value",
-      value: y(e.deal_terms.property_value)
+      value: p(e.deal_terms.property_value)
     },
     {
       label: "Upfront payment",
-      value: y(e.deal_terms.upfront_payment)
+      value: p(e.deal_terms.upfront_payment)
     },
     {
       label: "Monthly payment",
-      value: y(e.deal_terms.monthly_payment)
+      value: p(e.deal_terms.monthly_payment)
     },
     {
       label: "Number of payments",
       value: `${e.deal_terms.number_of_payments}`
     },
     {
-      label: "Payback window",
-      value: `${e.deal_terms.payback_window_start_year}–${e.deal_terms.payback_window_end_year} yr`
+      label: "Target exit window",
+      value: `${e.deal_terms.target_exit_window_start_year}–${e.deal_terms.target_exit_window_end_year} yr`
     },
     {
-      label: "Timing factor (early)",
-      value: K(e.deal_terms.timing_factor_early)
-    },
-    {
-      label: "Timing factor (late)",
-      value: K(e.deal_terms.timing_factor_late)
+      label: "Long-stop year",
+      value: `${e.deal_terms.long_stop_year} yr`
     }
   ];
   return e.scenario.fmv_override != null && t.push({
     label: "FMV override",
-    value: y(e.scenario.fmv_override)
+    value: p(e.scenario.fmv_override)
   }), t;
 }
-function Dn(e, t, n) {
+function gn(e, t, n) {
   switch (e) {
     case "cash_flow":
-      return Mn(n);
+      return _n(n);
     case "ownership":
-      return Fn(t, n);
+      return fn(t, n);
     case "protections":
-      return En(t, n);
+      return yn(t, n);
     case "fees":
-      return An(t, n);
+      return hn(t, n);
     case "assumptions":
-      return Tn(t);
+      return bn(t);
   }
 }
-function qn({
+function En({
   persona: e,
   status: t,
   inputs: n,
   results: r
 }) {
-  const [o, i] = P("cash_flow"), l = Pn(r, n), u = Dn(o, n, r);
-  return /* @__PURE__ */ c(
+  const [o, c] = M("cash_flow"), i = pn(r, n), _ = gn(o, n, r);
+  return /* @__PURE__ */ s(
     "div",
     {
       style: {
@@ -3666,7 +3485,7 @@ function qn({
       "data-testid": "deal-snapshot-view",
       "data-persona": e,
       children: [
-        /* @__PURE__ */ a(
+        /* @__PURE__ */ s(
           "div",
           {
             style: {
@@ -3677,12 +3496,15 @@ function qn({
               borderBottom: "1px solid #e5e7eb",
               background: "#fafafa"
             },
-            children: /* @__PURE__ */ a("h2", { style: { margin: 0, fontSize: 17, color: "#111827" }, children: "Deal Snapshot" })
+            children: [
+              /* @__PURE__ */ a("h2", { style: { margin: 0, fontSize: 17, color: "#111827" }, children: "Deal Snapshot" }),
+              t && /* @__PURE__ */ a("span", { style: { fontSize: 11, color: "#9ca3af" }, children: t })
+            ]
           }
         ),
-        /* @__PURE__ */ a("div", { style: { padding: "14px 18px" }, children: /* @__PURE__ */ a(wn, { items: l }) }),
-        /* @__PURE__ */ a("div", { style: { padding: "0 18px 14px" }, children: /* @__PURE__ */ a(Sn, { results: r }) }),
-        /* @__PURE__ */ c("div", { style: { borderTop: "1px solid #e5e7eb" }, children: [
+        /* @__PURE__ */ a("div", { style: { padding: "14px 18px" }, children: /* @__PURE__ */ a(cn, { items: i }) }),
+        /* @__PURE__ */ a("div", { style: { padding: "0 18px 14px" }, children: /* @__PURE__ */ a(un, { results: r }) }),
+        /* @__PURE__ */ s("div", { style: { borderTop: "1px solid #e5e7eb" }, children: [
           /* @__PURE__ */ a(
             "div",
             {
@@ -3692,32 +3514,32 @@ function qn({
                 padding: "0 18px",
                 overflowX: "auto"
               },
-              children: kn.map((m) => /* @__PURE__ */ a(
+              children: dn.map((d) => /* @__PURE__ */ a(
                 "button",
                 {
                   type: "button",
-                  onClick: () => i(m.key),
+                  onClick: () => c(d.key),
                   style: {
                     padding: "9px 14px",
                     border: "none",
-                    borderBottom: o === m.key ? "2px solid #111827" : "2px solid transparent",
+                    borderBottom: o === d.key ? "2px solid #111827" : "2px solid transparent",
                     background: "none",
                     fontSize: 12,
-                    fontWeight: o === m.key ? 600 : 400,
-                    color: o === m.key ? "#111827" : "#6b7280",
+                    fontWeight: o === d.key ? 600 : 400,
+                    color: o === d.key ? "#111827" : "#6b7280",
                     cursor: "pointer",
                     fontFamily: "system-ui, sans-serif",
                     whiteSpace: "nowrap"
                   },
-                  children: m.label
+                  children: d.label
                 },
-                m.key
+                d.key
               ))
             }
           ),
-          /* @__PURE__ */ a("div", { style: { padding: "14px 18px" }, children: /* @__PURE__ */ a(Rn, { rows: u }) })
+          /* @__PURE__ */ a("div", { style: { padding: "14px 18px" }, children: /* @__PURE__ */ a(mn, { rows: _ }) })
         ] }),
-        /* @__PURE__ */ c(
+        /* @__PURE__ */ s(
           "div",
           {
             style: {
@@ -3739,55 +3561,55 @@ function qn({
     }
   );
 }
-function Hn({ value: e, anchors: t, onCommit: n, parseRaw: r }) {
-  const [o, i] = P(""), [l, u] = P(!1), m = t.some((w) => w.value === e), _ = N(
-    (w) => {
-      u(!1), i(""), n(w);
+function Cn({ value: e, anchors: t, onCommit: n, parseRaw: r }) {
+  const [o, c] = M(""), [i, _] = M(!1), d = t.some((v) => v.value === e), h = z(
+    (v) => {
+      _(!1), c(""), n(v);
     },
     [n]
-  ), g = N(() => {
-    u(!0);
-  }, []), x = N((w) => {
-    i(w);
-  }, []), f = N(() => {
+  ), x = z(() => {
+    _(!0);
+  }, []), w = z((v) => {
+    c(v);
+  }, []), y = z(() => {
     if (!o) {
-      u(!1);
+      _(!1);
       return;
     }
-    const E = (r ?? ((Y) => parseFloat(Y.replace(/,/g, ""))))(o);
-    Number.isFinite(E) && n(E), u(!1);
-  }, [o, n, r]), d = l ? o : m ? "" : String(e);
+    const E = (r ?? ((L) => parseFloat(L.replace(/,/g, ""))))(o);
+    Number.isFinite(E) && n(E), _(!1);
+  }, [o, n, r]), u = i ? o : d ? "" : String(e);
   return {
-    isAnchorMatch: m && !l,
-    displayCustom: d,
-    selectAnchor: _,
-    focusCustom: g,
-    changeCustom: x,
-    blurCustom: f
+    isAnchorMatch: d && !i,
+    displayCustom: u,
+    selectAnchor: h,
+    focusCustom: x,
+    changeCustom: w,
+    blurCustom: y
   };
 }
 export {
-  re as CONTRACT_VERSION,
-  fn as DealEditModal,
-  wn as DealKpiStrip,
-  qn as DealSnapshotView,
-  Ct as EquityChart,
-  Sn as EquityTransferChart,
-  z as FEE_DEFAULTS,
-  Wn as FractPathCalculatorWidget,
-  jn as MARKETING_PERSONAS,
-  oe as SCHEMA_VERSION,
-  Mt as buildChartSeries,
-  $n as buildDraftSnapshot,
-  Yt as buildFullDealSnapshotV1,
-  Ln as buildSavePayload,
-  Yn as buildShareSummary,
-  Pt as computeScenario,
-  ie as deterministicHash,
-  Z as getLabel,
-  In as getPersonaConfig,
-  zn as getSummaryOrder,
-  xt as normalizeInputs,
-  Lt as resolvePersonaPresentation,
-  Hn as useKioskInput
+  ae as CONTRACT_VERSION,
+  en as DealEditModal,
+  cn as DealKpiStrip,
+  En as DealSnapshotView,
+  xt as EquityChart,
+  un as EquityTransferChart,
+  k as FEE_DEFAULTS,
+  An as FractPathCalculatorWidget,
+  Fn as MARKETING_PERSONAS,
+  re as SCHEMA_VERSION,
+  _t as buildChartSeries,
+  Pn as buildDraftSnapshot,
+  Rt as buildFullDealSnapshotV1,
+  Mn as buildSavePayload,
+  Rn as buildShareSummary,
+  pt as computeScenario,
+  oe as deterministicHash,
+  Q as getLabel,
+  Sn as getPersonaConfig,
+  kn as getSummaryOrder,
+  st as normalizeInputs,
+  Mt as resolvePersonaPresentation,
+  Cn as useKioskInput
 };

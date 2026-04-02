@@ -8,7 +8,7 @@ import { FIXTURE_DRAFT } from "./fixtures/canonicalInputs.fixture.js";
 
 describe("Version Pin Drift Guard", () => {
   it("CONTRACT_VERSION matches expected value", () => {
-    expect(CONTRACT_VERSION).toBe("10.2.0");
+    expect(CONTRACT_VERSION).toBe("11.0.0");
   });
 
   it("SCHEMA_VERSION matches expected value", () => {
@@ -16,7 +16,7 @@ describe("Version Pin Drift Guard", () => {
   });
 
   it("COMPUTE_VERSION matches expected value", () => {
-    expect(COMPUTE_VERSION).toBe("10.2.0");
+    expect(COMPUTE_VERSION).toBe("11.0.0");
   });
 
   it("CONTRACT_VERSION and COMPUTE_VERSION are aligned", () => {

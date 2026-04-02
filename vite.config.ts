@@ -3,6 +3,13 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
+  test: {
+    exclude: [
+      "**/.local/**",
+      "**/node_modules/**",
+      "**/dist/**",
+    ],
+  },
   plugins: [react()],
   server: {
     host: "0.0.0.0",

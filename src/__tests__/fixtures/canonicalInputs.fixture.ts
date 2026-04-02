@@ -6,25 +6,39 @@ export const FIXTURE_DEAL_TERMS: DealTerms = {
   upfront_payment: 80_000,
   monthly_payment: 500,
   number_of_payments: 36,
-  payback_window_start_year: 3,
-  payback_window_end_year: 8,
-  timing_factor_early: 0.95,
-  timing_factor_late: 1.05,
-  floor_multiple: 1.0,
-  ceiling_multiple: 2.5,
-  downside_mode: "HARD_FLOOR",
-  contract_maturity_years: 20,
-  liquidity_trigger_year: 10,
   minimum_hold_years: 2,
-  platform_fee: 2500,
+  contract_maturity_years: 20,
+
+  target_exit_year: 7,
+  target_exit_window_start_year: 6,
+  target_exit_window_end_year: 8,
+  long_stop_year: 15,
+
+  first_extension_start_year: 8,
+  first_extension_end_year: 11,
+  first_extension_premium_pct: 0.05,
+
+  second_extension_start_year: 11,
+  second_extension_end_year: 15,
+  second_extension_premium_pct: 0.08,
+
+  partial_buyout_allowed: false,
+  partial_buyout_min_fraction: 0.25,
+  partial_buyout_increment_fraction: 0.25,
+
+  buyer_purchase_option_enabled: false,
+  buyer_purchase_notice_days: 90,
+  buyer_purchase_closing_days: 60,
+
+  setup_fee_pct: 0.02,
+  setup_fee_floor: 1_000,
+  setup_fee_cap: 5_000,
   servicing_fee_monthly: 49,
-  exit_fee_pct: 0.01,
-  duration_yield_floor_enabled: false,
-  duration_yield_floor_start_year: null,
-  duration_yield_floor_min_multiple: null,
+  payment_admin_fee: 5,
+  exit_admin_fee_amount: 500,
+
   realtor_representation_mode: "NONE",
   realtor_commission_pct: 0,
-  realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
 };
 
 export const FIXTURE_ASSUMPTIONS: ScenarioAssumptions = {

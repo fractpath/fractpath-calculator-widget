@@ -85,8 +85,8 @@ describe("Field Meta Coverage (WGT-002 drift guards)", () => {
     expect(unique.size).toBe(allKeys.length);
   });
 
-  it("fieldMeta has exactly 27 entries (26 fields + 1 disclosure)", () => {
-    expect(FIELD_META.length).toBe(27);
+  it("fieldMeta has exactly 20 entries (19 fields + 1 disclosure)", () => {
+    expect(FIELD_META.length).toBe(20);
   });
 
   it("tabConfig has exactly 5 tabs", () => {

@@ -5,7 +5,7 @@ export declare function buildDraftSnapshot(persona: CalculatorPersona, normalize
 export declare function buildShareSummary(persona: CalculatorPersona, normalizedInputs: ScenarioInputs, outputs: ScenarioOutputs): ShareSummary;
 export declare function buildSavePayload(persona: CalculatorPersona, normalizedInputs: ScenarioInputs, outputs: ScenarioOutputs): Promise<SavePayload>;
 /**
- * Maps widget-level ScenarioInputs to canonical DealTerms.
+ * Maps widget-level ScenarioInputs to canonical v11 DealTerms.
  * Missing canonical fields use deterministic defaults documented inline.
  */
 export declare function mapWidgetInputsToDealTerms(inputs: ScenarioInputs): DealTerms;

@@ -23,5 +23,3 @@ export interface PreviewState {
   lastComputedAtIso?: string;
   results?: DealResults;
 }
-
-export type DownsideMode = DealTerms["downside_mode"];

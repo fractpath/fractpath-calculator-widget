@@ -36,30 +36,45 @@ export type MarketingLiteState = {
 };
 
 export function buildMarketingDealTerms(state: MarketingLiteState): DealTerms {
+  const termYears = state.exitYear;
   return {
     property_value: state.propertyValue,
     upfront_payment: state.upfrontPayment,
     monthly_payment: state.monthlyPayment,
     number_of_payments: state.numberOfPayments,
-    payback_window_start_year: Math.max(0, Math.floor(state.exitYear / 3)),
-    payback_window_end_year: Math.max(1, Math.ceil((state.exitYear * 2) / 3)),
-    timing_factor_early: 1,
-    timing_factor_late: 1,
-    floor_multiple: 1.1,
-    ceiling_multiple: 2.0,
-    downside_mode: "HARD_FLOOR",
-    contract_maturity_years: 30,
-    liquidity_trigger_year: 13,
     minimum_hold_years: 2,
-    platform_fee: FEE_DEFAULTS.platform_fee,
+    contract_maturity_years: Math.max(termYears + 5, 15),
+
+    target_exit_year: termYears,
+    target_exit_window_start_year: Math.max(1, termYears - 1),
+    target_exit_window_end_year: termYears + 1,
+    long_stop_year: termYears + 5,
+
+    first_extension_start_year: termYears + 1,
+    first_extension_end_year: termYears + 4,
+    first_extension_premium_pct: 0.05,
+
+    second_extension_start_year: termYears + 4,
+    second_extension_end_year: termYears + 5,
+    second_extension_premium_pct: 0.08,
+
+    partial_buyout_allowed: false,
+    partial_buyout_min_fraction: 0.25,
+    partial_buyout_increment_fraction: 0.25,
+
+    buyer_purchase_option_enabled: false,
+    buyer_purchase_notice_days: 90,
+    buyer_purchase_closing_days: 60,
+
+    setup_fee_pct: FEE_DEFAULTS.setup_fee_pct,
+    setup_fee_floor: FEE_DEFAULTS.setup_fee_floor,
+    setup_fee_cap: FEE_DEFAULTS.setup_fee_cap,
     servicing_fee_monthly: FEE_DEFAULTS.servicing_fee_monthly,
-    exit_fee_pct: FEE_DEFAULTS.exit_fee_pct,
-    duration_yield_floor_enabled: false,
-    duration_yield_floor_start_year: null,
-    duration_yield_floor_min_multiple: null,
+    payment_admin_fee: FEE_DEFAULTS.payment_admin_fee,
+    exit_admin_fee_amount: FEE_DEFAULTS.exit_admin_fee_amount,
+
     realtor_representation_mode: state.realtorMode,
     realtor_commission_pct: state.realtorPct / 100,
-    realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
   };
 }
 
@@ -447,9 +462,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
         annualGrowthRate: growthRatePct / 100,
       };
       const basic_results = {
-        standard_net_payout: canonicalResult.isa_settlement,
-        early_net_payout: canonicalResult.isa_settlement,
-        late_net_payout: canonicalResult.isa_settlement,
+        standard_net_payout: canonicalResult.extension_adjusted_buyout_amount,
+        early_net_payout: canonicalResult.extension_adjusted_buyout_amount,
+        late_net_payout: canonicalResult.extension_adjusted_buyout_amount,
         standard_settlement_month: settlementMonth,
         early_settlement_month: settlementMonth,
         late_settlement_month: settlementMonth,
@@ -496,9 +511,9 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
           annualGrowthRate: growthRatePct / 100,
         },
         basic_results: {
-          standard_net_payout: canonicalResult.isa_settlement,
-          early_net_payout: canonicalResult.isa_settlement,
-          late_net_payout: canonicalResult.isa_settlement,
+          standard_net_payout: canonicalResult.extension_adjusted_buyout_amount,
+          early_net_payout: canonicalResult.extension_adjusted_buyout_amount,
+          late_net_payout: canonicalResult.extension_adjusted_buyout_amount,
         },
         created_at: new Date().toISOString(),
       });
@@ -894,7 +909,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                       border: "1px solid #f3f4f6",
                     }}
                   >
-                    Platform fee: {formatCurrency(FEE_DEFAULTS.platform_fee)}
+                    Setup fee: {formatPct(FEE_DEFAULTS.setup_fee_pct)} (min {formatCurrency(FEE_DEFAULTS.setup_fee_floor)}, max {formatCurrency(FEE_DEFAULTS.setup_fee_cap)})
                   </div>
                   <div
                     style={{
@@ -919,7 +934,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                       border: "1px solid #f3f4f6",
                     }}
                   >
-                    Exit fee: {formatPct(FEE_DEFAULTS.exit_fee_pct)}
+                    Exit admin fee: {formatCurrency(FEE_DEFAULTS.exit_admin_fee_amount)}
                   </div>
                 </div>
               </details>
@@ -1052,8 +1067,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
               }}
             >
               <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                <strong style={{ color: "#374151" }}>Standard</strong> · {formatMonth(settlementMonth)} · Net
-                Payout: {formatCurrency(canonicalResult.isa_settlement)}
+                <strong style={{ color: "#374151" }}>Standard</strong> · {formatMonth(settlementMonth)} · Illustrative Buyout: {formatCurrency(canonicalResult.extension_adjusted_buyout_amount)}
               </div>
             </div>
           )}
