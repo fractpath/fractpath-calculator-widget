@@ -7,5 +7,5 @@ export type {
   ScenarioAssumptions,
   DealResults,
   RealtorRepresentationMode,
-  RealtorCommissionPaymentMode,
+  ContractWindow,
 } from "./types.js";

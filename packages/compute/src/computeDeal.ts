@@ -1,6 +1,5 @@
-import { DealTerms, ScenarioAssumptions, DealResults } from "./types.js";
+import { DealTerms, ScenarioAssumptions, DealResults, ContractWindow } from "./types.js";
 import { roundMoney } from "./rounding.js";
-import { computeIRR } from "./irr.js";
 import { COMPUTE_VERSION } from "./version.js";
 
 export function computeDeal(
@@ -10,242 +9,198 @@ export function computeDeal(
   const exitMonth = Math.floor(assumptions.exit_year * 12);
   const paymentsMade = Math.min(terms.number_of_payments, exitMonth);
 
-  const invested_capital_total = roundMoney(
-    terms.upfront_payment + sumPayments(terms.monthly_payment, paymentsMade)
+  const total_scheduled_buyer_funding = roundMoney(
+    terms.upfront_payment + terms.monthly_payment * terms.number_of_payments
   );
 
-  const projected_fmv = roundMoney(computeFMV(terms, assumptions));
-
-  const vested_equity_percentage = computeVestedEquity(
-    terms,
-    assumptions.annual_appreciation,
-    paymentsMade
+  const actual_buyer_funding_to_date = roundMoney(
+    terms.upfront_payment + terms.monthly_payment * paymentsMade
   );
 
-  const base_equity_value = roundMoney(projected_fmv * vested_equity_percentage);
+  const funding_completion_factor =
+    total_scheduled_buyer_funding > 0
+      ? actual_buyer_funding_to_date / total_scheduled_buyer_funding
+      : 0;
 
-  const gain_above_capital = roundMoney(base_equity_value - invested_capital_total);
+  const scheduled_buyer_appreciation_share =
+    terms.property_value > 0
+      ? total_scheduled_buyer_funding / terms.property_value
+      : 0;
 
-  const timing_factor_applied = computeTimingFactor(terms, assumptions.exit_year);
+  const effective_buyer_appreciation_share =
+    scheduled_buyer_appreciation_share * funding_completion_factor;
 
-  const isa_pre_floor_cap = roundMoney(
-    invested_capital_total + gain_above_capital * timing_factor_applied
+  const current_contract_value = roundMoney(
+    assumptions.fmv_override !== undefined &&
+    assumptions.fmv_override !== null &&
+    assumptions.fmv_override > 0
+      ? assumptions.fmv_override
+      : terms.property_value * Math.pow(1 + assumptions.annual_appreciation, assumptions.exit_year)
   );
 
-  const floor_amount = roundMoney(invested_capital_total * terms.floor_multiple);
-  const ceiling_amount = roundMoney(invested_capital_total * terms.ceiling_multiple);
+  const buyer_base_capital_component = actual_buyer_funding_to_date;
 
-  const isa_standard_pre_dyf = roundMoney(
-    computeSettlement(
-      terms.downside_mode,
-      isa_pre_floor_cap,
-      floor_amount,
-      ceiling_amount
+  const appreciation_amount = Math.max(0, current_contract_value - terms.property_value);
+
+  const buyer_appreciation_claim = roundMoney(
+    appreciation_amount * effective_buyer_appreciation_share
+  );
+
+  const current_participation_value = roundMoney(
+    buyer_base_capital_component + buyer_appreciation_claim
+  );
+
+  const fractpath_setup_fee_amount = roundMoney(
+    Math.min(
+      Math.max(
+        total_scheduled_buyer_funding * terms.setup_fee_pct,
+        terms.setup_fee_floor
+      ),
+      terms.setup_fee_cap
     )
   );
 
-  const { isa_settlement, dyf_floor_amount, dyf_applied } = applyDurationYieldFloor(
+  const elapsed_months_for_servicing = exitMonth;
+
+  const fractpath_revenue_to_date = roundMoney(
+    fractpath_setup_fee_amount +
+    terms.servicing_fee_monthly * elapsed_months_for_servicing +
+    terms.payment_admin_fee * paymentsMade +
+    terms.exit_admin_fee_amount
+  );
+
+  const base_buyout_amount = roundMoney(
+    current_participation_value + terms.exit_admin_fee_amount
+  );
+
+  const current_window = resolveContractWindow(terms, assumptions.exit_year);
+
+  const extension_adjusted_buyout_amount = roundMoney(
+    applyExtensionPremium(base_buyout_amount, current_window, terms)
+  );
+
+  const partialBuyouts = computePartialBuyouts(
     terms,
-    assumptions.exit_year,
-    invested_capital_total,
-    isa_standard_pre_dyf
+    extension_adjusted_buyout_amount
   );
 
-  const investor_profit = roundMoney(isa_settlement - invested_capital_total);
+  const discount_purchase_price = terms.buyer_purchase_option_enabled
+    ? roundMoney(current_contract_value - current_participation_value)
+    : null;
 
-  const investor_multiple = roundMoney(
-    invested_capital_total > 0 ? isa_settlement / invested_capital_total : 0
-  );
-
-  const cashflows = buildCashflows(terms, paymentsMade, exitMonth, isa_settlement);
-  const investor_irr_annual = computeIRR(cashflows);
-
-  const realtorFees = computeRealtorFees(terms, assumptions.annual_appreciation, paymentsMade);
+  const realtor_fee_total_projected = computeRealtorFee(terms, paymentsMade);
 
   return {
-    invested_capital_total,
-    vested_equity_percentage,
-    projected_fmv,
-    base_equity_value,
-    gain_above_capital,
-    timing_factor_applied,
-    isa_pre_floor_cap,
-    floor_amount,
-    ceiling_amount,
-    isa_standard_pre_dyf,
-    isa_settlement,
-    dyf_floor_amount,
-    dyf_applied,
-    investor_profit,
-    investor_multiple,
-    investor_irr_annual,
-    realtor_fee_total_projected: realtorFees.realtor_fee_total_projected,
-    realtor_fee_upfront_projected: realtorFees.realtor_fee_upfront_projected,
-    realtor_fee_installments_projected: realtorFees.realtor_fee_installments_projected,
-    buyer_realtor_fee_total_projected: realtorFees.buyer_realtor_fee_total_projected,
-    seller_realtor_fee_total_projected: realtorFees.seller_realtor_fee_total_projected,
-    investor_irr_annual_net: null,
+    total_scheduled_buyer_funding,
+    actual_buyer_funding_to_date,
+    funding_completion_factor,
+    scheduled_buyer_appreciation_share,
+    effective_buyer_appreciation_share,
+    buyer_base_capital_component,
+    buyer_appreciation_claim,
+    current_contract_value,
+    current_participation_value,
+    base_buyout_amount,
+    extension_adjusted_buyout_amount,
+    partial_buyout_amount_25: partialBuyouts[25],
+    partial_buyout_amount_50: partialBuyouts[50],
+    partial_buyout_amount_75: partialBuyouts[75],
+    discount_purchase_price,
+    current_window,
+    fractpath_setup_fee_amount,
+    fractpath_revenue_to_date,
+    realtor_fee_total_projected,
     compute_version: COMPUTE_VERSION,
   };
 }
 
-
-function sumPayments(monthly: number, count: number): number {
-  return monthly * count;
-}
-
-function computeFMV(terms: DealTerms, assumptions: ScenarioAssumptions): number {
+function resolveContractWindow(terms: DealTerms, exitYear: number): ContractWindow {
+  if (exitYear < terms.target_exit_window_start_year) {
+    return "pre_target";
+  }
+  if (exitYear <= terms.target_exit_window_end_year) {
+    return "target_exit";
+  }
+  if (exitYear > terms.long_stop_year) {
+    return "post_long_stop";
+  }
   if (
-    assumptions.fmv_override !== undefined &&
-    assumptions.fmv_override !== null &&
-    assumptions.fmv_override > 0
+    exitYear >= terms.first_extension_start_year &&
+    exitYear <= terms.first_extension_end_year
   ) {
-    return assumptions.fmv_override;
+    return "first_extension";
   }
-  return terms.property_value * Math.pow(1 + assumptions.annual_appreciation, assumptions.exit_year);
-}
-
-function computeVestedEquity(
-  terms: DealTerms,
-  annualAppreciation: number,
-  paymentsCount: number
-): number {
-  const upfrontEquity = terms.upfront_payment / terms.property_value;
-
-  let monthlyEquityTotal = 0;
-  for (let m = 1; m <= paymentsCount; m++) {
-    const pvAtMonth = terms.property_value * Math.pow(1 + annualAppreciation, m / 12);
-    monthlyEquityTotal += terms.monthly_payment / pvAtMonth;
-  }
-
-  return upfrontEquity + monthlyEquityTotal;
-}
-
-function computeTimingFactor(terms: DealTerms, exitYear: number): number {
-  if (exitYear < terms.payback_window_start_year) {
-    return terms.timing_factor_early;
-  }
-  if (exitYear > terms.payback_window_end_year) {
-    return terms.timing_factor_late;
-  }
-  return 1;
-}
-
-function computeSettlement(
-  downsideMode: "HARD_FLOOR" | "NO_FLOOR",
-  isaPre: number,
-  floor: number,
-  ceiling: number
-): number {
-  if (downsideMode === "HARD_FLOOR") {
-    return Math.min(Math.max(isaPre, floor), ceiling);
-  }
-  return Math.min(isaPre, ceiling);
-}
-
-function applyDurationYieldFloor(
-  terms: DealTerms,
-  exitYear: number,
-  iba: number,
-  isaStandard: number
-): { isa_settlement: number; dyf_floor_amount: number | null; dyf_applied: boolean } {
   if (
-    !terms.duration_yield_floor_enabled ||
-    terms.duration_yield_floor_start_year == null ||
-    terms.duration_yield_floor_min_multiple == null
+    exitYear >= terms.second_extension_start_year &&
+    exitYear <= terms.second_extension_end_year
   ) {
-    return { isa_settlement: isaStandard, dyf_floor_amount: null, dyf_applied: false };
+    return "second_extension";
   }
-
-  const dyfFloor = roundMoney(iba * terms.duration_yield_floor_min_multiple);
-
-  if (exitYear >= terms.duration_yield_floor_start_year && isaStandard < dyfFloor) {
-    return { isa_settlement: dyfFloor, dyf_floor_amount: dyfFloor, dyf_applied: true };
-  }
-
-  return { isa_settlement: isaStandard, dyf_floor_amount: dyfFloor, dyf_applied: false };
+  return "post_long_stop";
 }
 
-function buildCashflows(
+function applyExtensionPremium(
+  baseBuyout: number,
+  window: ContractWindow,
+  terms: DealTerms
+): number {
+  switch (window) {
+    case "pre_target":
+    case "target_exit":
+      return baseBuyout;
+    case "first_extension":
+      return baseBuyout * (1 + terms.first_extension_premium_pct);
+    case "second_extension":
+      return baseBuyout * (1 + terms.second_extension_premium_pct);
+    case "post_long_stop":
+      return baseBuyout * (1 + terms.second_extension_premium_pct);
+  }
+}
+
+function isValidPartialFraction(
+  fraction: number,
+  minFraction: number,
+  incrementFraction: number
+): boolean {
+  if (fraction < minFraction) return false;
+  if (incrementFraction <= 0) return false;
+  const ratio = fraction / incrementFraction;
+  return Math.abs(ratio - Math.round(ratio)) < 1e-9;
+}
+
+function computePartialBuyouts(
   terms: DealTerms,
-  paymentsCount: number,
-  exitMonth: number,
-  isaSettlement: number
-): number[] {
-  const cf: number[] = new Array(exitMonth + 1).fill(0);
-  cf[0] = -terms.upfront_payment;
-  for (let m = 1; m <= paymentsCount; m++) {
-    cf[m] = -terms.monthly_payment;
+  adjustedBuyout: number
+): Record<25 | 50 | 75, number | null> {
+  if (!terms.partial_buyout_allowed) {
+    return { 25: null, 50: null, 75: null };
   }
-  cf[exitMonth] += isaSettlement;
-  return cf;
+  const fractions: (25 | 50 | 75)[] = [25, 50, 75];
+  const result: Record<25 | 50 | 75, number | null> = { 25: null, 50: null, 75: null };
+  for (const pct of fractions) {
+    const fraction = pct / 100;
+    if (
+      isValidPartialFraction(
+        fraction,
+        terms.partial_buyout_min_fraction,
+        terms.partial_buyout_increment_fraction
+      )
+    ) {
+      result[pct] = roundMoney(adjustedBuyout * fraction);
+    }
+  }
+  return result;
 }
 
-interface RealtorFeeResult {
-  realtor_fee_total_projected: number;
-  realtor_fee_upfront_projected: number;
-  realtor_fee_installments_projected: number;
-  buyer_realtor_fee_total_projected: number;
-  seller_realtor_fee_total_projected: number;
-}
-
-function computeRealtorFees(
-  terms: DealTerms,
-  annualAppreciation: number,
-  paymentsMade: number
-): RealtorFeeResult {
-  if (terms.realtor_commission_payment_mode !== "PER_PAYMENT_EVENT") {
-    throw new Error(
-      `realtor_commission_payment_mode must be "PER_PAYMENT_EVENT" in v10.2, got "${terms.realtor_commission_payment_mode}"`
-    );
+function computeRealtorFee(terms: DealTerms, paymentsMade: number): number {
+  if (
+    terms.realtor_representation_mode === "NONE" ||
+    terms.realtor_commission_pct === 0
+  ) {
+    return 0;
   }
-
-  const pct =
-    terms.realtor_representation_mode !== "NONE"
-      ? terms.realtor_commission_pct
-      : 0;
-
-  if (pct === 0) {
-    return {
-      realtor_fee_total_projected: 0,
-      realtor_fee_upfront_projected: 0,
-      realtor_fee_installments_projected: 0,
-      buyer_realtor_fee_total_projected: 0,
-      seller_realtor_fee_total_projected: 0,
-    };
-  }
-
-  const realtor_fee_upfront_projected = roundMoney(terms.upfront_payment * pct);
-  const realtor_fee_installments_projected = roundMoney(
-    (terms.monthly_payment * paymentsMade) * pct
+  return roundMoney(
+    (terms.upfront_payment + terms.monthly_payment * paymentsMade) *
+      terms.realtor_commission_pct
   );
-  const realtor_fee_total_projected = roundMoney(
-    realtor_fee_upfront_projected + realtor_fee_installments_projected
-  );
-
-  let buyerTotal = 0;
-  let sellerTotal = 0;
-
-  let cumulativeEquity = terms.upfront_payment / terms.property_value;
-
-  const upfrontCommission = terms.upfront_payment * pct;
-  buyerTotal += upfrontCommission * cumulativeEquity;
-  sellerTotal += upfrontCommission * (1 - cumulativeEquity);
-
-  for (let m = 1; m <= paymentsMade; m++) {
-    const pvAtMonth = terms.property_value * Math.pow(1 + annualAppreciation, m / 12);
-    cumulativeEquity += terms.monthly_payment / pvAtMonth;
-
-    const commission = terms.monthly_payment * pct;
-    buyerTotal += commission * cumulativeEquity;
-    sellerTotal += commission * (1 - cumulativeEquity);
-  }
-
-  return {
-    realtor_fee_total_projected,
-    realtor_fee_upfront_projected,
-    realtor_fee_installments_projected,
-    buyer_realtor_fee_total_projected: roundMoney(buyerTotal),
-    seller_realtor_fee_total_projected: roundMoney(sellerTotal),
-  };
 }

@@ -4,311 +4,354 @@ import { COMPUTE_VERSION } from "../src/version.js";
 import { roundMoney } from "../src/rounding.js";
 import type { DealTerms, ScenarioAssumptions } from "../src/types.js";
 
-const DEFAULT_TERMS: DealTerms = {
-  property_value: 600_000,
-  upfront_payment: 60_000,
-  monthly_payment: 2_000,
-  number_of_payments: 72,
-  payback_window_start_year: 4,
-  payback_window_end_year: 8,
-  timing_factor_early: 0.9,
-  timing_factor_late: 1.2,
-  floor_multiple: 1.03,
-  ceiling_multiple: 3.25,
-  downside_mode: "HARD_FLOOR",
-  contract_maturity_years: 30,
-  liquidity_trigger_year: 13,
+const BASE_TERMS: DealTerms = {
+  property_value: 960_000,
+  upfront_payment: 144_000,
+  monthly_payment: 1_900,
+  number_of_payments: 50,
   minimum_hold_years: 2,
-  platform_fee: 5_000,
-  servicing_fee_monthly: 49,
-  exit_fee_pct: 0.01,
+  contract_maturity_years: 30,
+
+  target_exit_year: 5,
+  target_exit_window_start_year: 3,
+  target_exit_window_end_year: 7,
+  long_stop_year: 11,
+
+  first_extension_start_year: 7,
+  first_extension_end_year: 9,
+  first_extension_premium_pct: 0.06,
+
+  second_extension_start_year: 9,
+  second_extension_end_year: 11,
+  second_extension_premium_pct: 0.12,
+
+  partial_buyout_allowed: true,
+  partial_buyout_min_fraction: 0.25,
+  partial_buyout_increment_fraction: 0.25,
+
+  buyer_purchase_option_enabled: true,
+  buyer_purchase_notice_days: 30,
+  buyer_purchase_closing_days: 45,
+
+  setup_fee_pct: 0.0225,
+  setup_fee_floor: 1_750,
+  setup_fee_cap: 18_000,
+  servicing_fee_monthly: 59,
+  payment_admin_fee: 4,
+  exit_admin_fee_amount: 4_500,
+
   realtor_representation_mode: "NONE",
   realtor_commission_pct: 0,
-  realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
 };
 
-const STANDARD_ASSUMPTIONS: ScenarioAssumptions = {
+const BASE_ASSUMPTIONS: ScenarioAssumptions = {
   annual_appreciation: 0.04,
   closing_cost_pct: 0.02,
-  exit_year: 7,
+  exit_year: 5,
 };
 
-const EARLY_ASSUMPTIONS: ScenarioAssumptions = {
-  annual_appreciation: 0.04,
-  closing_cost_pct: 0.02,
-  exit_year: 2,
-};
+describe("computeDeal v11", () => {
+  describe("total scheduled buyer funding", () => {
+    it("equals upfront + monthly * number_of_payments", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const expected = roundMoney(
+        BASE_TERMS.upfront_payment +
+          BASE_TERMS.monthly_payment * BASE_TERMS.number_of_payments
+      );
+      expect(result.total_scheduled_buyer_funding).toBe(expected);
+      expect(result.total_scheduled_buyer_funding).toBe(239_000);
+    });
+  });
 
-const LATE_ASSUMPTIONS: ScenarioAssumptions = {
-  annual_appreciation: 0.04,
-  closing_cost_pct: 0.02,
-  exit_year: 12,
-};
+  describe("actual buyer funding at partial completion (exit year 2)", () => {
+    const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 2 });
 
-describe("computeDeal", () => {
-  describe("Standard scenario (exit year 7, within window)", () => {
-    const result = computeDeal(DEFAULT_TERMS, STANDARD_ASSUMPTIONS);
+    it("counts only payments made by exit month", () => {
+      const exitMonth = Math.floor(2 * 12);
+      const paymentsMade = Math.min(BASE_TERMS.number_of_payments, exitMonth);
+      const expected = roundMoney(
+        BASE_TERMS.upfront_payment + BASE_TERMS.monthly_payment * paymentsMade
+      );
+      expect(result.actual_buyer_funding_to_date).toBe(expected);
+      expect(paymentsMade).toBe(24);
+      expect(result.actual_buyer_funding_to_date).toBe(
+        roundMoney(144_000 + 1_900 * 24)
+      );
+    });
 
-    it("includes compute_version", () => {
+    it("is less than total scheduled funding when payments not complete", () => {
+      expect(result.actual_buyer_funding_to_date).toBeLessThan(
+        result.total_scheduled_buyer_funding
+      );
+    });
+  });
+
+  describe("funding completion factor", () => {
+    it("is 1.0 when all payments made by exit", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 5 });
+      expect(result.funding_completion_factor).toBe(1.0);
+    });
+
+    it("is less than 1.0 on early exit (year 2)", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 2 });
+      const expected =
+        result.actual_buyer_funding_to_date /
+        result.total_scheduled_buyer_funding;
+      expect(result.funding_completion_factor).toBeCloseTo(expected, 10);
+      expect(result.funding_completion_factor).toBeLessThan(1);
+    });
+
+    it("is zero when total_scheduled_buyer_funding is zero", () => {
+      const terms: DealTerms = {
+        ...BASE_TERMS,
+        upfront_payment: 0,
+        monthly_payment: 0,
+      };
+      const result = computeDeal(terms, BASE_ASSUMPTIONS);
+      expect(result.funding_completion_factor).toBe(0);
+    });
+  });
+
+  describe("scheduled and effective appreciation share", () => {
+    it("scheduled_buyer_appreciation_share = total_funding / property_value", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const expected =
+        result.total_scheduled_buyer_funding / BASE_TERMS.property_value;
+      expect(result.scheduled_buyer_appreciation_share).toBeCloseTo(expected, 10);
+    });
+
+    it("effective_buyer_appreciation_share = scheduled * factor", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 2 });
+      const expected =
+        result.scheduled_buyer_appreciation_share * result.funding_completion_factor;
+      expect(result.effective_buyer_appreciation_share).toBeCloseTo(expected, 10);
+    });
+
+    it("at full completion, effective equals scheduled share", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(result.effective_buyer_appreciation_share).toBeCloseTo(
+        result.scheduled_buyer_appreciation_share,
+        10
+      );
+    });
+  });
+
+  describe("appreciation claim scaling on early exit", () => {
+    it("claim is lower on early exit than full-term exit", () => {
+      const earlyResult = computeDeal(BASE_TERMS, {
+        ...BASE_ASSUMPTIONS,
+        exit_year: 2,
+      });
+      const fullResult = computeDeal(BASE_TERMS, {
+        ...BASE_ASSUMPTIONS,
+        exit_year: 5,
+      });
+      expect(earlyResult.buyer_appreciation_claim).toBeLessThan(
+        fullResult.buyer_appreciation_claim
+      );
+    });
+
+    it("claim equals appreciation_amount * effective_share", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 2 });
+      const appreciationAmount = Math.max(
+        0,
+        result.current_contract_value - BASE_TERMS.property_value
+      );
+      const expected = roundMoney(
+        appreciationAmount * result.effective_buyer_appreciation_share
+      );
+      expect(result.buyer_appreciation_claim).toBe(expected);
+    });
+
+    it("claim is zero when property did not appreciate", () => {
+      const result = computeDeal(BASE_TERMS, {
+        ...BASE_ASSUMPTIONS,
+        annual_appreciation: 0,
+        exit_year: 2,
+      });
+      expect(result.buyer_appreciation_claim).toBe(0);
+    });
+  });
+
+  describe("extension premium — first extension (exit year 8)", () => {
+    const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 8 });
+
+    it("current_window is first_extension", () => {
+      expect(result.current_window).toBe("first_extension");
+    });
+
+    it("extension_adjusted_buyout_amount = base_buyout * (1 + 0.06)", () => {
+      const expected = roundMoney(
+        result.base_buyout_amount * (1 + BASE_TERMS.first_extension_premium_pct)
+      );
+      expect(result.extension_adjusted_buyout_amount).toBe(expected);
+    });
+
+    it("extension_adjusted_buyout_amount exceeds base_buyout_amount", () => {
+      expect(result.extension_adjusted_buyout_amount).toBeGreaterThan(
+        result.base_buyout_amount
+      );
+    });
+  });
+
+  describe("extension premium — second extension (exit year 10)", () => {
+    const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 10 });
+
+    it("current_window is second_extension", () => {
+      expect(result.current_window).toBe("second_extension");
+    });
+
+    it("extension_adjusted_buyout_amount = base_buyout * (1 + 0.12)", () => {
+      const expected = roundMoney(
+        result.base_buyout_amount * (1 + BASE_TERMS.second_extension_premium_pct)
+      );
+      expect(result.extension_adjusted_buyout_amount).toBe(expected);
+    });
+
+    it("second extension premium exceeds first extension premium", () => {
+      const firstExt = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 8 });
+      expect(result.extension_adjusted_buyout_amount).toBeGreaterThan(
+        firstExt.extension_adjusted_buyout_amount
+      );
+    });
+  });
+
+  describe("no premium in target exit and pre-target windows", () => {
+    it("target_exit: extension_adjusted equals base_buyout", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 5 });
+      expect(result.current_window).toBe("target_exit");
+      expect(result.extension_adjusted_buyout_amount).toBe(result.base_buyout_amount);
+    });
+
+    it("pre_target: extension_adjusted equals base_buyout", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 1 });
+      expect(result.current_window).toBe("pre_target");
+      expect(result.extension_adjusted_buyout_amount).toBe(result.base_buyout_amount);
+    });
+
+    it("post_long_stop: uses second extension premium", () => {
+      const result = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 15 });
+      expect(result.current_window).toBe("post_long_stop");
+      const expected = roundMoney(
+        result.base_buyout_amount * (1 + BASE_TERMS.second_extension_premium_pct)
+      );
+      expect(result.extension_adjusted_buyout_amount).toBe(expected);
+    });
+  });
+
+  describe("discount purchase price when enabled", () => {
+    it("discount_purchase_price is current_contract_value minus current_participation_value", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const expected = roundMoney(
+        result.current_contract_value - result.current_participation_value
+      );
+      expect(result.discount_purchase_price).toBe(expected);
+    });
+
+    it("discount_purchase_price is non-null when buyer_purchase_option_enabled", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(BASE_TERMS.buyer_purchase_option_enabled).toBe(true);
+      expect(result.discount_purchase_price).not.toBeNull();
+    });
+  });
+
+  describe("null discount purchase price when disabled", () => {
+    it("discount_purchase_price is null when buyer_purchase_option_enabled is false", () => {
+      const terms: DealTerms = {
+        ...BASE_TERMS,
+        buyer_purchase_option_enabled: false,
+      };
+      const result = computeDeal(terms, BASE_ASSUMPTIONS);
+      expect(result.discount_purchase_price).toBeNull();
+    });
+  });
+
+  describe("partial buyout amounts when enabled", () => {
+    const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+
+    it("partial_buyout_amount_25 is 25% of extension_adjusted_buyout_amount", () => {
+      const expected = roundMoney(result.extension_adjusted_buyout_amount * 0.25);
+      expect(result.partial_buyout_amount_25).toBe(expected);
+    });
+
+    it("partial_buyout_amount_50 is 50% of extension_adjusted_buyout_amount", () => {
+      const expected = roundMoney(result.extension_adjusted_buyout_amount * 0.50);
+      expect(result.partial_buyout_amount_50).toBe(expected);
+    });
+
+    it("partial_buyout_amount_75 is 75% of extension_adjusted_buyout_amount", () => {
+      const expected = roundMoney(result.extension_adjusted_buyout_amount * 0.75);
+      expect(result.partial_buyout_amount_75).toBe(expected);
+    });
+
+    it("all partial buyout amounts are non-null", () => {
+      expect(result.partial_buyout_amount_25).not.toBeNull();
+      expect(result.partial_buyout_amount_50).not.toBeNull();
+      expect(result.partial_buyout_amount_75).not.toBeNull();
+    });
+  });
+
+  describe("null partial buyout amounts when disabled", () => {
+    it("all partial buyouts are null when partial_buyout_allowed is false", () => {
+      const terms: DealTerms = { ...BASE_TERMS, partial_buyout_allowed: false };
+      const result = computeDeal(terms, BASE_ASSUMPTIONS);
+      expect(result.partial_buyout_amount_25).toBeNull();
+      expect(result.partial_buyout_amount_50).toBeNull();
+      expect(result.partial_buyout_amount_75).toBeNull();
+    });
+  });
+
+  describe("fmv_override precedence", () => {
+    it("uses fmv_override when provided and > 0 instead of computed value", () => {
+      const assumptions: ScenarioAssumptions = {
+        ...BASE_ASSUMPTIONS,
+        fmv_override: 1_500_000,
+      };
+      const result = computeDeal(BASE_TERMS, assumptions);
+      expect(result.current_contract_value).toBe(1_500_000);
+    });
+
+    it("uses computed appreciation when fmv_override is not provided", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const expected = roundMoney(
+        BASE_TERMS.property_value *
+          Math.pow(1 + BASE_ASSUMPTIONS.annual_appreciation, BASE_ASSUMPTIONS.exit_year)
+      );
+      expect(result.current_contract_value).toBe(expected);
+    });
+
+    it("uses computed appreciation when fmv_override is 0", () => {
+      const assumptions: ScenarioAssumptions = {
+        ...BASE_ASSUMPTIONS,
+        fmv_override: 0,
+      };
+      const resultOverride = computeDeal(BASE_TERMS, assumptions);
+      const resultNormal = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(resultOverride.current_contract_value).toBe(
+        resultNormal.current_contract_value
+      );
+    });
+  });
+
+  describe("compute_version", () => {
+    it("compute_version is present in output", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(result.compute_version).toBeDefined();
+      expect(typeof result.compute_version).toBe("string");
+      expect(result.compute_version.length).toBeGreaterThan(0);
+    });
+
+    it("compute_version matches COMPUTE_VERSION constant", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
       expect(result.compute_version).toBe(COMPUTE_VERSION);
-      expect(result.compute_version).toBe("10.2.0");
-    });
-
-    it("computes IBA correctly", () => {
-      expect(result.invested_capital_total).toBe(204_000);
-    });
-
-    it("computes FMV with 4% appreciation over 7 years", () => {
-      const expected = roundMoney(600_000 * Math.pow(1.04, 7));
-      expect(result.projected_fmv).toBe(expected);
-    });
-
-    it("vested_equity_percentage is between 0 and 1", () => {
-      expect(result.vested_equity_percentage).toBeGreaterThan(0);
-      expect(result.vested_equity_percentage).toBeLessThanOrEqual(1);
-    });
-
-    it("base_equity_value equals FMV * vested_equity", () => {
-      expect(result.base_equity_value).toBe(
-        roundMoney(result.projected_fmv * result.vested_equity_percentage)
-      );
-    });
-
-    it("gain_above_capital is base_equity - IBA", () => {
-      expect(result.gain_above_capital).toBe(
-        roundMoney(result.base_equity_value - result.invested_capital_total)
-      );
-    });
-
-    it("timing factor is 1 (within window)", () => {
-      expect(result.isa_pre_floor_cap).toBe(
-        roundMoney(result.invested_capital_total + result.gain_above_capital * 1)
-      );
-    });
-
-    it("floor and ceiling are correct multiples of IBA", () => {
-      expect(result.floor_amount).toBe(roundMoney(204_000 * 1.03));
-      expect(result.ceiling_amount).toBe(roundMoney(204_000 * 3.25));
-    });
-
-    it("ISA settlement is clamped within floor and ceiling (HARD_FLOOR)", () => {
-      expect(result.isa_settlement).toBeGreaterThanOrEqual(result.floor_amount);
-      expect(result.isa_settlement).toBeLessThanOrEqual(result.ceiling_amount);
-    });
-
-    it("profit = ISA - IBA", () => {
-      expect(result.investor_profit).toBe(
-        roundMoney(result.isa_settlement - result.invested_capital_total)
-      );
-    });
-
-    it("multiple = ISA / IBA", () => {
-      expect(result.investor_multiple).toBe(
-        roundMoney(result.isa_settlement / result.invested_capital_total)
-      );
-    });
-
-    it("IRR is a finite number", () => {
-      expect(Number.isFinite(result.investor_irr_annual)).toBe(true);
-    });
-
-    it("all monetary values are rounded to 2 decimal places", () => {
-      const moneyFields: (keyof typeof result)[] = [
-        "invested_capital_total",
-        "projected_fmv",
-        "base_equity_value",
-        "gain_above_capital",
-        "isa_pre_floor_cap",
-        "floor_amount",
-        "ceiling_amount",
-        "isa_settlement",
-        "investor_profit",
-        "investor_multiple",
-        "timing_factor_applied",
-        "isa_standard_pre_dyf",
-        "realtor_fee_total_projected",
-        "realtor_fee_upfront_projected",
-        "realtor_fee_installments_projected",
-        "buyer_realtor_fee_total_projected",
-        "seller_realtor_fee_total_projected",
-      ];
-      for (const field of moneyFields) {
-        const val = result[field] as number;
-        const rounded = Math.round(val * 100) / 100;
-        expect(val).toBe(rounded);
-      }
+      expect(result.compute_version).toBe("11.0.0");
     });
   });
 
-  describe("Early exit scenario (exit year 2, before window)", () => {
-    const result = computeDeal(DEFAULT_TERMS, EARLY_ASSUMPTIONS);
-
-    it("IBA reflects only 24 monthly payments", () => {
-      expect(result.invested_capital_total).toBe(
-        roundMoney(60_000 + 24 * 2_000)
-      );
-    });
-
-    it("timing factor is early (0.9)", () => {
-      const expectedPre = roundMoney(
-        result.invested_capital_total + result.gain_above_capital * 0.9
-      );
-      expect(result.isa_pre_floor_cap).toBe(expectedPre);
-    });
-
-    it("ISA settlement respects floor under HARD_FLOOR", () => {
-      expect(result.isa_settlement).toBeGreaterThanOrEqual(result.floor_amount);
-    });
-
-    it("compute_version is 10.0.0", () => {
-      expect(result.compute_version).toBe("10.2.0");
-    });
-  });
-
-  describe("Late exit scenario (exit year 12, after window)", () => {
-    const result = computeDeal(DEFAULT_TERMS, LATE_ASSUMPTIONS);
-
-    it("IBA reflects all 72 payments (capped at number_of_payments)", () => {
-      expect(result.invested_capital_total).toBe(204_000);
-    });
-
-    it("timing factor is late (1.2) applied to gain only", () => {
-      const expectedPre = roundMoney(
-        result.invested_capital_total + result.gain_above_capital * 1.2
-      );
-      expect(result.isa_pre_floor_cap).toBe(expectedPre);
-    });
-
-    it("FMV is higher than standard (more appreciation)", () => {
-      const stdFmv = roundMoney(600_000 * Math.pow(1.04, 7));
-      expect(result.projected_fmv).toBeGreaterThan(stdFmv);
-    });
-  });
-
-  describe("Ceiling binding case", () => {
-    const terms: DealTerms = {
-      ...DEFAULT_TERMS,
-      ceiling_multiple: 1.5,
-      floor_multiple: 1.0,
-    };
-    const assumptions: ScenarioAssumptions = {
-      annual_appreciation: 0.10,
-      closing_cost_pct: 0.02,
-      exit_year: 10,
-    };
-    const result = computeDeal(terms, assumptions);
-
-    it("ISA settlement equals ceiling amount", () => {
-      expect(result.isa_settlement).toBe(result.ceiling_amount);
-    });
-
-    it("isa_pre_floor_cap exceeds ceiling", () => {
-      expect(result.isa_pre_floor_cap).toBeGreaterThan(result.ceiling_amount);
-    });
-
-    it("ceiling_amount = IBA * ceiling_multiple", () => {
-      expect(result.ceiling_amount).toBe(
-        roundMoney(result.invested_capital_total * 1.5)
-      );
-    });
-  });
-
-  describe("HARD_FLOOR enforcement case", () => {
-    const terms: DealTerms = {
-      ...DEFAULT_TERMS,
-      floor_multiple: 1.03,
-      downside_mode: "HARD_FLOOR",
-    };
-    const assumptions: ScenarioAssumptions = {
-      annual_appreciation: -0.05,
-      closing_cost_pct: 0.02,
-      exit_year: 5,
-    };
-    const result = computeDeal(terms, assumptions);
-
-    it("gain_above_capital is negative (depreciation)", () => {
-      expect(result.gain_above_capital).toBeLessThan(0);
-    });
-
-    it("ISA settlement equals floor (HARD_FLOOR protects investor)", () => {
-      expect(result.isa_settlement).toBe(result.floor_amount);
-    });
-
-    it("floor_amount = IBA * floor_multiple", () => {
-      expect(result.floor_amount).toBe(
-        roundMoney(result.invested_capital_total * 1.03)
-      );
-    });
-  });
-
-  describe("NO_FLOOR negative loss case", () => {
-    const terms: DealTerms = {
-      ...DEFAULT_TERMS,
-      downside_mode: "NO_FLOOR",
-    };
-    const assumptions: ScenarioAssumptions = {
-      annual_appreciation: -0.10,
-      closing_cost_pct: 0.02,
-      exit_year: 5,
-    };
-    const result = computeDeal(terms, assumptions);
-
-    it("ISA may be less than IBA (true loss sharing)", () => {
-      expect(result.isa_settlement).toBeLessThan(result.invested_capital_total);
-    });
-
-    it("investor_profit is negative", () => {
-      expect(result.investor_profit).toBeLessThan(0);
-    });
-
-    it("investor_multiple is less than 1", () => {
-      expect(result.investor_multiple).toBeLessThan(1);
-    });
-
-    it("settlement is NOT clamped to floor", () => {
-      expect(result.isa_settlement).toBeLessThan(result.floor_amount);
-    });
-  });
-
-  describe("Zero appreciation case", () => {
-    const assumptions: ScenarioAssumptions = {
-      annual_appreciation: 0,
-      closing_cost_pct: 0.02,
-      exit_year: 7,
-    };
-    const result = computeDeal(DEFAULT_TERMS, assumptions);
-
-    it("FMV equals property_value (no growth)", () => {
-      expect(result.projected_fmv).toBe(600_000);
-    });
-
-    it("gain may be negative due to equity fraction vs IBA", () => {
-      expect(Number.isFinite(result.gain_above_capital)).toBe(true);
-    });
-
-    it("ISA respects floor under HARD_FLOOR", () => {
-      expect(result.isa_settlement).toBeGreaterThanOrEqual(result.floor_amount);
-    });
-  });
-
-  describe("FMV override", () => {
-    const assumptions: ScenarioAssumptions = {
-      annual_appreciation: 0.04,
-      closing_cost_pct: 0.02,
-      exit_year: 7,
-      fmv_override: 1_000_000,
-    };
-    const result = computeDeal(DEFAULT_TERMS, assumptions);
-
-    it("uses fmv_override instead of computed FMV", () => {
-      expect(result.projected_fmv).toBe(1_000_000);
-    });
-  });
-
-  describe("Determinism invariant", () => {
-    it("same inputs produce identical outputs across multiple runs", () => {
+  describe("deterministic repeated runs", () => {
+    it("same inputs produce identical output across 10 runs", () => {
       const results = Array.from({ length: 10 }, () =>
-        computeDeal(DEFAULT_TERMS, STANDARD_ASSUMPTIONS)
+        computeDeal(BASE_TERMS, BASE_ASSUMPTIONS)
       );
       const first = JSON.stringify(results[0]);
       for (let i = 1; i < results.length; i++) {
@@ -317,478 +360,165 @@ describe("computeDeal", () => {
     });
 
     it("different exit years produce different outputs", () => {
-      const r7 = computeDeal(DEFAULT_TERMS, { ...STANDARD_ASSUMPTIONS, exit_year: 7 });
-      const r5 = computeDeal(DEFAULT_TERMS, { ...STANDARD_ASSUMPTIONS, exit_year: 5 });
-      expect(r7.projected_fmv).not.toBe(r5.projected_fmv);
+      const r5 = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 5 });
+      const r8 = computeDeal(BASE_TERMS, { ...BASE_ASSUMPTIONS, exit_year: 8 });
+      expect(r5.current_contract_value).not.toBe(r8.current_contract_value);
+      expect(r5.current_window).not.toBe(r8.current_window);
+    });
+
+    it("output is JSON-serializable", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(() => JSON.stringify(result)).not.toThrow();
+      const roundTrip = JSON.parse(JSON.stringify(result));
+      expect(roundTrip.compute_version).toBe(COMPUTE_VERSION);
     });
   });
 
-  describe("Golden fixture — spreadsheet default scenario (standard exit year 7)", () => {
-    const result = computeDeal(DEFAULT_TERMS, STANDARD_ASSUMPTIONS);
-
-    it("IBA = 204,000.00", () => {
-      expect(result.invested_capital_total).toBe(204_000.00);
-    });
-
-    it("FMV = 600000 * 1.04^7", () => {
-      expect(result.projected_fmv).toBe(roundMoney(600_000 * Math.pow(1.04, 7)));
-    });
-
-    it("floor = 204000 * 1.03 = 210120.00", () => {
-      expect(result.floor_amount).toBe(210_120.00);
-    });
-
-    it("ceiling = 204000 * 3.25 = 663000.00", () => {
-      expect(result.ceiling_amount).toBe(663_000.00);
-    });
-
-    it("investor_multiple > 1 (profitable deal)", () => {
-      expect(result.investor_multiple).toBeGreaterThan(1);
-    });
-
-    it("investor_irr_annual is positive", () => {
-      expect(result.investor_irr_annual).toBeGreaterThan(0);
-    });
-
-    it("ISA is within [floor, ceiling]", () => {
-      expect(result.isa_settlement).toBeGreaterThanOrEqual(210_120.00);
-      expect(result.isa_settlement).toBeLessThanOrEqual(663_000.00);
-    });
-
-    it("DYF is not applied when not configured", () => {
-      expect(result.dyf_applied).toBe(false);
-      expect(result.dyf_floor_amount).toBe(null);
-    });
-
-    it("all output fields are present", () => {
+  describe("all required output fields are present", () => {
+    it("result has all DealResults fields", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
       const requiredFields: (keyof typeof result)[] = [
-        "invested_capital_total",
-        "vested_equity_percentage",
-        "projected_fmv",
-        "base_equity_value",
-        "gain_above_capital",
-        "timing_factor_applied",
-        "isa_pre_floor_cap",
-        "floor_amount",
-        "ceiling_amount",
-        "isa_standard_pre_dyf",
-        "isa_settlement",
-        "dyf_floor_amount",
-        "dyf_applied",
-        "investor_profit",
-        "investor_multiple",
-        "investor_irr_annual",
+        "total_scheduled_buyer_funding",
+        "actual_buyer_funding_to_date",
+        "funding_completion_factor",
+        "scheduled_buyer_appreciation_share",
+        "effective_buyer_appreciation_share",
+        "buyer_base_capital_component",
+        "buyer_appreciation_claim",
+        "current_contract_value",
+        "current_participation_value",
+        "base_buyout_amount",
+        "extension_adjusted_buyout_amount",
+        "partial_buyout_amount_25",
+        "partial_buyout_amount_50",
+        "partial_buyout_amount_75",
+        "discount_purchase_price",
+        "current_window",
+        "fractpath_setup_fee_amount",
+        "fractpath_revenue_to_date",
         "realtor_fee_total_projected",
-        "realtor_fee_upfront_projected",
-        "realtor_fee_installments_projected",
-        "buyer_realtor_fee_total_projected",
-        "seller_realtor_fee_total_projected",
-        "investor_irr_annual_net",
         "compute_version",
       ];
-      for (const f of requiredFields) {
-        expect(result).toHaveProperty(f);
+      for (const field of requiredFields) {
+        expect(result).toHaveProperty(field);
       }
     });
   });
 
-  describe("Duration Yield Floor (DYF)", () => {
-    const DYF_TERMS: DealTerms = {
-      ...DEFAULT_TERMS,
-      ceiling_multiple: 1.5,
-      duration_yield_floor_enabled: true,
-      duration_yield_floor_start_year: 15,
-      duration_yield_floor_min_multiple: 1.5,
-    };
-
-    describe("DYF disabled → no change to settlement", () => {
-      const baseTerms: DealTerms = {
-        ...DEFAULT_TERMS,
-        ceiling_multiple: 1.5,
-      };
-
-      const termsWithDyfDisabled: DealTerms = {
-        ...baseTerms,
-        duration_yield_floor_enabled: false,
-        duration_yield_floor_start_year: 10,
-        duration_yield_floor_min_multiple: 2.0,
-      };
-
-      const assumptions: ScenarioAssumptions = { ...LATE_ASSUMPTIONS, exit_year: 15 };
-
-      const baseline = computeDeal(baseTerms, assumptions);
-      const result = computeDeal(termsWithDyfDisabled, assumptions);
-
-      it("dyf_applied is false", () => {
-        expect(result.dyf_applied).toBe(false);
-      });
-
-      it("dyf_floor_amount is null", () => {
-        expect(result.dyf_floor_amount).toBe(null);
-      });
-
-      it("settlement matches baseline when DYF is disabled", () => {
-        expect(result.isa_settlement).toBe(baseline.isa_settlement);
-      });
+  describe("fractpath fee calculations", () => {
+    it("setup fee is clamped between floor and cap", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(result.fractpath_setup_fee_amount).toBeGreaterThanOrEqual(
+        BASE_TERMS.setup_fee_floor
+      );
+      expect(result.fractpath_setup_fee_amount).toBeLessThanOrEqual(
+        BASE_TERMS.setup_fee_cap
+      );
     });
 
-    describe("DYF enabled but exit_year < start_year → no change", () => {
-      const result = computeDeal(DYF_TERMS, {
-        annual_appreciation: 0.02,
-        closing_cost_pct: 0.02,
-        exit_year: 10,
-      });
-
-      it("dyf_applied is false", () => {
-        expect(result.dyf_applied).toBe(false);
-      });
-
-      it("dyf_floor_amount is computed but not applied", () => {
-        expect(result.dyf_floor_amount).toBe(
-          roundMoney(result.invested_capital_total * 1.5)
-        );
-      });
+    it("setup fee formula: min(max(total_funding * pct, floor), cap)", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const expected = roundMoney(
+        Math.min(
+          Math.max(
+            result.total_scheduled_buyer_funding * BASE_TERMS.setup_fee_pct,
+            BASE_TERMS.setup_fee_floor
+          ),
+          BASE_TERMS.setup_fee_cap
+        )
+      );
+      expect(result.fractpath_setup_fee_amount).toBe(expected);
     });
 
-    describe("DYF enabled, exit_year >= start_year, ISA_standard < DYF floor → raised", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        ceiling_multiple: 1.2,
-        timing_factor_late: 1.0,
-        duration_yield_floor_enabled: true,
-        duration_yield_floor_start_year: 15,
-        duration_yield_floor_min_multiple: 1.5,
-      };
-      const result = computeDeal(terms, {
-        annual_appreciation: 0.01,
-        closing_cost_pct: 0.02,
-        exit_year: 20,
-      });
-
-      it("dyf_applied is true", () => {
-        expect(result.dyf_applied).toBe(true);
-      });
-
-      it("settlement equals DYF floor amount", () => {
-        expect(result.isa_settlement).toBe(result.dyf_floor_amount);
-      });
-
-      it("DYF floor = IBA * min_multiple", () => {
-        expect(result.dyf_floor_amount).toBe(
-          roundMoney(result.invested_capital_total * 1.5)
-        );
-      });
-
-      it("DYF floor exceeds ceiling (that is the point)", () => {
-        expect(result.isa_settlement).toBeGreaterThan(result.ceiling_amount);
-      });
-    });
-
-    describe("DYF enabled, exit_year >= start_year, ISA_standard >= DYF floor → unchanged", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        ceiling_multiple: 3.25,
-        duration_yield_floor_enabled: true,
-        duration_yield_floor_start_year: 10,
-        duration_yield_floor_min_multiple: 1.2,
-      };
-      const result = computeDeal(terms, {
-        annual_appreciation: 0.06,
-        closing_cost_pct: 0.02,
-        exit_year: 12,
-      });
-
-      it("dyf_applied is false (standard settlement already exceeds DYF)", () => {
-        expect(result.dyf_applied).toBe(false);
-      });
-
-      it("settlement is standard (not raised)", () => {
-        expect(result.dyf_floor_amount).not.toBeNull();
-        expect(result.isa_settlement).toBeGreaterThanOrEqual(result.dyf_floor_amount!);
-      });
-    });
-
-    describe("DYF works under HARD_FLOOR mode", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        downside_mode: "HARD_FLOOR",
-        ceiling_multiple: 1.1,
-        duration_yield_floor_enabled: true,
-        duration_yield_floor_start_year: 15,
-        duration_yield_floor_min_multiple: 1.5,
-      };
-      const result = computeDeal(terms, {
-        annual_appreciation: 0.01,
-        closing_cost_pct: 0.02,
-        exit_year: 20,
-      });
-
-      it("DYF is applied and exceeds ceiling", () => {
-        expect(result.dyf_applied).toBe(true);
-        expect(result.isa_settlement).toBe(result.dyf_floor_amount);
-        expect(result.isa_settlement).toBeGreaterThan(result.ceiling_amount);
-      });
-    });
-
-    describe("DYF works under NO_FLOOR mode", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        downside_mode: "NO_FLOOR",
-        ceiling_multiple: 1.1,
-        duration_yield_floor_enabled: true,
-        duration_yield_floor_start_year: 15,
-        duration_yield_floor_min_multiple: 1.5,
-      };
-      const result = computeDeal(terms, {
-        annual_appreciation: 0.01,
-        closing_cost_pct: 0.02,
-        exit_year: 20,
-      });
-
-      it("DYF is applied under NO_FLOOR", () => {
-        expect(result.dyf_applied).toBe(true);
-        expect(result.isa_settlement).toBe(result.dyf_floor_amount);
-      });
-    });
-
-    describe("DYF IRR reflects updated settlement", () => {
-      const termsNoDyf: DealTerms = {
-        ...DEFAULT_TERMS,
-        ceiling_multiple: 1.1,
-      };
-      const termsDyf: DealTerms = {
-        ...termsNoDyf,
-        duration_yield_floor_enabled: true,
-        duration_yield_floor_start_year: 15,
-        duration_yield_floor_min_multiple: 1.5,
-      };
-      const assumptions: ScenarioAssumptions = {
-        annual_appreciation: 0.01,
-        closing_cost_pct: 0.02,
-        exit_year: 20,
-      };
-
-      it("IRR is higher when DYF raises settlement", () => {
-        const withoutDyf = computeDeal(termsNoDyf, assumptions);
-        const withDyf = computeDeal(termsDyf, assumptions);
-        expect(withDyf.isa_settlement).toBeGreaterThan(withoutDyf.isa_settlement);
-        expect(withDyf.investor_irr_annual).toBeGreaterThan(withoutDyf.investor_irr_annual);
-      });
-    });
-
-    describe("DYF determinism", () => {
-      it("same DYF inputs produce identical outputs", () => {
-        const terms: DealTerms = {
-          ...DEFAULT_TERMS,
-          duration_yield_floor_enabled: true,
-          duration_yield_floor_start_year: 15,
-          duration_yield_floor_min_multiple: 1.5,
-        };
-        const assumptions: ScenarioAssumptions = {
-          annual_appreciation: 0.02,
-          closing_cost_pct: 0.02,
-          exit_year: 20,
-        };
-        const results = Array.from({ length: 5 }, () => computeDeal(terms, assumptions));
-        const first = JSON.stringify(results[0]);
-        for (let i = 1; i < results.length; i++) {
-          expect(JSON.stringify(results[i])).toBe(first);
-        }
-      });
+    it("revenue_to_date includes setup fee + servicing + payment admin + exit admin", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const exitMonth = Math.floor(BASE_ASSUMPTIONS.exit_year * 12);
+      const paymentsMade = Math.min(BASE_TERMS.number_of_payments, exitMonth);
+      const expected = roundMoney(
+        result.fractpath_setup_fee_amount +
+          BASE_TERMS.servicing_fee_monthly * exitMonth +
+          BASE_TERMS.payment_admin_fee * paymentsMade +
+          BASE_TERMS.exit_admin_fee_amount
+      );
+      expect(result.fractpath_revenue_to_date).toBe(expected);
     });
   });
 
-  describe("Realtor commission computation", () => {
-    describe("NONE mode returns all zeros", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        realtor_representation_mode: "NONE",
-        realtor_commission_pct: 0.03,
-        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
-      };
-      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
-
-      it("realtor_fee_total_projected is 0", () => {
-        expect(result.realtor_fee_total_projected).toBe(0);
-      });
-
-      it("realtor_fee_upfront_projected is 0", () => {
-        expect(result.realtor_fee_upfront_projected).toBe(0);
-      });
-
-      it("realtor_fee_installments_projected is 0", () => {
-        expect(result.realtor_fee_installments_projected).toBe(0);
-      });
-
-      it("buyer_realtor_fee_total_projected is 0", () => {
-        expect(result.buyer_realtor_fee_total_projected).toBe(0);
-      });
-
-      it("seller_realtor_fee_total_projected is 0", () => {
-        expect(result.seller_realtor_fee_total_projected).toBe(0);
-      });
+  describe("realtor fee", () => {
+    it("is 0 when mode is NONE", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      expect(BASE_TERMS.realtor_representation_mode).toBe("NONE");
+      expect(result.realtor_fee_total_projected).toBe(0);
     });
 
-    describe("BUYER mode computes correct totals", () => {
+    it("is 0 when commission_pct is 0", () => {
       const terms: DealTerms = {
-        ...DEFAULT_TERMS,
+        ...BASE_TERMS,
+        realtor_representation_mode: "BUYER",
+        realtor_commission_pct: 0,
+      };
+      const result = computeDeal(terms, BASE_ASSUMPTIONS);
+      expect(result.realtor_fee_total_projected).toBe(0);
+    });
+
+    it("is positive when mode is BUYER and pct > 0", () => {
+      const terms: DealTerms = {
+        ...BASE_TERMS,
         realtor_representation_mode: "BUYER",
         realtor_commission_pct: 0.03,
-        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
       };
-      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
-
-      it("total = upfront + installments (Section 6C)", () => {
-        expect(result.realtor_fee_total_projected).toBe(
-          roundMoney(result.realtor_fee_upfront_projected + result.realtor_fee_installments_projected)
-        );
-      });
-
-      it("upfront = upfront_payment * commission_pct", () => {
-        expect(result.realtor_fee_upfront_projected).toBe(
-          roundMoney(DEFAULT_TERMS.upfront_payment * 0.03)
-        );
-      });
-
-      it("buyer + seller splits sum to total (Section 6D)", () => {
-        expect(
-          roundMoney(result.buyer_realtor_fee_total_projected + result.seller_realtor_fee_total_projected)
-        ).toBe(result.realtor_fee_total_projected);
-      });
-
-      it("total is positive", () => {
-        expect(result.realtor_fee_total_projected).toBeGreaterThan(0);
-      });
+      const result = computeDeal(terms, BASE_ASSUMPTIONS);
+      expect(result.realtor_fee_total_projected).toBeGreaterThan(0);
     });
 
-    describe("SELLER mode computes correct totals", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        realtor_representation_mode: "SELLER",
-        realtor_commission_pct: 0.025,
-        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
-      };
-      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
-
-      it("total = upfront + installments", () => {
-        expect(result.realtor_fee_total_projected).toBe(
-          roundMoney(result.realtor_fee_upfront_projected + result.realtor_fee_installments_projected)
-        );
-      });
-
-      it("buyer + seller splits sum to total", () => {
-        expect(
-          roundMoney(result.buyer_realtor_fee_total_projected + result.seller_realtor_fee_total_projected)
-        ).toBe(result.realtor_fee_total_projected);
-      });
-    });
-
-    describe("DUAL mode computes correct totals", () => {
-      const terms: DealTerms = {
-        ...DEFAULT_TERMS,
-        realtor_representation_mode: "DUAL",
-        realtor_commission_pct: 0.05,
-        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
-      };
-      const result = computeDeal(terms, STANDARD_ASSUMPTIONS);
-
-      it("total = upfront + installments", () => {
-        expect(result.realtor_fee_total_projected).toBe(
-          roundMoney(result.realtor_fee_upfront_projected + result.realtor_fee_installments_projected)
-        );
-      });
-
-      it("buyer + seller splits sum to total", () => {
-        expect(
-          roundMoney(result.buyer_realtor_fee_total_projected + result.seller_realtor_fee_total_projected)
-        ).toBe(result.realtor_fee_total_projected);
-      });
-
-      it("total is positive", () => {
-        expect(result.realtor_fee_total_projected).toBeGreaterThan(0);
-      });
-    });
-
-    describe("Section 6D — explicit equity-weighted attribution numerics", () => {
+    it("fee = (upfront + monthly * paymentsMade) * pct", () => {
       const pct = 0.03;
       const terms: DealTerms = {
-        property_value: 500_000,
-        upfront_payment: 50_000,
-        monthly_payment: 1_000,
-        number_of_payments: 120,
-        payback_window_start_year: 3,
-        payback_window_end_year: 10,
-        timing_factor_early: 1,
-        timing_factor_late: 1,
-        floor_multiple: 1,
-        ceiling_multiple: 3,
-        downside_mode: "HARD_FLOOR",
-        contract_maturity_years: 30,
-        liquidity_trigger_year: 12,
-        minimum_hold_years: 3,
-        platform_fee: 0,
-        servicing_fee_monthly: 0,
-        exit_fee_pct: 0,
-        realtor_representation_mode: "BUYER",
+        ...BASE_TERMS,
+        realtor_representation_mode: "SELLER",
         realtor_commission_pct: pct,
-        realtor_commission_payment_mode: "PER_PAYMENT_EVENT",
       };
-      const appreciation = 0.04;
-      const assumptions: ScenarioAssumptions = {
-        annual_appreciation: appreciation,
-        closing_cost_pct: 0,
-        exit_year: 0.25,
-      };
-      const result = computeDeal(terms, assumptions);
+      const result = computeDeal(terms, { ...BASE_ASSUMPTIONS, exit_year: 2 });
+      const exitMonth = Math.floor(2 * 12);
+      const paymentsMade = Math.min(terms.number_of_payments, exitMonth);
+      const expected = roundMoney(
+        (terms.upfront_payment + terms.monthly_payment * paymentsMade) * pct
+      );
+      expect(result.realtor_fee_total_projected).toBe(expected);
+    });
+  });
 
-      it("upfront attribution uses vested equity AFTER upfront payment", () => {
-        const vestedAfterUpfront = terms.upfront_payment / terms.property_value;
-        const upfrontCommission = terms.upfront_payment * pct;
-        const expectedBuyerUpfront = roundMoney(upfrontCommission * vestedAfterUpfront);
-        const expectedSellerUpfront = roundMoney(upfrontCommission * (1 - vestedAfterUpfront));
+  describe("base_buyout_amount", () => {
+    it("equals current_participation_value + exit_admin_fee_amount", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const expected = roundMoney(
+        result.current_participation_value + BASE_TERMS.exit_admin_fee_amount
+      );
+      expect(result.base_buyout_amount).toBe(expected);
+    });
+  });
 
-        let buyerManual = expectedBuyerUpfront;
-        let sellerManual = expectedSellerUpfront;
+  describe("monetary rounding", () => {
+    it("all money fields are rounded to 2 decimal places", () => {
+      const result = computeDeal(BASE_TERMS, BASE_ASSUMPTIONS);
+      const moneyFields = [
+        "total_scheduled_buyer_funding",
+        "actual_buyer_funding_to_date",
+        "buyer_base_capital_component",
+        "buyer_appreciation_claim",
+        "current_contract_value",
+        "current_participation_value",
+        "base_buyout_amount",
+        "extension_adjusted_buyout_amount",
+        "fractpath_setup_fee_amount",
+        "fractpath_revenue_to_date",
+        "realtor_fee_total_projected",
+      ] as const;
 
-        const exitMonth = Math.floor(assumptions.exit_year * 12);
-        const paymentsMade = Math.min(terms.number_of_payments, exitMonth);
-
-        let cumulativeEquity = vestedAfterUpfront;
-        for (let m = 1; m <= paymentsMade; m++) {
-          const pvAtMonth = terms.property_value * Math.pow(1 + appreciation, m / 12);
-          cumulativeEquity += terms.monthly_payment / pvAtMonth;
-          const monthCommission = terms.monthly_payment * pct;
-          buyerManual += monthCommission * cumulativeEquity;
-          sellerManual += monthCommission * (1 - cumulativeEquity);
-        }
-
-        expect(result.buyer_realtor_fee_total_projected).toBe(roundMoney(buyerManual));
-        expect(result.seller_realtor_fee_total_projected).toBe(roundMoney(sellerManual));
-      });
-
-      it("upfront buyer share equals upfront_commission * (upfront/property_value)", () => {
-        const vestedAfterUpfront = terms.upfront_payment / terms.property_value;
-        const upfrontCommission = terms.upfront_payment * pct;
-        expect(result.buyer_realtor_fee_total_projected).toBeGreaterThanOrEqual(
-          roundMoney(upfrontCommission * vestedAfterUpfront)
-        );
-      });
-
-      it("seller share is always positive when vested equity < 100%", () => {
-        expect(result.seller_realtor_fee_total_projected).toBeGreaterThan(0);
-      });
-
-      it("buyer share grows relative to seller as equity vests", () => {
-        const shortResult = computeDeal(terms, { ...assumptions, exit_year: 0.25 });
-        const longResult = computeDeal(terms, { ...assumptions, exit_year: 5 });
-
-        const shortBuyerRatio = shortResult.buyer_realtor_fee_total_projected /
-          (shortResult.buyer_realtor_fee_total_projected + shortResult.seller_realtor_fee_total_projected);
-        const longBuyerRatio = longResult.buyer_realtor_fee_total_projected /
-          (longResult.buyer_realtor_fee_total_projected + longResult.seller_realtor_fee_total_projected);
-
-        expect(longBuyerRatio).toBeGreaterThan(shortBuyerRatio);
-      });
+      for (const field of moneyFields) {
+        const val = result[field] as number;
+        expect(val).toBe(Math.round(val * 100) / 100);
+      }
     });
   });
 });
