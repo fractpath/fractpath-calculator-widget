@@ -8,6 +8,7 @@ import type {
 
 import { DEFAULT_INPUTS } from "./constants.js";
 import { computeDeal } from "../compute.js";
+import { FEE_DEFAULTS } from "../widget/editing/feeDefaults.js";
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
@@ -98,11 +99,11 @@ function toDealTerms(inputs: ScenarioInputs): import("../compute.js").DealTerms 
 
     first_extension_start_year: termYears + 1,
     first_extension_end_year: termYears + 4,
-    first_extension_premium_pct: 0.05,
+    first_extension_premium_pct: FEE_DEFAULTS.first_extension_premium_pct,
 
     second_extension_start_year: termYears + 4,
     second_extension_end_year: termYears + 5,
-    second_extension_premium_pct: 0.08,
+    second_extension_premium_pct: FEE_DEFAULTS.second_extension_premium_pct,
 
     partial_buyout_allowed: false,
     partial_buyout_min_fraction: 0.25,
@@ -112,12 +113,12 @@ function toDealTerms(inputs: ScenarioInputs): import("../compute.js").DealTerms 
     buyer_purchase_notice_days: 90,
     buyer_purchase_closing_days: 60,
 
-    setup_fee_pct: 0.02,
-    setup_fee_floor: 1_000,
-    setup_fee_cap: 5_000,
-    servicing_fee_monthly: 0,
-    payment_admin_fee: 0,
-    exit_admin_fee_amount: 0,
+    setup_fee_pct: FEE_DEFAULTS.setup_fee_pct,
+    setup_fee_floor: FEE_DEFAULTS.setup_fee_floor,
+    setup_fee_cap: FEE_DEFAULTS.setup_fee_cap,
+    servicing_fee_monthly: FEE_DEFAULTS.servicing_fee_monthly,
+    payment_admin_fee: FEE_DEFAULTS.payment_admin_fee,
+    exit_admin_fee_amount: FEE_DEFAULTS.exit_admin_fee_amount,
 
     realtor_representation_mode: "NONE",
     realtor_commission_pct: 0,

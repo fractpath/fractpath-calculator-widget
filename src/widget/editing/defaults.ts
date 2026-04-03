@@ -18,11 +18,11 @@ export function getDefaultDraftCanonicalInputs(): DraftCanonicalInputs {
 
       first_extension_start_year: 8,
       first_extension_end_year: 11,
-      first_extension_premium_pct: 0.05,
+      first_extension_premium_pct: FEE_DEFAULTS.first_extension_premium_pct,
 
       second_extension_start_year: 11,
       second_extension_end_year: 15,
-      second_extension_premium_pct: 0.08,
+      second_extension_premium_pct: FEE_DEFAULTS.second_extension_premium_pct,
 
       partial_buyout_allowed: false,
       partial_buyout_min_fraction: 0.25,
@@ -43,7 +43,7 @@ export function getDefaultDraftCanonicalInputs(): DraftCanonicalInputs {
       realtor_commission_pct: 0,
     },
     scenario: {
-      annual_appreciation: 0.03,
+      annual_appreciation: 0.04,
       closing_cost_pct: 0.02,
       exit_year: 7,
     },

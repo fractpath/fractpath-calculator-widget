@@ -52,11 +52,11 @@ export function buildMarketingDealTerms(state: MarketingLiteState): DealTerms {
 
     first_extension_start_year: termYears + 1,
     first_extension_end_year: termYears + 4,
-    first_extension_premium_pct: 0.05,
+    first_extension_premium_pct: FEE_DEFAULTS.first_extension_premium_pct,
 
     second_extension_start_year: termYears + 4,
     second_extension_end_year: termYears + 5,
-    second_extension_premium_pct: 0.08,
+    second_extension_premium_pct: FEE_DEFAULTS.second_extension_premium_pct,
 
     partial_buyout_allowed: false,
     partial_buyout_min_fraction: 0.25,
@@ -356,7 +356,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const [monthlyPayment, setMonthlyPayment] = useState(0);
   const [numberOfPayments, setNumberOfPayments] = useState(0);
   const [exitYear, setExitYear] = useState(10);
-  const [growthRatePct, setGrowthRatePct] = useState(3.0);
+  const [growthRatePct, setGrowthRatePct] = useState(4.0);
 
   const [realtorMode, setRealtorMode] =
     useState<RealtorRepresentationMode>("NONE");
