@@ -8,12 +8,9 @@
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run",
-    "build:compute": "cd packages/compute && npx tsc -p tsconfig.json",
-    "prebuild": "npm run build:compute"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@fractpath/compute": "file:./packages/compute",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "vitest": "^4.0.18"
@@ -42,8 +39,6 @@
     }
   },
   "files": [
-    "dist",
-    "packages/compute",
-    "packages/compute/dist"
+    "dist"
   ]
 }
