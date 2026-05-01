@@ -84,6 +84,7 @@ export function DealEditModal({
 }: DealEditModalProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("payments");
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
+  const [draftErrors, setDraftErrors] = useState<Record<string, string>>({});
 
   const metaMap = useMemo(() => {
     const m = new Map<FieldKey, FieldMeta>();
@@ -100,6 +101,7 @@ export function DealEditModal({
     (key: FieldKey, value: number) => {
       setField(key as DraftPath, value);
       setCustomValues((cv) => ({ ...cv, [key]: "" }));
+      setDraftErrors((de) => ({ ...de, [key]: "" }));
 
       if (key === "deal_terms.realtor_representation_mode") return;
 
@@ -146,7 +148,12 @@ export function DealEditModal({
   const handleCustomBlur = useCallback(
     (key: FieldKey, meta: FieldMeta) => {
       const raw = customValues[key];
-      if (raw === undefined || raw === "") return;
+      if (raw === undefined) return;
+
+      if (raw.trim() === "") {
+        setDraftErrors((de) => ({ ...de, [key]: "Required" }));
+        return;
+      }
 
       let parsed: number;
       if (meta.unit === "percent") {
@@ -155,12 +162,16 @@ export function DealEditModal({
         parsed = parseFloat(raw.replace(/,/g, ""));
       }
 
-      if (!Number.isFinite(parsed)) return;
+      if (!Number.isFinite(parsed)) {
+        setDraftErrors((de) => ({ ...de, [key]: "Enter a valid number" }));
+        return;
+      }
 
       if (meta.hardRange) {
         parsed = Math.max(meta.hardRange.min, Math.min(meta.hardRange.max, parsed));
       }
 
+      setDraftErrors((de) => ({ ...de, [key]: "" }));
       setField(key as DraftPath, parsed);
       onBlurCompute();
     },
@@ -304,14 +315,18 @@ export function DealEditModal({
               anchors[3] ?? { label: "—", value: 0 },
             ];
 
-      let displayCustomValue = customValues[key] ?? "";
-      if (!displayCustomValue && !fourAnchors.some((a) => a.value === value)) {
+      const rawCustom = customValues[key];
+      let displayCustomValue = rawCustom ?? "";
+      if (rawCustom === undefined && !fourAnchors.some((a) => a.value === value)) {
         if (meta.unit === "percent") {
           displayCustomValue = ((value as number) * 100).toString();
         } else {
           displayCustomValue = String(value);
         }
       }
+
+      const draftError = draftErrors[key] || "";
+      const displayError = error || draftError || undefined;
 
       return (
         <div key={key} style={{ marginBottom: 14 }}>
@@ -328,7 +343,7 @@ export function DealEditModal({
             onChangeCustom={(v) => handleCustomChange(key, v)}
             onBlurCustom={() => handleCustomBlur(key, meta)}
             disabled={disabled}
-            error={error}
+            error={displayError}
           />
         </div>
       );

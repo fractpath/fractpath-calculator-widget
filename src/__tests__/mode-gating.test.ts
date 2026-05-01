@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeScenario } from "../calc/calc.js";
-import { computeDeal } from "@fractpath/compute";
+import { computeDeal } from "../compute.js";
 import { buildDraftSnapshot, buildShareSummary } from "../widget/snapshot.js";
 import { validateDraft, hasErrors } from "../widget/editing/validateDraft.js";
 import { getDefaultDraftCanonicalInputs } from "../widget/editing/defaults.js";

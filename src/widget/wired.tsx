@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNumericDraft } from "./hooks/useNumericDraft.js";
 import type { FractPathCalculatorWidgetProps } from "./types.js";
 import type { CalculatorPersona } from "./types.js";
 import type {
@@ -317,6 +318,9 @@ const WIDGET_CSS = `
   }
 `;
 
+const parseCurrency = (s: string) => parseFloat(s.replace(/,/g, ""));
+const parseInteger = (s: string) => { const n = parseInt(s, 10); return Number.isInteger(n) ? n : NaN; };
+
 export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const {
     persona: propPersona,
@@ -361,6 +365,28 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const [realtorMode, setRealtorMode] =
     useState<RealtorRepresentationMode>("NONE");
   const [realtorPct, setRealtorPct] = useState(0);
+
+  const pvDraft = useNumericDraft(propertyValue, setPropertyValue, {
+    format: (n) => n.toLocaleString(), parse: parseCurrency, validate: (n) => n > 0,
+  });
+  const upDraft = useNumericDraft(upfrontPayment, setUpfrontPayment, {
+    format: (n) => n.toLocaleString(), parse: parseCurrency, validate: (n) => n >= 0,
+  });
+  const mpDraft = useNumericDraft(monthlyPayment, setMonthlyPayment, {
+    format: (n) => n.toLocaleString(), parse: parseCurrency, validate: (n) => n >= 0,
+  });
+  const npDraft = useNumericDraft(numberOfPayments, setNumberOfPayments, {
+    format: String, parse: parseInteger, validate: (n) => Number.isInteger(n) && n >= 0 && n <= 360,
+  });
+  const eyDraft = useNumericDraft(exitYear, setExitYear, {
+    format: String, parse: parseInteger, validate: (n) => Number.isInteger(n) && n >= 1 && n <= 30,
+  });
+  const grDraft = useNumericDraft(growthRatePct, setGrowthRatePct, {
+    format: String, parse: parseFloat, validate: (n) => n >= -50 && n <= 50,
+  });
+  const rpDraft = useNumericDraft(realtorPct, setRealtorPct, {
+    format: String, parse: parseFloat, validate: (n) => n >= 0 && n <= 6,
+  });
 
   useEffect(() => {
     onEvent?.({ type: "calculator_used", persona });
@@ -438,11 +464,6 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     () => (appOutputs ? buildChartSeries(appOutputs) : null),
     [appOutputs],
   );
-
-  const parseNumber = (raw: string, fallback: number): number => {
-    const n = Number(raw.replace(/,/g, ""));
-    return Number.isFinite(n) && n >= 0 ? n : fallback;
-  };
 
   const handleSave = useCallback(() => {
     onEvent?.({ type: "save_clicked", persona });
@@ -581,6 +602,13 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
     marginBottom: isMobile ? 20 : 16,
   };
 
+  const draftErrorStyle: React.CSSProperties = {
+    marginTop: 4,
+    fontSize: 11,
+    color: "#b91c1c",
+    fontWeight: 500,
+  };
+
   const chipStyle: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -714,81 +742,64 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel(
-                  "deal_terms.property_value",
-                  persona,
-                  "Home Value ($)",
-                )}
+                {getLabel("deal_terms.property_value", persona, "Home Value ($)")}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 style={inputStyle}
-                value={propertyValue.toLocaleString()}
-                onChange={(e) => {
-                  setPropertyValue(parseNumber(e.target.value, propertyValue));
-                }}
+                value={pvDraft.displayValue}
+                onFocus={pvDraft.onFocus}
+                onChange={pvDraft.onChange}
+                onBlur={pvDraft.onBlur}
               />
+              {pvDraft.isInvalid && <div style={draftErrorStyle}>Enter a valid positive amount</div>}
             </div>
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel(
-                  "deal_terms.upfront_payment",
-                  persona,
-                  "Upfront Payment ($)",
-                )}
+                {getLabel("deal_terms.upfront_payment", persona, "Upfront Payment ($)")}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 style={inputStyle}
-                value={upfrontPayment.toLocaleString()}
-                onChange={(e) => {
-                  setUpfrontPayment(
-                    parseNumber(e.target.value, upfrontPayment),
-                  );
-                }}
+                value={upDraft.displayValue}
+                onFocus={upDraft.onFocus}
+                onChange={upDraft.onChange}
+                onBlur={upDraft.onBlur}
               />
+              {upDraft.isInvalid && <div style={draftErrorStyle}>Enter a valid amount (0 or more)</div>}
             </div>
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>
-                {getLabel(
-                  "deal_terms.monthly_payment",
-                  persona,
-                  "Monthly Installment ($)",
-                )}
+                {getLabel("deal_terms.monthly_payment", persona, "Monthly Installment ($)")}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 style={inputStyle}
-                value={monthlyPayment.toLocaleString()}
-                onChange={(e) => {
-                  setMonthlyPayment(
-                    parseNumber(e.target.value, monthlyPayment),
-                  );
-                }}
+                value={mpDraft.displayValue}
+                onFocus={mpDraft.onFocus}
+                onChange={mpDraft.onChange}
+                onBlur={mpDraft.onBlur}
               />
+              {mpDraft.isInvalid && <div style={draftErrorStyle}>Enter a valid amount (0 or more)</div>}
             </div>
 
             <div style={inputGroupStyle}>
               <label style={inputLabelStyle}>Number of Monthly Payments</label>
               <input
-                type="number"
-                min={0}
-                max={360}
-                step={1}
+                type="text"
+                inputMode="numeric"
                 style={inputStyle}
-                value={numberOfPayments}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (Number.isFinite(v) && v >= 0 && v <= 360) {
-                    setNumberOfPayments(v);
-                  }
-                }}
+                value={npDraft.displayValue}
+                onFocus={npDraft.onFocus}
+                onChange={npDraft.onChange}
+                onBlur={npDraft.onBlur}
               />
+              {npDraft.isInvalid && <div style={draftErrorStyle}>Enter a whole number 0–360</div>}
             </div>
 
             <div style={inputGroupStyle}>
@@ -796,39 +807,29 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
                 {getLabel("scenario.exit_year", persona, "Target Exit Year")}
               </label>
               <input
-                type="number"
-                min={1}
-                max={30}
-                step={1}
+                type="text"
+                inputMode="numeric"
                 style={inputStyle}
-                value={exitYear}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (Number.isFinite(v) && v >= 1 && v <= 30) {
-                    setExitYear(v);
-                  }
-                }}
+                value={eyDraft.displayValue}
+                onFocus={eyDraft.onFocus}
+                onChange={eyDraft.onChange}
+                onBlur={eyDraft.onBlur}
               />
+              {eyDraft.isInvalid && <div style={draftErrorStyle}>Enter a year between 1 and 30</div>}
             </div>
 
             <div style={inputGroupStyle}>
-              <label style={inputLabelStyle}>
-                Annual Growth Rate (assumption)
-              </label>
+              <label style={inputLabelStyle}>Annual Growth Rate (assumption)</label>
               <input
-                type="number"
-                min={0}
-                max={20}
-                step={0.1}
+                type="text"
+                inputMode="decimal"
                 style={inputStyle}
-                value={growthRatePct}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (Number.isFinite(v) && v >= 0 && v <= 20) {
-                    setGrowthRatePct(v);
-                  }
-                }}
+                value={grDraft.displayValue}
+                onFocus={grDraft.onFocus}
+                onChange={grDraft.onChange}
+                onBlur={grDraft.onBlur}
               />
+              {grDraft.isInvalid && <div style={draftErrorStyle}>Enter a growth rate (e.g. 4)</div>}
             </div>
 
             <div style={inputGroupStyle}>
@@ -860,26 +861,18 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
             {realtorMode !== "NONE" && (
               <div style={inputGroupStyle}>
                 <label style={inputLabelStyle}>
-                  {getLabel(
-                    "deal_terms.realtor_commission_pct",
-                    persona,
-                    "Commission (%)",
-                  )}
+                  {getLabel("deal_terms.realtor_commission_pct", persona, "Commission (%)")}
                 </label>
                 <input
-                  type="number"
-                  min={0}
-                  max={6}
-                  step={0.5}
+                  type="text"
+                  inputMode="decimal"
                   style={inputStyle}
-                  value={realtorPct}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    if (Number.isFinite(v) && v >= 0 && v <= 6) {
-                      setRealtorPct(v);
-                    }
-                  }}
+                  value={rpDraft.displayValue}
+                  onFocus={rpDraft.onFocus}
+                  onChange={rpDraft.onChange}
+                  onBlur={rpDraft.onBlur}
                 />
+                {rpDraft.isInvalid && <div style={draftErrorStyle}>Enter a commission % between 0 and 6</div>}
               </div>
             )}
 
