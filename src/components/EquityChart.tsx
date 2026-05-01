@@ -7,6 +7,22 @@ type Props = {
   height?: number;
 };
 
+const CHART_COLORS = {
+  cashPaid: "#16A34A",
+  buyoutCost: "#F97316",
+  projectedValue: "#EAB308",
+  grid: "#E4E4E7",
+  axis: "#71717A",
+  muted: "#D4D4D8",
+  text: "#18181B",
+};
+
+const MARKER_COLORS: Record<string, string> = {
+  early: CHART_COLORS.cashPaid,
+  standard: CHART_COLORS.projectedValue,
+  late: CHART_COLORS.buyoutCost,
+};
+
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
@@ -27,12 +43,6 @@ function markerLabel(m: SettlementMarker) {
   return "Std";
 }
 
-const MARKER_COLORS: Record<string, string> = {
-  early: "#ca8a04",
-  standard: "#0891b2",
-  late: "#c026d3",
-};
-
 export function EquityChart({ series, width = 640, height = 260 }: Props) {
   const { points, markers } = series;
 
@@ -45,7 +55,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
     return <div style={{ fontFamily: "system-ui, sans-serif" }}>No data</div>;
   }
 
-  const padding = { top: 24, right: 24, bottom: 40, left: 64 };
+  const padding = { top: 28, right: 24, bottom: 44, left: 64 };
 
   const innerW = Math.max(10, width - padding.left - padding.right);
   const innerH = Math.max(10, height - padding.top - padding.bottom);
@@ -76,6 +86,14 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
     })
     .join(" ");
 
+  const contractValuePathD = points
+    .map((p, i) => {
+      const x = xScale(p.year);
+      const y = yScale(p.contractValue);
+      return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+
   const pathLength = points.length * 40;
 
   const yTickCount = 4;
@@ -97,7 +115,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label="Contract value over time"
+      aria-label="Projected home value and buyout cost over time"
       style={{ display: "block" }}
     >
       <style>{`
@@ -106,6 +124,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
           to { stroke-dashoffset: 0; }
         }
       `}</style>
+
       <rect x={0} y={0} width={width} height={height} fill="white" rx={8} />
 
       {yTicks.map((t, i) => (
@@ -115,7 +134,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
             x2={width - padding.right}
             y1={t.y}
             y2={t.y}
-            stroke="#f3f4f6"
+            stroke={CHART_COLORS.grid}
             strokeWidth={1}
           />
           <text
@@ -123,7 +142,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
             y={t.y + 4}
             fontSize={11}
             textAnchor="end"
-            fill="#9ca3af"
+            fill={CHART_COLORS.axis}
             fontFamily="system-ui, sans-serif"
           >
             {t.label}
@@ -136,7 +155,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
         x2={width - padding.right}
         y1={padding.top + innerH}
         y2={padding.top + innerH}
-        stroke="#e5e7eb"
+        stroke={CHART_COLORS.grid}
         strokeWidth={1}
       />
 
@@ -147,7 +166,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
             x2={t.x}
             y1={padding.top + innerH}
             y2={padding.top + innerH + 5}
-            stroke="#d1d5db"
+            stroke={CHART_COLORS.muted}
             strokeWidth={1}
           />
           <text
@@ -155,7 +174,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
             y={padding.top + innerH + 20}
             fontSize={10}
             textAnchor="middle"
-            fill="#9ca3af"
+            fill={CHART_COLORS.axis}
             fontFamily="system-ui, sans-serif"
           >
             {t.label}
@@ -165,7 +184,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
             y={padding.top + innerH + 33}
             fontSize={9}
             textAnchor="middle"
-            fill="#d1d5db"
+            fill={CHART_COLORS.muted}
             fontFamily="system-ui, sans-serif"
           >
             {formatYear(t.year)}
@@ -175,7 +194,8 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
 
       {markers.map((m) => {
         const x = xScale(m.year);
-        const color = MARKER_COLORS[m.timing] || "#d1d5db";
+        const color = MARKER_COLORS[m.timing] || CHART_COLORS.muted;
+
         return (
           <g key={m.timing}>
             <line
@@ -193,7 +213,7 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
               width={40}
               height={18}
               rx={9}
-              fill="#f9fafb"
+              fill="white"
               stroke={color}
               strokeWidth={1}
             />
@@ -213,14 +233,30 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
       })}
 
       <path
-        d={buyoutPathD}
+        d={contractValuePathD}
         fill="none"
-        stroke="#0891b2"
+        stroke={CHART_COLORS.projectedValue}
         strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray={pathLength}
         strokeDashoffset={0}
+        opacity={0.95}
+        style={{
+          animation: `${uniqueId}-draw 1s ease-out forwards`,
+        }}
+      />
+
+      <path
+        d={buyoutPathD}
+        fill="none"
+        stroke={CHART_COLORS.buyoutCost}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={pathLength}
+        strokeDashoffset={0}
+        opacity={0.95}
         style={{
           animation: `${uniqueId}-draw 1s ease-out forwards`,
         }}
@@ -228,26 +264,53 @@ export function EquityChart({ series, width = 640, height = 260 }: Props) {
 
       {points.slice(1).map((p) => (
         <circle
-          key={p.year}
+          key={`value-${p.year}`}
           cx={xScale(p.year)}
-          cy={yScale(p.buyoutAmount)}
+          cy={yScale(p.contractValue)}
           r={4}
-          fill="#0891b2"
+          fill={CHART_COLORS.projectedValue}
           stroke="white"
           strokeWidth={2}
         />
       ))}
 
-      <text
-        x={padding.left}
-        y={14}
-        fontSize={12}
-        fill="#6b7280"
-        fontFamily="system-ui, sans-serif"
-        fontWeight={500}
-      >
-        Contract Value Over Time
-      </text>
+      {points.slice(1).map((p) => (
+        <circle
+          key={`buyout-${p.year}`}
+          cx={xScale(p.year)}
+          cy={yScale(p.buyoutAmount)}
+          r={4}
+          fill={CHART_COLORS.buyoutCost}
+          stroke="white"
+          strokeWidth={2}
+        />
+      ))}
+
+      <g transform={`translate(${padding.left}, 14)`}>
+        <circle cx={0} cy={0} r={4} fill={CHART_COLORS.projectedValue} />
+        <text
+          x={10}
+          y={4}
+          fontSize={12}
+          fill={CHART_COLORS.text}
+          fontFamily="system-ui, sans-serif"
+          fontWeight={500}
+        >
+          Projected home value
+        </text>
+
+        <circle cx={160} cy={0} r={4} fill={CHART_COLORS.buyoutCost} />
+        <text
+          x={170}
+          y={4}
+          fontSize={12}
+          fill={CHART_COLORS.text}
+          fontFamily="system-ui, sans-serif"
+          fontWeight={500}
+        >
+          Buyout cost
+        </text>
+      </g>
     </svg>
   );
 }

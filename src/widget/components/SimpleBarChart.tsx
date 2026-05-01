@@ -11,7 +11,13 @@ type SimpleBarChartProps = {
   height?: number;
 };
 
-const CHART_COLORS = ["#0891b2", "#c026d3", "#ca8a04", "#6b7280", "#374151"];
+const CHART_COLORS = [
+  "#16A34A", // Cash paid / cash unlocked
+  "#F97316", // Buyout payout / exit cost
+  "#EAB308", // Projected home value
+  "#71717A", // Neutral fallback
+  "#18181B", // Strong neutral fallback
+];
 
 export function SimpleBarChart({ bars, width = 400, height = 220 }: SimpleBarChartProps) {
   const maxVal = Math.max(...bars.map((b) => b.value), 1);
